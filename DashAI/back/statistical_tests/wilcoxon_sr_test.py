@@ -4,7 +4,11 @@ from DashAI.back.statistical_tests.statistical_test_result import (
     PairwiseResult,
     StatisticalTestResult,
 )
-from DashAI.back.statistical_tests.utils import CorrectionMethod, correct_p_values
+from DashAI.back.statistical_tests.utils import (
+    RANK_TEST_DECIMALS,
+    CorrectionMethod,
+    correct_p_values,
+)
 
 
 class WilcoxonSRTest(BaseStatisticalTest):
@@ -171,7 +175,7 @@ class WilcoxonSRTest(BaseStatisticalTest):
 
             # we round the scores to 4 decimal places to avoid issues
             # with very small differences, according to scipy documentation
-            score_differences = np.round(scores1 - scores2, decimals=4)
+            score_differences = np.round(scores1 - scores2, decimals=RANK_TEST_DECIMALS)
             statistic, p_value = wilcoxon(score_differences, alternative=alternative)
 
             significant = p_value < alpha
@@ -196,7 +200,9 @@ class WilcoxonSRTest(BaseStatisticalTest):
                 scores1 = np.array(scores[run_names[i]])
                 scores2 = np.array(scores[run_names[j]])
 
-                score_differences = np.round(scores1 - scores2, decimals=4)
+                score_differences = np.round(
+                    scores1 - scores2, decimals=RANK_TEST_DECIMALS
+                )
                 statistic, p_value = wilcoxon(score_differences)
 
                 preliminary_results.append((run_names[i], run_names[j], statistic))

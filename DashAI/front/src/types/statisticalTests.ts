@@ -3,8 +3,11 @@ export interface PairwiseResult {
   run_1_name?: string;
   run_2: number;
   run_2_name?: string;
-  p_value: number;
+  // null when the comparison could not be computed (see `error`)
+  p_value: number | null;
   significant: boolean;
+  // Short reason shown in place of the p-value for an undefined pair
+  error?: string | null;
 }
 
 /**
@@ -23,7 +26,8 @@ export interface StatisticalTestRequest {
 
 export interface StatisticalTestResponse {
   test_name: string;
-  statistic: number | null;
+  // "Infinity" / "-Infinity" when the statistic is infinite (JSON has no inf)
+  statistic: number | "Infinity" | "-Infinity" | null;
   p_value: number | null;
   significant: boolean;
   alpha: number;
@@ -43,7 +47,7 @@ export interface StatisticalTestSavePayload {
   significant: boolean;
   run_ids?: number[];
   run_names?: Record<string, string>;
-  statistic?: number | null;
+  statistic?: number | "Infinity" | "-Infinity" | null;
   p_value?: number | null;
   interpretation?: string | null;
   params?: Record<string, unknown> | null;

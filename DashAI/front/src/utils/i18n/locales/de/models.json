@@ -184,6 +184,8 @@
     "normal": "Normal",
     "normalityByRunSummary": "{{normal}} von {{total}} Durchläufen scheinen einer Normalverteilung zu folgen (α = {{alpha}}).",
     "notNormal": "Nicht normal",
+    "notEvaluable": "Nicht auswertbar",
+    "runsNotEvaluated": "{{count}} von {{total}} Durchläufen konnten nicht ausgewertet werden.",
     "notSignificant": "Nicht Signifikant",
     "operations": "Vorgänge",
     "operationsWillBeDeletedWarning": "Diese Operationen werden dauerhaft gelöscht und können nicht wiederhergestellt werden. Sind Sie sicher?",

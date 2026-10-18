@@ -86,6 +86,7 @@ dependencies = [
     "pypdf",
     "pdfminer.six",
     "pdfplumber",
+    "scikit-posthocs>=0.17.1",
 ]
 
 [project.optional-dependencies]

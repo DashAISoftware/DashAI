@@ -1,9 +1,27 @@
 """Schemas for statistical tests endpoints."""
 
+import math
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Annotated, Dict, List, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
+
+
+def _serialize_statistic(value: Optional[float]) -> Optional[Union[float, str]]:
+    """Send infinite statistics as strings, since JSON has no infinity.
+
+    By default Pydantic serializes inf as null, which hides valid results such
+    as an ANOVA where every model is constant but the models differ. The
+    frontend parses "Infinity" / "-Infinity" back with Number().
+    """
+    if value is not None and math.isinf(value):
+        return "Infinity" if value > 0 else "-Infinity"
+    return value
+
+
+Statistic = Annotated[
+    Optional[float], PlainSerializer(_serialize_statistic, when_used="json")
+]
 
 
 class StatisticalTestRequest(BaseModel):
@@ -29,15 +47,18 @@ class PairwiseResultResponse(BaseModel):
     run_1_name: Optional[str] = None
     run_2: int
     run_2_name: Optional[str] = None
-    p_value: float
+    # None when the comparison could not be computed (see ``error``)
+    p_value: Optional[float] = None
     significant: bool
+    # Short reason shown in place of the p-value for an undefined pair
+    error: Optional[str] = None
 
 
 class StatisticalTestResponse(BaseModel):
     """Response schema for statistical test results."""
 
     test_name: str
-    statistic: Optional[float] = None
+    statistic: Statistic = None
     p_value: Optional[float] = None
     significant: bool
     alpha: float
@@ -63,7 +84,7 @@ class StatisticalTestParams(BaseModel):
     run_ids: List[int] = []
     run_names: Dict[str, str] = {}
 
-    statistic: Optional[float] = None
+    statistic: Statistic = None
     p_value: Optional[float] = None
     interpretation: Optional[str] = None
 

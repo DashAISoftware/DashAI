@@ -1,10 +1,11 @@
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.statistical_tests.base_statistical_test import BaseStatisticalTest
-from DashAI.back.statistical_tests.statistical_test_result import (
-    PairwiseResult,
-    StatisticalTestResult,
+from DashAI.back.statistical_tests.statistical_test_result import StatisticalTestResult
+from DashAI.back.statistical_tests.utils import (
+    UndefinedTestError,
+    build_corrected_pairwise_results,
+    check_constant_differences,
 )
-from DashAI.back.statistical_tests.utils import CorrectionMethod, correct_p_values
 
 
 class PairedTTest(BaseStatisticalTest):
@@ -152,7 +153,8 @@ class PairedTTest(BaseStatisticalTest):
         ------
         ValueError
             If the input does not contain enough score sets, if the score lists
-            are not aligned, or if the paired differences have zero variance.
+            are not aligned, or if the paired differences are constant and
+            non-zero. Runs with identical scores are reported with p = 1.
         """
         import numpy as np
         from scipy.stats import ttest_rel
@@ -186,11 +188,18 @@ class PairedTTest(BaseStatisticalTest):
 
             differences = scores1 - scores2
 
-            # Ensure the paired differences have variance
-            if np.var(differences, ddof=1) == 0:
-                raise ValueError(
-                    "The paired differences have zero variance. "
-                    "All differences are identical, making the t-test undefined."
+            # Identical runs show no difference; a constant non-zero
+            # difference raises because the t statistic is undefined
+            if check_constant_differences(differences, run_names[0], run_names[1]):
+                return StatisticalTestResult(
+                    statistic=0.0,
+                    p_value=1.0,
+                    significant=False,
+                    alpha=alpha,
+                    details={
+                        "degrees_of_freedom": len(scores1) - 1,
+                        "alternative": alternative,
+                    },
                 )
 
             result = ttest_rel(scores1, scores2, alternative=alternative)
@@ -212,8 +221,8 @@ class PairedTTest(BaseStatisticalTest):
             )
 
         # more than two models: perform pairwise comparisons with correction
-        preliminary_results = []
-        pre_correction_p_values = []
+        # (run_1, run_2, statistic, p_value, error) per pair
+        pairs = []
 
         for i in range(len(run_names)):
             for j in range(i + 1, len(run_names)):
@@ -242,48 +251,29 @@ class PairedTTest(BaseStatisticalTest):
 
                 differences = scores1 - scores2
 
-                # Ensure the paired differences have variance
-                if np.var(differences, ddof=1) == 0:
-                    raise ValueError(
-                        f"The paired differences for {run_names[i]} and {run_names[j]} "
-                        "have zero variance. All differences are identical, "
-                        "making the t-test undefined."
+                # Identical runs show no difference for this pair; a constant
+                # non-zero difference is undefined, but only for this pair, so
+                # it is reported in its row and the other pairs are still run
+                try:
+                    identical = check_constant_differences(
+                        differences, run_names[i], run_names[j]
                     )
+                except UndefinedTestError as e:
+                    pairs.append((run_names[i], run_names[j], None, None, e.summary))
+                    continue
+
+                if identical:
+                    pairs.append((run_names[i], run_names[j], 0.0, 1.0, None))
+                    continue
 
                 result = ttest_rel(scores1, scores2, alternative=alternative)
-                statistic = result.statistic
-                p_value = result.pvalue
-
-                preliminary_results.append((run_names[i], run_names[j], statistic))
-                pre_correction_p_values.append(p_value)
-
-        # Apply correction to the p-values
-        corrected_p_values = correct_p_values(
-            p_values=pre_correction_p_values,
-            method=CorrectionMethod[correction_method.upper()],
-            alpha=alpha,
-        )
-
-        results = [
-            (a, b, stat, p)
-            for (a, b, stat), p in zip(
-                preliminary_results, corrected_p_values, strict=False
-            )
-        ]
-
-        overall_significant = any(p < alpha for _, _, _, p in results)
-        pairwise = []
-
-        for a, b, stat, p in results:
-            pairwise.append(
-                PairwiseResult(
-                    run_1=a,
-                    run_2=b,
-                    statistic=stat,
-                    p_value=p,
-                    significant=p < alpha,
+                pairs.append(
+                    (run_names[i], run_names[j], result.statistic, result.pvalue, None)
                 )
-            )
+
+        pairwise, overall_significant = build_corrected_pairwise_results(
+            pairs, correction_method, alpha
+        )
 
         return StatisticalTestResult(
             statistic=float("nan"),  # no single omnibus statistic

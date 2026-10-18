@@ -20,6 +20,7 @@ from DashAI.back.dependencies.database.models import StatisticalTest
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.statistical_tests.base_statistical_test import BaseStatisticalTest
 from DashAI.back.statistical_tests.statistical_test_result import StatisticalTestResult
+from DashAI.back.statistical_tests.utils import UndefinedTestError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -110,7 +111,8 @@ async def run_statistical_test(
     Raises
     ------
     HTTPException
-        400 if the test name is unknown or inputs are invalid.
+        400 if the test name is unknown, inputs are invalid, or the test is
+        undefined for the given scores (e.g. zero variance).
         500 on internal error.
     """
     try:
@@ -171,6 +173,7 @@ async def run_statistical_test(
                         run_2_name=request.run_names.get(str(pr.run_2), None),
                         p_value=pr.p_value,
                         significant=pr.significant,
+                        error=pr.error,
                     )
                     for pr in posthoc_result.posthoc
                 ]
@@ -187,6 +190,7 @@ async def run_statistical_test(
                     run_2_name=request.run_names.get(str(pr.run_2), None),
                     p_value=pr.p_value,
                     significant=pr.significant,
+                    error=pr.error,
                 )
                 for pr in result.posthoc
             ]
@@ -227,6 +231,12 @@ async def run_statistical_test(
 
     except HTTPException:
         raise
+    except UndefinedTestError as e:
+        # Degenerate scores (e.g. zero variance): a data problem, not a fault
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
     except Exception as e:
         log.error(f"Error running statistical test: {str(e)}")
         raise HTTPException(

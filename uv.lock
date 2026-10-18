@@ -1302,6 +1302,7 @@ dependencies = [
     { name = "rich" },
     { name = "sacrebleu" },
     { name = "scikit-learn" },
+    { name = "scikit-posthocs" },
     { name = "sentence-transformers" },
     { name = "sentencepiece" },
     { name = "setuptools" },
@@ -1406,6 +1407,7 @@ requires-dist = [
     { name = "rich" },
     { name = "sacrebleu" },
     { name = "scikit-learn", specifier = "<1.8.0" },
+    { name = "scikit-posthocs", specifier = ">=0.17.1" },
     { name = "sentence-transformers" },
     { name = "sentencepiece" },
     { name = "setuptools", specifier = ">=65.0.0,<82" },
@@ -5918,6 +5920,24 @@ wheels = [
 ]
 
 [[package]]
+name = "scikit-posthocs"
+version = "0.17.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12' or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "scipy", version = "1.18.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12' or (extra == 'extra-6-dashai-cpu' and extra == 'extra-6-dashai-cuda')" },
+    { name = "seaborn" },
+    { name = "statsmodels" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/07/06/87ba6869ee33d85649c6f3b452e7ca660ee6920aae9b69ab0569f1b90c01/scikit_posthocs-0.17.1.tar.gz", hash = "sha256:8538c6ca5d895e416d9ded1b70c0d518c3c8c92238d46db9477df8104e82a2f4", size = 50703, upload-time = "2026-10-09T15:45:37.286Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/da/7fd0d1f25e20aa2054a43c6f5802788b0bddd6bfb24738657851a9ab63cf/scikit_posthocs-0.17.1-py3-none-any.whl", hash = "sha256:eca6397bdce788b44d3ea1be6c3c397ac656dd12b38c2337b78b8803a46a103b", size = 47016, upload-time = "2026-10-09T15:45:35.811Z" },
+]
+
+[[package]]
 name = "scipy"
 version = "1.17.1"
 source = { registry = "https://pypi.org/simple" }
@@ -6061,6 +6081,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f7/86/5185061a1fcc41d18c5dc2463969b3a3964b31d9ac67b2fb05d4c7ff7670/scipy-1.18.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:9aac6192fac56bf2ca534389d24623f07b39ff83317d58287285e7fbd622ff76", size = 37472480, upload-time = "2026-06-19T15:01:35.136Z" },
     { url = "https://files.pythonhosted.org/packages/31/8e/f04c68e39919a010d34f2ee1367fd705b0a25a02f609d755f0bfbc0a15fc/scipy-1.18.0-cp314-cp314t-win_amd64.whl", hash = "sha256:e40baea28ae7f5475c779741e2d90b1247c78531207b49c7030e698ff81cee3f", size = 37365390, upload-time = "2026-06-19T15:01:38.091Z" },
     { url = "https://files.pythonhosted.org/packages/d5/19/969dc072906c84dd0a3b05dcf57ea750936087d7873549e408b35cfc3f97/scipy-1.18.0-cp314-cp314t-win_arm64.whl", hash = "sha256:368e0a705903c466aa5f08eefb39e6b1b6b2d659e7352a31fd9e2438365be0f8", size = 25279661, upload-time = "2026-06-19T15:01:40.817Z" },
+]
+
+[[package]]
+name = "seaborn"
+version = "0.13.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/86/59/a451d7420a77ab0b98f7affa3a1d78a313d2f7281a57afb1a34bae8ab412/seaborn-0.13.2.tar.gz", hash = "sha256:93e60a40988f4d65e9f4885df477e2fdaff6b73a9ded434c1ab356dd57eefff7", size = 1457696, upload-time = "2024-01-25T13:21:52.551Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl", hash = "sha256:636f8336facf092165e27924f223d3c62ca560b1f2bb5dff7ab7fad265361987", size = 294914, upload-time = "2024-01-25T13:21:49.598Z" },
 ]
 
 [[package]]

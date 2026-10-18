@@ -1,6 +1,11 @@
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.statistical_tests.base_statistical_test import BaseStatisticalTest
 from DashAI.back.statistical_tests.statistical_test_result import StatisticalTestResult
+from DashAI.back.statistical_tests.utils import (
+    UndefinedTestError,
+    check_defined_result,
+    has_zero_variance,
+)
 
 
 class AnovaTest(BaseStatisticalTest):
@@ -142,8 +147,9 @@ class AnovaTest(BaseStatisticalTest):
         Raises
         ------
         ValueError
-            If fewer than three score sets are provided or if the score vectors
-            do not contain the same number of observations.
+            If fewer than three score sets are provided, if the score vectors
+            do not contain the same number of observations, or if every model
+            has the same score on every fold.
         """
         import numpy as np
         from scipy.stats import f_oneway
@@ -165,7 +171,15 @@ class AnovaTest(BaseStatisticalTest):
                     "All sets of scores must have the same number of observations."
                 )
 
+        # Neither within- nor between-group variance: F is 0/0
+        if has_zero_variance(np.concatenate(score_arrays)):
+            raise UndefinedTestError(
+                "ANOVA is undefined because every model obtained the same score "
+                "on every fold (zero variance). The models perform identically."
+            )
+
         statistic, p_value = f_oneway(*score_arrays)
+        check_defined_result(statistic, p_value, "ANOVA")
 
         significant = p_value < alpha
 

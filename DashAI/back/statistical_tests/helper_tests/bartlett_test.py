@@ -1,6 +1,11 @@
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.statistical_tests.base_statistical_test import BaseStatisticalTest
 from DashAI.back.statistical_tests.statistical_test_result import StatisticalTestResult
+from DashAI.back.statistical_tests.utils import (
+    UndefinedTestError,
+    check_defined_result,
+    has_zero_variance,
+)
 
 
 class BartlettTest(BaseStatisticalTest):
@@ -138,7 +143,8 @@ class BartlettTest(BaseStatisticalTest):
         Raises
         ------
         ValueError
-            If fewer than two score sets are provided.
+            If fewer than two score sets are provided or if every set of scores
+            is constant.
         """
         import numpy as np
         from scipy.stats import bartlett
@@ -147,7 +153,17 @@ class BartlettTest(BaseStatisticalTest):
             raise ValueError("Bartlett's Test requires at least two sets of scores.")
 
         data = [np.array(scores[run_name]) for run_name in scores]
+
+        # Bartlett compares log-variances: a single constant set gives an
+        # infinite statistic (valid), but all of them constant gives NaN
+        if all(has_zero_variance(arr) for arr in data):
+            raise UndefinedTestError(
+                "Bartlett's Test is undefined because every set of scores is "
+                "constant across folds (zero variance)."
+            )
+
         statistic, p_value = bartlett(*data)
+        check_defined_result(statistic, p_value, "Bartlett's Test")
 
         significant = p_value < alpha
 

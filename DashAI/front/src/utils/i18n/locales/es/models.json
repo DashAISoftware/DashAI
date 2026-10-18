@@ -138,6 +138,8 @@
     "selectExactlyRuns_other": "Seleccione exactamente {{count}} modelos",
     "normalityByRunSummary": "{{normal}} de {{total}} ejecuciones parecen seguir una distribución normal (α = {{alpha}}).",
     "notNormal": "No normal",
+    "notEvaluable": "No evaluable",
+    "runsNotEvaluated": "{{count}} de {{total}} ejecuciones no se pudieron evaluar.",
     "normal": "Normal",
     "selectBetweenRuns": "Seleccione entre {{min}} y {{max}} modelos",
     "saveDetails": "Detalles para guardar",

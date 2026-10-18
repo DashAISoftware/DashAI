@@ -4,6 +4,12 @@ from DashAI.back.statistical_tests.statistical_test_result import (
     PairwiseResult,
     StatisticalTestResult,
 )
+from DashAI.back.statistical_tests.utils import (
+    FLOAT_NOISE_DECIMALS,
+    NUMERICAL_TOLERANCE,
+    UndefinedTestError,
+    has_zero_variance,
+)
 
 
 class TukeyHSDTest(BaseStatisticalTest):
@@ -157,8 +163,9 @@ class TukeyHSDTest(BaseStatisticalTest):
         Raises
         ------
         ValueError
-            If fewer than three models are provided or if the score vectors are
-            not aligned across models.
+            If fewer than three models are provided, if the score vectors are
+            not aligned across models, or if every model has the same score on
+            every fold.
         """
         import numpy as np
         from scipy.stats import f_oneway
@@ -171,7 +178,12 @@ class TukeyHSDTest(BaseStatisticalTest):
             )
 
         run_names = list(scores.keys())
-        score_arrays = [np.array(scores[name]) for name in run_names]
+        # When every run is nearly constant the standard error is ~1e-17, so
+        # floating-point noise alone would make identical runs "significant"
+        score_arrays = [
+            np.round(np.array(scores[name]), decimals=FLOAT_NOISE_DECIMALS)
+            for name in run_names
+        ]
 
         num_observations = len(score_arrays[0])
         for arr in score_arrays:
@@ -179,6 +191,14 @@ class TukeyHSDTest(BaseStatisticalTest):
                 raise ValueError(
                     "All sets of scores must have the same number of observations."
                 )
+
+        # No variance at all: every pairwise p-value would be NaN
+        if has_zero_variance(np.concatenate(score_arrays)):
+            raise UndefinedTestError(
+                "Tukey HSD test is undefined because every model obtained the "
+                "same score on every fold (zero variance). The models perform "
+                "identically."
+            )
 
         # Use precalculated ANOVA values if provided, otherwise compute
         if statistic is not None and p_value is not None:
@@ -203,13 +223,25 @@ class TukeyHSDTest(BaseStatisticalTest):
             run_1, run_2, _, _, _, _, reject = row
             # p-value not directly exposed, derive significance from reject flag
             # and get adjusted p-value from meandiffs table
-            p_val = float(tukey.pvalues[len(pairwise)])
+            pair_index = len(pairwise)
+            p_val = float(tukey.pvalues[pair_index])
+            significant = bool(reject)
+
+            # With zero within-group variance the standard error is 0, so a pair
+            # with equal means gives q = 0/0 (NaN). Those runs are identical:
+            # report no difference, as the paired t-tests do.
+            if np.isnan(p_val) and np.isclose(
+                tukey.meandiffs[pair_index], 0.0, atol=NUMERICAL_TOLERANCE
+            ):
+                p_val = 1.0
+                significant = False
+
             pairwise.append(
                 PairwiseResult(
                     run_1=str(run_1),
                     run_2=str(run_2),
                     p_value=p_val,
-                    significant=bool(reject),
+                    significant=significant,
                 )
             )
 

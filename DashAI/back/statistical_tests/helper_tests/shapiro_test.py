@@ -1,6 +1,11 @@
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.statistical_tests.base_statistical_test import BaseStatisticalTest
 from DashAI.back.statistical_tests.statistical_test_result import StatisticalTestResult
+from DashAI.back.statistical_tests.utils import (
+    UndefinedTestError,
+    check_defined_result,
+    has_zero_variance,
+)
 
 
 class ShapiroTest(BaseStatisticalTest):
@@ -130,7 +135,8 @@ class ShapiroTest(BaseStatisticalTest):
         Raises
         ------
         ValueError
-            If the input does not contain exactly one score set.
+            If the input does not contain exactly one score set, if it has
+            fewer than three scores, or if all its scores are identical.
         """
         import numpy as np
         from scipy.stats import shapiro
@@ -141,7 +147,22 @@ class ShapiroTest(BaseStatisticalTest):
         run_name = list(scores.keys())[0]
         data = np.array(scores[run_name])
 
+        # SciPy returns NaN in both cases, which would read as "normal". The
+        # frontend shows these messages in the run's own row, so they are kept
+        # short and do not repeat the run.
+        if len(data) < 3:
+            raise UndefinedTestError(
+                "Shapiro-Wilk Test requires at least three folds, but this run "
+                f"has {len(data)}."
+            )
+        if has_zero_variance(data):
+            raise UndefinedTestError(
+                "Shapiro-Wilk Test is undefined: same score on every fold "
+                "(zero variance)."
+            )
+
         statistic, p_value = shapiro(data)
+        check_defined_result(statistic, p_value, "Shapiro-Wilk Test")
         significant = p_value < alpha
 
         return StatisticalTestResult(

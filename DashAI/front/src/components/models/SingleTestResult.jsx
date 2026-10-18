@@ -15,7 +15,9 @@ import { useTranslation } from "react-i18next";
 import {
   getHypothesisDecisionMessage,
   formatPValue,
+  formatStatistic,
 } from "../../utils/statisticalTests";
+import NotEvaluableCell from "./NotEvaluableCell";
 import TechnicalDetails from "./TechnicalDetails";
 
 const POSTHOC_TEST_LABELS = {
@@ -82,7 +84,7 @@ const SingleTestResult = forwardRef(function SingleTestResult(
               {t("models:label.statistic")}
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {result.statistic?.toFixed(4)}
+              {formatStatistic(result.statistic)}
             </Typography>
           </Box>
         )}
@@ -147,21 +149,27 @@ const SingleTestResult = forwardRef(function SingleTestResult(
                 <TableRow key={i}>
                   <TableCell>{pair.run_1_name || pair.run_1}</TableCell>
                   <TableCell>{pair.run_2_name || pair.run_2}</TableCell>
-                  <TableCell align="right">
-                    {formatPValue(pair.p_value)}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={
-                        pair.significant
-                          ? t("models:label.significant")
-                          : t("models:label.notSignificant")
-                      }
-                      color={pair.significant ? "success" : "default"}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </TableCell>
+                  {pair.error ? (
+                    <NotEvaluableCell error={pair.error} colSpan={2} />
+                  ) : (
+                    <>
+                      <TableCell align="right">
+                        {formatPValue(pair.p_value)}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          label={
+                            pair.significant
+                              ? t("models:label.significant")
+                              : t("models:label.notSignificant")
+                          }
+                          color={pair.significant ? "success" : "default"}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -177,7 +185,8 @@ const SingleTestResult = forwardRef(function SingleTestResult(
 SingleTestResult.propTypes = {
   result: PropTypes.shape({
     test_name: PropTypes.string,
-    statistic: PropTypes.number,
+    // "Infinity" / "-Infinity" strings when the statistic is infinite
+    statistic: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     p_value: PropTypes.number,
     significant: PropTypes.bool,
     alpha: PropTypes.number,

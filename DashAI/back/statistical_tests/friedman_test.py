@@ -1,6 +1,12 @@
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.statistical_tests.base_statistical_test import BaseStatisticalTest
 from DashAI.back.statistical_tests.statistical_test_result import StatisticalTestResult
+from DashAI.back.statistical_tests.utils import (
+    RANK_TEST_DECIMALS,
+    UndefinedTestError,
+    check_defined_result,
+    has_zero_variance,
+)
 
 
 class FriedmanTest(BaseStatisticalTest):
@@ -143,8 +149,9 @@ class FriedmanTest(BaseStatisticalTest):
         Raises
         ------
         ValueError
-            If fewer than three score sets are provided or if the score vectors
-            do not contain the same number of observations.
+            If fewer than three score sets are provided, if the score vectors
+            do not contain the same number of observations, or if all models
+            are tied on every fold.
         """
         import numpy as np
         from scipy.stats import friedmanchisquare
@@ -153,7 +160,11 @@ class FriedmanTest(BaseStatisticalTest):
             raise ValueError("Friedman Test requires at least three sets of scores.")
 
         run_names = list(scores.keys())
-        score_arrays = [np.array(scores[run_name]) for run_name in run_names]
+        # Rank-based: tiny differences must be ties, not consistent wins
+        score_arrays = [
+            np.round(np.array(scores[run_name]), decimals=RANK_TEST_DECIMALS)
+            for run_name in run_names
+        ]
 
         # Check that all score arrays have the same number of observations
         num_observations = len(score_arrays[0])
@@ -163,7 +174,18 @@ class FriedmanTest(BaseStatisticalTest):
                     "All sets of scores must have the same number of observations."
                 )
 
+        # Models are ranked within each fold; if every fold is a full tie the
+        # tie correction leaves the statistic as 0/0
+        folds = np.column_stack(score_arrays)
+        if all(has_zero_variance(fold_scores) for fold_scores in folds):
+            raise UndefinedTestError(
+                "Friedman Test is undefined because all models obtained the same "
+                "score on every fold (every fold is a full tie). The models "
+                "perform identically."
+            )
+
         statistic, p_value = friedmanchisquare(*score_arrays)
+        check_defined_result(statistic, p_value, "Friedman Test")
 
         significant = p_value < alpha
 

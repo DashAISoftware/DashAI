@@ -184,6 +184,8 @@
     "normal": "正态",
     "normalityByRunSummary": "{{total}} 个运行中有 {{normal}} 个似乎服从正态分布（α = {{alpha}}）。",
     "notNormal": "非正态",
+    "notEvaluable": "无法评估",
+    "runsNotEvaluated": "{{total}} 个运行中有 {{count}} 个无法评估。",
     "notSignificant": "不显著",
     "operations": "操作",
     "operationsWillBeDeletedWarning": "这些操作将被永久删除且无法恢复。确定要继续吗？",

@@ -33,3 +33,21 @@ export const formatPValue = (p) => {
   if (p < 0.0001) return p.toExponential(2);
   return p.toFixed(4);
 };
+
+/**
+ * Format a test statistic for display.
+ * The backend sends infinite statistics as the strings "Infinity" /
+ * "-Infinity" (JSON has no infinity), shown here as ∞ / -∞. Returns an em
+ * dash for missing/invalid values.
+ *
+ * @param {number|string|null|undefined} value
+ * @returns {string}
+ */
+export const formatStatistic = (value) => {
+  if (value === null || value === undefined) return "—";
+  const statistic = Number(value);
+  if (isNaN(statistic)) return "—";
+  if (statistic === Infinity) return "∞";
+  if (statistic === -Infinity) return "-∞";
+  return statistic.toFixed(4);
+};

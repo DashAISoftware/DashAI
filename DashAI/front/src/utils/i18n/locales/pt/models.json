@@ -187,6 +187,8 @@
     "normal": "Normal",
     "normalityByRunSummary": "{{normal}} de {{total}} execuções parecem seguir uma distribuição normal (α = {{alpha}}).",
     "notNormal": "Não normal",
+    "notEvaluable": "Não avaliável",
+    "runsNotEvaluated": "{{count}} de {{total}} execuções não puderam ser avaliadas.",
     "notSignificant": "Não Significativo",
     "operations": "Operações",
     "operationsWillBeDeletedWarning": "Estas operações serão excluídas permanentemente e não podem ser recuperadas. Tem certeza de que deseja continuar?",

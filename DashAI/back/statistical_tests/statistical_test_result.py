@@ -8,9 +8,12 @@ class PairwiseResult:
 
     run_1: int
     run_2: int
-    p_value: float
+    # None when the comparison could not be computed (see ``error``)
+    p_value: Optional[float]
     significant: bool
     statistic: Optional[float] = field(default=None)
+    # Short reason shown in place of the p-value when this pair is undefined
+    error: Optional[str] = field(default=None)
 
 
 @dataclass

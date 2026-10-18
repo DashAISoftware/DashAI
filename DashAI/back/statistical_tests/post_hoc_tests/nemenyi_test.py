@@ -4,6 +4,7 @@ from DashAI.back.statistical_tests.statistical_test_result import (
     PairwiseResult,
     StatisticalTestResult,
 )
+from DashAI.back.statistical_tests.utils import RANK_TEST_DECIMALS
 
 
 class NemenyiTest(BaseStatisticalTest):
@@ -167,7 +168,11 @@ class NemenyiTest(BaseStatisticalTest):
             )
 
         run_names = list(scores.keys())
-        score_arrays = [np.array(scores[name]) for name in run_names]
+        # Same rounding as Friedman, so both rank the same data
+        score_arrays = [
+            np.round(np.array(scores[name]), decimals=RANK_TEST_DECIMALS)
+            for name in run_names
+        ]
 
         num_observations = len(score_arrays[0])
         for arr in score_arrays:

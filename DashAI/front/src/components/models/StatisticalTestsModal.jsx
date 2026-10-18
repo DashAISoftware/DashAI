@@ -222,17 +222,30 @@ export default function StatisticalTestsModal({
           selectedRuns.map(async (run) => {
             const metrics = await getFoldMetrics(run.id, selectedSplit);
             const data = metrics[selectedMetric] || [];
-            const resp = await runStatisticalTest({
-              test_name: testIdentifier,
-              metric_name: selectedMetric,
-              metric_split: selectedSplit,
-              run_ids: [run.id],
-              run_names: { [run.id.toString()]: run.name },
-              fold_metrics: { [run.id]: data },
-              alpha,
-              params,
-            });
-            return { id: run.id, name: run.name, resp };
+            try {
+              const resp = await runStatisticalTest({
+                test_name: testIdentifier,
+                metric_name: selectedMetric,
+                metric_split: selectedSplit,
+                run_ids: [run.id],
+                run_names: { [run.id.toString()]: run.name },
+                fold_metrics: { [run.id]: data },
+                alpha,
+                params,
+              });
+              return { id: run.id, name: run.name, resp };
+            } catch (err) {
+              // A 400 means the test is undefined for this run's scores
+              // (e.g. constant): show it in the run's row and keep the other
+              // runs. Anything else is a general failure.
+              if (err.response?.status !== 400) throw err;
+              return {
+                id: run.id,
+                name: run.name,
+                resp: null,
+                error: err.response.data?.detail,
+              };
+            }
           }),
         );
         setPerRunResults(perRun);
@@ -279,7 +292,9 @@ export default function StatisticalTestsModal({
     const description = customDescription.trim() || null;
 
     if (isPerRun && perRunResults) {
-      return perRunResults.map(({ id, name: runName, resp }) => ({
+      // Runs that could not be evaluated have no result to store
+      const evaluated = perRunResults.filter(({ resp }) => resp);
+      return evaluated.map(({ id, name: runName, resp }) => ({
         test_name: test.display_name,
         metric_name: selectedMetric,
         metric_split: selectedSplit,
@@ -681,7 +696,11 @@ export default function StatisticalTestsModal({
             variant="outlined"
             color="success"
             onClick={handleSave}
-            disabled={saving || saved}
+            disabled={
+              saving ||
+              saved ||
+              (isPerRun && !perRunResults?.some(({ resp }) => resp))
+            }
             startIcon={
               saving ? (
                 <CircularProgress size={18} />

@@ -1,6 +1,11 @@
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.statistical_tests.base_statistical_test import BaseStatisticalTest
 from DashAI.back.statistical_tests.statistical_test_result import StatisticalTestResult
+from DashAI.back.statistical_tests.utils import (
+    UndefinedTestError,
+    check_defined_result,
+    has_zero_variance,
+)
 
 
 class LeveneTest(BaseStatisticalTest):
@@ -138,7 +143,9 @@ class LeveneTest(BaseStatisticalTest):
         Raises
         ------
         ValueError
-            If fewer than two score sets are provided.
+            If fewer than two score sets are provided, or if within every set
+            all folds deviate from the median by the same amount (always the
+            case with two folds or constant scores).
         """
         import numpy as np
         from scipy.stats import levene
@@ -147,7 +154,22 @@ class LeveneTest(BaseStatisticalTest):
             raise ValueError("Levene's Test requires at least two sets of scores.")
 
         data = [np.array(scores[run_name]) for run_name in scores]
+
+        # Levene runs an ANOVA on the absolute deviations from each median, so
+        # it needs those deviations to vary within at least one set. With two
+        # folds both deviations are always equal, giving W ~ 1e30 instead of
+        # an error.
+        deviations = [np.abs(arr - np.median(arr)) for arr in data]
+        if all(has_zero_variance(dev) for dev in deviations):
+            raise UndefinedTestError(
+                "Levene's Test is undefined because, within every set of scores, "
+                "all folds deviate from the median by the same amount. This "
+                "always happens with two folds or constant scores; use at least "
+                "three folds or Bartlett's Test instead."
+            )
+
         statistic, p_value = levene(*data)
+        check_defined_result(statistic, p_value, "Levene's Test")
 
         significant = p_value < alpha
 

@@ -1,10 +1,11 @@
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.statistical_tests.base_statistical_test import BaseStatisticalTest
-from DashAI.back.statistical_tests.statistical_test_result import (
-    PairwiseResult,
-    StatisticalTestResult,
+from DashAI.back.statistical_tests.statistical_test_result import StatisticalTestResult
+from DashAI.back.statistical_tests.utils import (
+    UndefinedTestError,
+    build_corrected_pairwise_results,
+    check_constant_differences,
 )
-from DashAI.back.statistical_tests.utils import CorrectionMethod, correct_p_values
 
 
 class CorrectedPairedTTest(BaseStatisticalTest):
@@ -161,7 +162,8 @@ class CorrectedPairedTTest(BaseStatisticalTest):
         ------
         ValueError
             If fewer than two score sets are provided, if the score vectors are
-            not aligned, or if the corrected standard deviation is zero.
+            not aligned, or if the fold differences are constant and non-zero.
+            Runs with identical scores are reported with p = 1.
         """
         import numpy as np
         from scipy import stats
@@ -190,18 +192,31 @@ class CorrectedPairedTTest(BaseStatisticalTest):
             correction_factor = (1 / k) + (1 / (k - 1))
 
             differences = scores1 - scores2
+
+            # Identical runs show no difference; a constant non-zero
+            # difference raises because the t statistic is undefined
+            if check_constant_differences(differences, run_names[0], run_names[1]):
+                return StatisticalTestResult(
+                    statistic=0.0,
+                    p_value=1.0,
+                    significant=False,
+                    alpha=alpha,
+                    details={
+                        "differences": differences.tolist(),
+                        "mean_difference": 0.0,
+                        "correction_factor": float(correction_factor),
+                        "corrected_variance": 0.0,
+                        "degrees_of_freedom": k - 1,
+                        "alternative": alternative,
+                    },
+                )
+
             mean_diff = np.mean(differences)
             var_diff = np.var(differences, ddof=1)
 
             # Apply Nadeau & Bengio correction to the variance
             corrected_var = correction_factor * var_diff
             corrected_std = np.sqrt(corrected_var)
-
-            if corrected_std == 0:
-                raise ValueError(
-                    "Corrected standard deviation is zero — "
-                    "all fold differences are identical."
-                )
 
             # t-statistic with corrected variance
             t_statistic = mean_diff / corrected_std
@@ -230,8 +245,8 @@ class CorrectedPairedTTest(BaseStatisticalTest):
                 },
             )
 
-        preliminary_results = []
-        pre_correction_p_values = []
+        # (run_1, run_2, statistic, p_value, error) per pair
+        pairs = []
 
         for i in range(len(run_names)):
             for j in range(i + 1, len(run_names)):
@@ -248,16 +263,26 @@ class CorrectedPairedTTest(BaseStatisticalTest):
                 correction_factor = (1 / k) + (1 / (k - 1))
 
                 differences = scores1 - scores2
+
+                # Identical runs show no difference for this pair; a constant
+                # non-zero difference is undefined, but only for this pair, so
+                # it is reported in its row and the other pairs are still run
+                try:
+                    identical = check_constant_differences(
+                        differences, run_names[i], run_names[j]
+                    )
+                except UndefinedTestError as e:
+                    pairs.append((run_names[i], run_names[j], None, None, e.summary))
+                    continue
+
+                if identical:
+                    pairs.append((run_names[i], run_names[j], 0.0, 1.0, None))
+                    continue
+
                 mean_diff = np.mean(differences)
                 var_diff = np.var(differences, ddof=1)
                 corrected_var = correction_factor * var_diff
                 corrected_std = np.sqrt(corrected_var)
-
-                if corrected_std == 0:
-                    raise ValueError(
-                        f"Corrected standard deviation is zero for {run_names[i]} "
-                        f"and {run_names[j]} — all fold differences are identical."
-                    )
 
                 t_statistic = mean_diff / corrected_std
                 if alternative == "two-sided":
@@ -267,35 +292,13 @@ class CorrectedPairedTTest(BaseStatisticalTest):
                 else:  # less
                     p_value = stats.t.cdf(t_statistic, df=k - 1)
 
-                preliminary_results.append((run_names[i], run_names[j], t_statistic))
-                pre_correction_p_values.append(float(p_value))
-
-        corrected_p_values = correct_p_values(
-            p_values=pre_correction_p_values,
-            method=CorrectionMethod[correction_method.upper()],
-            alpha=alpha,
-        )
-
-        results = [
-            (a, b, stat, p)
-            for (a, b, stat), p in zip(
-                preliminary_results, corrected_p_values, strict=False
-            )
-        ]
-
-        overall_significant = any(p < alpha for _, _, _, p in results)
-        pairwise = []
-
-        for a, b, stat, p in results:
-            pairwise.append(
-                PairwiseResult(
-                    run_1=a,
-                    run_2=b,
-                    statistic=stat,
-                    p_value=p,
-                    significant=p < alpha,
+                pairs.append(
+                    (run_names[i], run_names[j], t_statistic, float(p_value), None)
                 )
-            )
+
+        pairwise, overall_significant = build_corrected_pairwise_results(
+            pairs, correction_method, alpha
+        )
 
         return StatisticalTestResult(
             statistic=float("nan"),
