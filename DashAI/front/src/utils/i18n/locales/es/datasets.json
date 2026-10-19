@@ -137,6 +137,7 @@
     "confirmBulkDeleteData_one": "¿Seguro que quieres eliminar el elemento seleccionado? Esta acción no se puede deshacer.",
     "confirmBulkDeleteData_many": "¿Seguro que quieres eliminar los {{count}} elementos seleccionados? Esta acción no se puede deshacer.",
     "confirmBulkDeleteData_other": "¿Seguro que quieres eliminar los {{count}} elementos seleccionados? Esta acción no se puede deshacer.",
+    "confirmBulkDeleteData": "¿Seguro que quieres eliminar los {{count}} elementos seleccionados? Esta acción no se puede deshacer.",
     "selectDatasetsToDelete": "Seleccionar datasets para eliminar",
     "selectDataToDelete": "Seleccionar datos para eliminar",
     "confirmDeleteNotebook": "¿Seguro que quieres eliminar el notebook \"{{name}}\"? Esta acción no se puede deshacer.",
