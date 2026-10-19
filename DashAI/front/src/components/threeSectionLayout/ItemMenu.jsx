@@ -14,7 +14,7 @@ import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import DeleteIcon from "@mui/icons-material/Delete";
 import InfoIcon from "@mui/icons-material/Info";
 import EditIcon from "@mui/icons-material/Edit";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import FileUploadIcon from "@mui/icons-material/FileUpload";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 import { useTranslation } from "react-i18next";
 
@@ -141,7 +141,7 @@ export default function ItemMenu({
               }}
             >
               <ListItemIcon>
-                <FileDownloadIcon fontSize="small" />
+                <FileUploadIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText>{t("common:export")}</ListItemText>
             </MenuItem>

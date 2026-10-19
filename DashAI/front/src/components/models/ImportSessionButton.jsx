@@ -10,7 +10,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Close as CloseIcon, FileUpload } from "@mui/icons-material";
+import { Close as CloseIcon, FileDownload } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
@@ -81,7 +81,7 @@ export default function ImportSessionButton({ onImported }) {
             {importing ? (
               <CircularProgress size={16} />
             ) : (
-              <FileUpload sx={{ fontSize: 18 }} />
+              <FileDownload sx={{ fontSize: 18 }} />
             )}
           </IconButton>
         </span>

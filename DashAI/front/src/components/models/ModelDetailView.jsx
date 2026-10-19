@@ -8,7 +8,7 @@ import {
   Tooltip,
   CircularProgress,
 } from "@mui/material";
-import { PlayArrow, Delete, Edit, Download } from "@mui/icons-material";
+import { PlayArrow, Delete, Edit, FileUpload } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 import { useSnackbar } from "notistack";
 import ModelsBreadcrumbs from "./ModelsBreadcrumbs";
@@ -167,7 +167,7 @@ export default function ModelDetailView({
                     {exporting ? (
                       <CircularProgress size={16} />
                     ) : (
-                      <Download fontSize="small" />
+                      <FileUpload fontSize="small" />
                     )}
                   </IconButton>
                 </span>
