@@ -297,6 +297,9 @@
     "validationMetrics": "Métricas de Validação",
     "validationSet": "conjunto de validação",
     "viewResultsAs": "Ver resultados como colunas ou gráficos",
+    "last": "Final",
+    "supervisedBadge": "Supervisionado",
+    "unsupervisedBadge": "Não supervisionado",
     "wilcoxonPairwiseComparisons": "Testes de Wilcoxon aos pares com correção de Holmes",
     "withHpo": "Com HPO",
     "withoutHpo": "Sem HPO"

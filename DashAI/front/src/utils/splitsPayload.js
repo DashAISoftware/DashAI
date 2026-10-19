@@ -15,13 +15,16 @@ export const SPLIT_TYPES = {
 export const STRATEGY_KINDS = {
   HOLDOUT: "holdout",
   CV: "cv",
+  // Carves nothing: the model is fitted and scored once on every row, which is
+  // the only evaluation a task without a target (clustering) offers.
+  FULL: "full",
 };
 
 /**
  * Read the split shape a strategy component declares.
  *
  * @param {object} strategy an EvaluationStrategy component
- * @returns {string|null} "holdout", "cv", or null when it declares neither
+ * @returns {string|null} "holdout", "cv", "full", or null when it declares none
  */
 export const strategyKindOf = (strategy) => strategy?.metadata?.kind ?? null;
 

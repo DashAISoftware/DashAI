@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, Any, List
 
-from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.supervised_model import SupervisedModel
 
 if TYPE_CHECKING:
     import numpy as np
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 
-class ForecastingModel(BaseModel):
+class ForecastingModel(SupervisedModel):
     """Base class for models that predict the future of a single series.
 
     These models are unusual among DashAI models in that they do not learn a

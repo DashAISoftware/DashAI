@@ -75,6 +75,11 @@ function CreateSessionSteps({
     input_column_refs: [],
   });
 
+  // A task without a target (clustering) picks no output column. Whether the
+  // dataset is partitioned is the evaluation strategy's answer, which the
+  // prepare step reads from the strategies the task offers.
+  const requiresTarget = selectedTask?.metadata?.requires_target !== false;
+
   const [nextEnabled, setNextEnabled] = useState(false);
   const [currentStep, setCurrentStep] = useState(STEP_PREPARE_DATASET);
 
@@ -282,7 +287,7 @@ function CreateSessionSteps({
           selectedTask?.name || newExp.task_name,
           effectiveName,
           newExp.input_columns,
-          newExp.output_columns,
+          requiresTarget ? newExp.output_columns : [],
           hasTrain ? allMetricNames : [],
           hasValidation ? allMetricNames : [],
           hasTest ? allMetricNames : [],
@@ -300,7 +305,7 @@ function CreateSessionSteps({
             selectedTask?.name || newExp.task_name,
             effectiveName,
             newExp.input_columns,
-            newExp.output_columns,
+            requiresTarget ? newExp.output_columns : [],
             hasTrain ? allMetricNames : [],
             hasValidation ? allMetricNames : [],
             hasTest ? allMetricNames : [],
@@ -451,6 +456,7 @@ function CreateSessionSteps({
                 dataset={selectedDataset}
                 datasetInfo={datasetInfo}
                 datasetTypes={datasetTypes}
+                requiresTarget={requiresTarget}
               />
             )}
           </>

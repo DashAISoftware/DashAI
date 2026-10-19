@@ -291,6 +291,9 @@
     "validationMetrics": "Validierungsmetriken",
     "validationSet": "Validierungsmenge",
     "viewResultsAs": "Ergebnisse als Spalten oder Graphen anzeigen",
+    "last": "Ergebnis",
+    "supervisedBadge": "Überwacht",
+    "unsupervisedBadge": "Unüberwacht",
     "wilcoxonPairwiseComparisons": "Paarweise Wilcoxon-Tests mit Holm-Korrektur",
     "withHpo": "Mit HPO",
     "withoutHpo": "Ohne HPO"

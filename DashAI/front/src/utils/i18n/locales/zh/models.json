@@ -290,6 +290,9 @@
     "validationMetrics": "验证集指标",
     "validationSet": "验证集",
     "viewResultsAs": "以列或图表方式查看结果",
+    "last": "终值",
+    "supervisedBadge": "有监督",
+    "unsupervisedBadge": "无监督",
     "wilcoxonPairwiseComparisons": "带 Holm 校正的成对 Wilcoxon 检验",
     "withHpo": "含 HPO",
     "withoutHpo": "不含 HPO"

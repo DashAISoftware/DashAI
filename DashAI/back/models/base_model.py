@@ -92,25 +92,11 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
     @abstractmethod
     def train(
         self,
-        x_train: "DashAIDataset",
-        y_train: "DashAIDataset",
-        x_validation: "DashAIDataset" = None,
-        y_validation: "DashAIDataset" = None,
+        *args,
+        **kwargs,
     ) -> "BaseModel":
-        """Train the model with the provided data.
-
-        Parameters
-        ----------
-        x_train : DashAIDataset
-            The input features for training.
-        y_train : DashAIDataset
-            The target labels for training.
-        x_validation : DashAIDataset, optional
-            Input features for
-            validation. Defaults to None.
-        y_validation : DashAIDataset, optional
-            Target labels for
-            validation. Defaults to None.
+        """Train the model with the data required by its task executor.
+        The concrete signature depends on the modeling problem.
 
         Returns
         -------
@@ -536,6 +522,9 @@ class BaseModel(ConfigObject, metaclass=ABCMeta):
         self, dataset: "DashAIDataset", is_fit: bool = False
     ) -> "DashAIDataset":
         """Hook for model-specific preprocessing of output targets.
+
+        This default exists for backward compatibility with supervised models that
+        preprocess targets. Unsupervised models are not required to use it.
 
         By default, delegates to `prepare_dataset`. Override in subclasses
         that need separate input and output preprocessing logic.

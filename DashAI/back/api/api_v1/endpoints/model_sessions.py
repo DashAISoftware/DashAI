@@ -329,6 +329,60 @@ async def validate_columns(
     return validation_response
 
 
+def _validate_evaluation_strategy(
+    task_name: str, evaluation_strategy: str, component_registry: "ComponentRegistry"
+) -> type:
+    """Check that a session's evaluation strategy is one its task offers.
+
+    The wizard lists only the strategies the registry relates to the task, and
+    this asks the same registry the same question, so a session the front
+    builds always passes. What it stops is a session put together by hand with
+    a strategy its task never offered: one that carves nothing on a task with
+    a target, which would train without ever reading the target, or a holdout
+    on a task without one. A run relies on this pairing to know from the
+    strategy alone which units to chain.
+
+    Parameters
+    ----------
+    task_name : str
+        The session's task.
+    evaluation_strategy : str
+        The session's evaluation strategy.
+    component_registry : ComponentRegistry
+        Registry that relates tasks to the strategies they offer.
+
+    Returns
+    -------
+    type
+        The strategy class, so the caller can read what it declares.
+
+    Raises
+    ------
+    HTTPException
+        If the task is not registered, or the strategy is not one it offers.
+    """
+    if task_name not in component_registry:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Task {task_name} does not exist in the registry.",
+        )
+
+    offered = sorted(
+        component["name"]
+        for component in component_registry.get_related_components(task_name)
+        if component.get("type") == "EvaluationStrategy"
+    )
+    if evaluation_strategy not in offered:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Evaluation strategy {evaluation_strategy!r} is not available "
+                f"for task {task_name}. Available strategies: {offered}."
+            ),
+        )
+    return component_registry[evaluation_strategy]["class"]
+
+
 def _validate_splits(splits: str, component_registry: "ComponentRegistry") -> None:
     """Validate a splits payload against the schema of its splitter.
 
@@ -380,6 +434,45 @@ def _validate_splits(splits: str, component_registry: "ComponentRegistry") -> No
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid configuration for splitter {splitter_name}: {e}",
         ) from e
+
+
+def _validate_empty_splits(splits: str, evaluation_strategy: str) -> None:
+    """Check that a session whose strategy carves nothing sends no splits.
+
+    Such a strategy takes no splitter, so any payload would be stored and never
+    used, while the front still reads it back to decide which partitions the
+    session has. Only an empty JSON object is accepted.
+
+    Parameters
+    ----------
+    splits : str
+        The splits payload, serialized as JSON.
+    evaluation_strategy : str
+        The session's evaluation strategy, named in the error.
+
+    Raises
+    ------
+    HTTPException
+        If the payload is not valid JSON or is not an empty object.
+    """
+    import json
+
+    try:
+        splits_data = json.loads(splits)
+    except (TypeError, ValueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"splits is not a valid JSON object: {e}",
+        ) from e
+
+    if splits_data != {}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Evaluation strategy {evaluation_strategy} takes no splitter, "
+                f"so splits must be an empty object, got {splits}."
+            ),
+        )
 
 
 # A training-only resampler runs twice (PreprocessingJob and ModelJob replay
@@ -510,7 +603,25 @@ async def create_model_session(
     import pyarrow as pa
     import pyarrow.ipc as ipc
 
-    _validate_splits(params.splits, component_registry)
+    strategy_class = _validate_evaluation_strategy(
+        params.task_name, params.evaluation_strategy, component_registry
+    )
+    if getattr(strategy_class, "KIND", "holdout") == "full":
+        # A strategy that carves nothing takes no splitter, so its splits
+        # payload must be empty, and no session preprocessing, which is fitted
+        # once per partition.
+        _validate_empty_splits(params.splits, params.evaluation_strategy)
+        if params.preprocessing:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Evaluation strategy {params.evaluation_strategy} does not "
+                    "take session preprocessing: it is fitted per partition, "
+                    "and this strategy makes none."
+                ),
+            )
+    else:
+        _validate_splits(params.splits, component_registry)
 
     sequence = ConverterSequence(
         steps=_with_resampling_seeds(params.preprocessing, component_registry)
@@ -726,6 +837,7 @@ async def update_model_session(
     task_name: Union[str, None] = None,
     name: Union[str, None] = None,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):
     """Update the model session associated with the provided ID.
 
@@ -736,6 +848,9 @@ async def update_model_session(
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
+    component_registry : ComponentRegistry
+        Registry used to check that a new task still offers the session's
+        evaluation strategy.
 
     Returns
     -------
@@ -780,6 +895,11 @@ async def update_model_session(
             if dataset_id:
                 setattr(model_session, "dataset_id", dataset_id)
             if task_name:
+                # The stored strategy must still be one the new task offers.
+                if task_name != model_session.task_name:
+                    _validate_evaluation_strategy(
+                        task_name, model_session.evaluation_strategy, component_registry
+                    )
                 setattr(model_session, "task_name", task_name)
 
             if dataset_id or task_name or name:

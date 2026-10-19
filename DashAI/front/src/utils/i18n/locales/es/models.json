@@ -299,6 +299,9 @@
     "validationMetrics": "Métricas de Validación",
     "validationSet": "conjunto de validación",
     "viewResultsAs": "Ver resultados como columnas o gráficos",
+    "last": "Final",
+    "supervisedBadge": "Supervisado",
+    "unsupervisedBadge": "No supervisado",
     "reports": "Reportes"
   },
   "message": {

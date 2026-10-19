@@ -1,14 +1,7 @@
-from typing import TYPE_CHECKING, List, Union
-
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.tasks.classification_task import ClassificationTask
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.value_types import Text
-
-if TYPE_CHECKING:
-    from datasets import DatasetDict
-
-    from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 
 class TextClassificationTask(ClassificationTask):
@@ -55,28 +48,3 @@ class TextClassificationTask(ClassificationTask):
         de="Textklassifikation",
         zh="文本分类",
     )
-
-    def prepare_for_task(
-        self,
-        dataset: Union["DatasetDict", "DashAIDataset"],
-        input_columns: List[str],
-        output_columns: List[str],
-    ) -> "DashAIDataset":
-        """Convert the dataset to DashAIDataset and check the columns types
-
-        A copy of the dataset is created.
-
-        Parameters
-        ----------
-        dataset : Union[DatasetDict, DashAIDataset]
-            Dataset to be changed
-
-        Returns
-        -------
-        DashAIDataset
-            Dataset with the new types
-        """
-        dashai_dataset = super().prepare_for_task(
-            dataset, input_columns, output_columns
-        )
-        return dashai_dataset

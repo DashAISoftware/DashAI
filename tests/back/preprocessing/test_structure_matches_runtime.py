@@ -108,6 +108,7 @@ CASES = [
     ("SMOTEENNConverter", {"random_state": 0}, ["i_full", "f1"]),
     ("RandomUnderSamplerConverter", {"random_state": 0}, ["i_full", "f1"]),
     ("NanRemover", {}, ["i_null", "f_null"]),
+    ("Clustering", {"algorithm_params": {"n_clusters": 3}}, ["i_full", "f1"]),
 ]
 
 

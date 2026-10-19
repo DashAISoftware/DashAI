@@ -293,6 +293,9 @@
     "validationMetrics": "Validation Metrics",
     "validationSet": "validation set",
     "viewResultsAs": "View results as columns or graphs",
+    "last": "Final",
+    "supervisedBadge": "Supervised",
+    "unsupervisedBadge": "Unsupervised",
     "reports": "Reports"
   },
   "message": {

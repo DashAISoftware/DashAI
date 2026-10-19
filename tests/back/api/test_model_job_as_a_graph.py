@@ -308,7 +308,7 @@ def test_six_drawn_edges_expand_into_twelve_wires(finished_pipeline_run):
     """The granularity problem, measured.
 
     The unit contract is finer than a canvas can draw: FitModelUnit alone
-    requires seven keys. One drawn edge carries every key its two units agree
+    requires six keys. One drawn edge carries every key its two units agree
     on, which is what makes six shapes on a canvas enough for this graph.
 
     It was fifteen while BuildModelUnit still took the data. It stopped taking
