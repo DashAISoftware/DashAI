@@ -143,6 +143,7 @@ class DefaultQueryExpansionPrompt(QueryExpansionPrompt):
         " search queries.",
         "type": "transformation",
         "technique": "expansion",
+        "variant": "default",
         "required_placeholders": required_placeholders,
         "optional_placeholders": optional_placeholders,
         "placeholder_descriptions": {

@@ -511,7 +511,7 @@ class TestRAGJobOutputVerification:
     """Verify the output stored in the DB after RAGJob completes."""
 
     def test_output_has_queries_dict_trace_and_str(self, client: TestClient):
-        """After RAGJob, the process output has the four typed rows in order."""
+        """After RAGJob, the process output has the five typed rows in order."""
         tag = uuid.uuid4().hex[:8]
         suffix = f"_output_{tag}"
         doc_id = _create_test_document(client, suffix=suffix)
@@ -534,6 +534,7 @@ class TestRAGJobOutputVerification:
                     "Queries",
                     "Dict",
                     "Trace",
+                    "Timings",
                     "str",
                 ]
 
@@ -554,8 +555,18 @@ class TestRAGJobOutputVerification:
                 for ref in trace_data[0]["retriever"]["chunks"]:
                     assert ref in chunks_data
 
+                # The Timings output carries the four stage durations.
+                timings_data = json.loads(outputs[3].data)
+                assert set(timings_data) == {
+                    "transformation_ms",
+                    "retrieval_ms",
+                    "generation_ms",
+                    "total_ms",
+                }
+                assert timings_data["transformation_ms"] == 0.0
+
                 # The str output is the answer message.
-                assert STUB_ANSWER in outputs[3].data
+                assert STUB_ANSWER in outputs[4].data
         finally:
             with contextlib.suppress(OSError):
                 os.remove(path)

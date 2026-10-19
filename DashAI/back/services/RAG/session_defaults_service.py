@@ -37,6 +37,16 @@ RAG_CONTEXT_WINDOW = 10000
 #: Room a RAG session reserves for the answer itself, for the same reason.
 RAG_MAX_TOKENS = 1000
 
+#: Context window for the query-transformation stage's nested LLM.
+#:
+#: Model schemas ship a conservative 512 placeholder that cannot hold the
+#: technique prompt plus the stage's own default two-message history. A
+#: transformation call carries only that history block and the instructions —
+#: never retrieved chunks — so it does not need the generation 10000 window,
+#: but it needs far more than 512. Resolved server-side so every client sees
+#: the value in the stored configuration.
+RAG_TRANSFORMATION_LLM_CONTEXT_WINDOW = 2048
+
 #: Languages the default prompt ships templates for.
 _PROMPT_LANGUAGES = ("en", "es", "pt")
 
@@ -97,4 +107,24 @@ def generation_model_overrides() -> Dict[str, Any]:
     return {
         "context_window": RAG_CONTEXT_WINDOW,
         "max_tokens": RAG_MAX_TOKENS,
+    }
+
+
+def transformation_llm_overrides() -> Dict[str, Any]:
+    """Return the context window the query-transformation LLM needs.
+
+    Applied under anything the caller sends explicitly, so a user who sets
+    their own ``context_window`` keeps it. The window only has to cover the
+    technique prompt plus the stage's history block, never retrieved chunks,
+    hence 2048 rather than the generation 10000 window.
+
+    Returns
+    -------
+    dict
+        ``{context_window}``. Models without a ``context_window``-shaped
+        parameter (for example DeepSeek's ``n_ctx``) ignore the extra key, the
+        same way the generation overrides do.
+    """
+    return {
+        "context_window": RAG_TRANSFORMATION_LLM_CONTEXT_WINDOW,
     }

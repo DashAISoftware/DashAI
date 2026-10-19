@@ -2,12 +2,14 @@
 
 Runs the real ``LLMQueryDecomposer`` with a stub LLM through the full RAGJob,
 against a session that has a document. Verifies that a finished process emits
-exactly four typed ``ProcessData`` output rows in pipeline order
-(``Queries`` → ``Dict`` → ``Trace`` → ``str``), that the ``Queries`` row holds
-the transformed queries (or the one-element ``[input message]`` when the stage
-is disabled), that the ``Trace`` row is a real retriever node tree, and that
-the GET endpoints no longer expose a ``transformed_queries`` key. The
-``rag_transformed_query`` table itself is removed.
+exactly five typed ``ProcessData`` output rows in pipeline order
+(``Queries`` → ``Dict`` → ``Trace`` → ``Timings`` → ``str``), that the
+``Queries`` row holds the transformed queries (or the one-element
+``[input message]`` when the stage is disabled), that the ``Trace`` row is a
+real retriever node tree, that the ``Timings`` row carries the four stage
+durations, and that the GET endpoints no longer expose a
+``transformed_queries`` key. The ``rag_transformed_query`` table itself is
+removed.
 """
 
 from __future__ import annotations
@@ -46,7 +48,7 @@ from tests.back.RAG.conftest import (
 
 STUB_ANSWER = "stub transformation answer"
 SUB_QUERIES = ["sub query one", "sub query two"]
-OUTPUT_TYPES = ["Queries", "Dict", "Trace", "str"]
+OUTPUT_TYPES = ["Queries", "Dict", "Trace", "Timings", "str"]
 
 
 # ---------------------------------------------------------------------------
@@ -236,12 +238,19 @@ class TestJobWritesTypedOutputRows:
             trace = json.loads(rows[2][1])
             assert [entry["query"] for entry in trace] == SUB_QUERIES
             assert trace[0]["retriever"]["name"] == "BM25Retriever"
-            assert rows[3][1] == STUB_ANSWER
+            timings = json.loads(rows[3][1])
+            assert set(timings) == {
+                "transformation_ms",
+                "retrieval_ms",
+                "generation_ms",
+                "total_ms",
+            }
+            assert rows[4][1] == STUB_ANSWER
         finally:
             with contextlib.suppress(OSError):
                 os.remove(path)
 
-    def test_second_message_also_writes_three_rows(self, client: TestClient):
+    def test_second_message_also_writes_typed_rows(self, client: TestClient):
         tag = uuid.uuid4().hex[:8]
         suffix = f"_jtransform2_{tag}"
         doc_id = _create_test_document(client, suffix=suffix)
@@ -314,7 +323,9 @@ class TestJobWithoutTransformation:
             assert [data_type for data_type, _data in rows] == OUTPUT_TYPES
             assert json.loads(rows[0][1]) == ["Plain message"]
             assert json.loads(rows[2][1])[0]["query"] == "Plain message"
-            assert rows[3][1] == STUB_ANSWER
+            timings = json.loads(rows[3][1])
+            assert timings["transformation_ms"] == 0.0
+            assert rows[4][1] == STUB_ANSWER
 
             response = client.get(f"/api/v1/generative-process/session/{session_id}")
             assert response.status_code == 200, response.text
@@ -354,7 +365,7 @@ class TestDeleteRemovesOutputRows:
                 client, _session_params([doc_id], True), "Delete me"
             )
             RAGJob(generative_process_id=process_id).run()
-            assert len(_output_rows(client, process_id)) == 4
+            assert len(_output_rows(client, process_id)) == 5
 
             response = client.delete(f"/api/v1/generative-process/{process_id}")
             assert response.status_code == 204, response.text
@@ -376,7 +387,7 @@ class TestDeleteRemovesOutputRows:
 
 
 def test_manual_probe_prints_output_rows(client: TestClient, capsys):
-    """Print the persisted four output rows with parsed payloads."""
+    """Print the persisted five output rows with parsed payloads."""
     tag = uuid.uuid4().hex[:8]
     suffix = f"_jprobe_{tag}"
     doc_id = _create_test_document(client, suffix=suffix)
@@ -396,7 +407,14 @@ def test_manual_probe_prints_output_rows(client: TestClient, capsys):
         assert [data_type for data_type, _data in rows] == OUTPUT_TYPES
         assert json.loads(rows[0][1]) == SUB_QUERIES
         assert json.loads(rows[2][1])[0]["retriever"]["name"] == "BM25Retriever"
-        assert rows[3][1] == STUB_ANSWER
+        timings = json.loads(rows[3][1])
+        assert set(timings) == {
+            "transformation_ms",
+            "retrieval_ms",
+            "generation_ms",
+            "total_ms",
+        }
+        assert rows[4][1] == STUB_ANSWER
     finally:
         with contextlib.suppress(OSError):
             os.remove(path)

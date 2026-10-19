@@ -574,6 +574,9 @@ class GenerativeProcess(Base):
     delivery_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     start_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     end_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    # Live pipeline stage payload while the process runs (see RAG_constants);
+    # set back to None when the process finishes or errors.
+    progress: Mapped[JSON] = mapped_column(JSON, nullable=True)
 
     session = relationship("GenerativeSession", back_populates="processes")
     input = relationship(
@@ -620,6 +623,18 @@ class GenerativeProcess(Base):
     def set_status_as_error(self) -> None:
         """Update the status of the process to error."""
         self.status = RunStatus.ERROR
+
+    def set_progress(self, progress: Optional[Dict[str, Any]]) -> None:
+        """Set the live pipeline stage payload on the process.
+
+        Parameters
+        ----------
+        progress : dict or None
+            The current stage payload (see ``RAG_constants`` for the exact
+            shapes) while the process runs, or None to clear it once the
+            process finishes or errors.
+        """
+        self.progress = progress
 
 
 class ProcessData(Base):

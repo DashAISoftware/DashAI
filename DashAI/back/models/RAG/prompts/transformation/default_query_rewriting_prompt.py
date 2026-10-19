@@ -138,6 +138,7 @@ class DefaultQueryRewritingPrompt(QueryRewritingPrompt):
         " search query.",
         "type": "transformation",
         "technique": "rewriting",
+        "variant": "default",
         "required_placeholders": required_placeholders,
         "optional_placeholders": optional_placeholders,
         "placeholder_descriptions": {

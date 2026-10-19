@@ -4,15 +4,6 @@
     "createSession": "创建会话",
     "generativeHub": "生成式中心"
   },
-  "documentReferences": {
-    "chunkLabel": "第 {{position}} 块",
-    "chunkLabelWithPage": "块 {{position}}，第 {{page}} 页",
-    "chunksCount_one": "此文档为此回复提供了 {{count}} 个块：",
-    "chunksCount_other": "此文档为此回复提供了 {{count}} 个块：",
-    "close": "关闭",
-    "fallbackTitle": "文档 {{id}}",
-    "openDocument": "打开文档"
-  },
   "documentsBar": {
     "addFromData": "从数据中添加",
     "addFromDataTitle": "从数据中添加文档",
@@ -129,6 +120,11 @@
       "rag": "RAG",
       "sessionSuffix": "会话"
     },
+    "chatProgress": {
+      "generatingAnswer": "正在根据来源生成回答",
+      "searchingSources": "正在使用查询搜索来源：{{queries}}",
+      "transformingQuery": "正在转换查询…"
+    },
     "chunking": {
       "advancedButton": "打开高级配置"
     },
@@ -164,6 +160,18 @@
       "chunkCount_other": "{{count}} 个块",
       "contextBudget": "上下文预算",
       "discard": "放弃更改",
+      "queryTransformation": {
+        "advanced": "高级配置",
+        "enable": "启用查询转换",
+        "historyWindow": "历史窗口",
+        "language": "语言",
+        "llm": "语言模型",
+        "maxSubqueries": "最大子查询数",
+        "nQueries": "查询数量",
+        "off": "已关闭",
+        "prompt": "提示词",
+        "unknownComponent": "此转换器未注册；请选择提示词和模型以继续。"
+      },
       "unsavedIn": "以下部分有未保存的更改：{{sections}}"
     },
     "create": {
@@ -250,22 +258,44 @@
       "nameRequired": "会话名称为必填项"
     }
   },
-  "retrievalTrace": {
-    "chunksLabel_one": "{{count}} 个块",
-    "chunksLabel_other": "{{count}} 个块",
-    "queryLabel": "查询 {{index}}",
-    "scoresLabel": "得分",
-    "title": "检索轨迹"
-  },
   "sourcesDisplay": {
-    "chunk_one": "个块",
-    "chunk_other": "个块",
-    "fallbackTitle": "来源 {{id}}",
-    "pages_one": "第 {{pages}} 页",
-    "pages_other": "第 {{pages}} 页",
-    "provided": "提供了",
     "viewChunks": "查看块",
     "viewSources": "查看消息来源"
+  },
+  "traceChunks": {
+    "allQueriesChip": "全部",
+    "chunkLabel": "内容块 {{position}}",
+    "chunkLabelWithPage": "内容块 {{position}}，第 {{page}} 页",
+    "chunksLabel_one": "{{count}} 个内容块",
+    "chunksLabel_other": "{{count}} 个内容块",
+    "chunksTab": "内容块",
+    "discarded": "该内容块已被丢弃：没有到达流程末端。",
+    "discardedCaption": "这些候选已被检索，但没有进入最终集合。",
+    "discardedTitle": "在选择过程中被丢弃",
+    "emptyState": "本次回答未检索到任何内容块。",
+    "fallbackTitle": "文档 {{id}}",
+    "foundBy": "由 {{retrievers}} 检索到",
+    "foundByQuery": "查询 {{index}}",
+    "openDocument": "打开文档",
+    "queryCandidates_one": "{{count}} 个候选",
+    "queryCandidates_other": "{{count}} 个候选",
+    "queryTooltip": "查询 {{index}}",
+    "receivedCount_one": "来自 {{documents}} 个文档的 {{chunks}} 个内容块",
+    "receivedCount_other": "来自 {{documents}} 个文档的 {{chunks}} 个内容块",
+    "receivedTitle": "用于此回答的内容块",
+    "retrieverTab": "检索器",
+    "sectionsLabel": "消息来源分区",
+    "selectedChunkHint": "从树中选择一个内容块以在此处查看其内容。",
+    "showLess": "收起",
+    "showMore": "展开",
+    "storyDirect": "检索器直接使用你的消息进行搜索。",
+    "storyKept": "{{total}} 个检索到的内容块中有 {{kept}} 个进入了回答。",
+    "storyKeptAll_one": "{{count}} 个检索到的内容块进入了回答。",
+    "storyKeptAll_other": "全部 {{count}} 个检索到的内容块进入了回答。",
+    "storyRewritten_one": "你的消息被改写为 {{count}} 个搜索查询。",
+    "storyRewritten_other": "你的消息被改写为 {{count}} 个搜索查询。",
+    "title": "消息来源",
+    "yourMessage": "你的消息是"
   },
   "validation": {
     "apiKeyMissingDescription": "此模型需要 API 密钥才能运行。打开高级配置以添加您的 API 密钥。",

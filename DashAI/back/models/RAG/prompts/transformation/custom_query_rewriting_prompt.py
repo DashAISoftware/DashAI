@@ -17,6 +17,7 @@ class CustomQueryRewritingPrompt(QueryRewritingPrompt):
         "description": "User-defined prompt template for 1-to-1 query rewriting.",
         "type": "transformation",
         "technique": "rewriting",
+        "variant": "custom",
         "required_placeholders": QueryRewritingPrompt.required_placeholders,
         "optional_placeholders": QueryRewritingPrompt.optional_placeholders,
         "placeholder_descriptions": {

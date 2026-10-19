@@ -4,6 +4,15 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "../../../test-utils/renderWithProviders";
 import RAGConfigPanel from "./RAGConfigPanel";
 
+// The unmocked QueryTransformationPicker pulls the shared form machinery in,
+// and form cards describe fields through react-markdown, which ships ESM only
+// and CRA's jest does not transform node_modules. See
+// FormSchemaRenderFields.test.jsx for the same workaround.
+jest.mock("react-markdown", () => ({
+  __esModule: true,
+  default: ({ children }) => <span>{children}</span>,
+}));
+
 // One stable object: the panel's loader depends on `enqueueSnackbar`, so a
 // fresh reference per render would restart the load on every render.
 jest.mock("notistack", () => {
@@ -19,6 +28,9 @@ jest.mock("../../../api/rag", () => ({
   getSessionConfiguration: jest.fn(),
   updateGenerativeSessionParams: jest.fn(),
   getDefaultPrompts: jest.fn(),
+  getGeneratorComponents: jest.fn(),
+  getQueryTransformationComponents: jest.fn(),
+  getQueryTransformationPrompts: jest.fn(),
 }));
 jest.mock("../../../api/session", () => ({
   updateGenerativeSession: jest.fn(),
@@ -79,6 +91,55 @@ const RETRIEVER_PRESETS = [
   },
 ];
 
+const TRANSFORMERS = [
+  {
+    name: "LLMQueryRewriter",
+    display_name: "Rewriter",
+    description: "One self-contained query",
+    metadata: { technique: "rewriting", prompt_parent: "QueryRewritingPrompt" },
+  },
+  {
+    name: "LLMQueryExpander",
+    display_name: "Expander",
+    description: "Several broader queries",
+    metadata: { technique: "expansion", prompt_parent: "QueryExpansionPrompt" },
+  },
+  {
+    name: "LLMQueryDecomposer",
+    display_name: "Decomposer",
+    description: "Independently retrievable sub-queries",
+    metadata: {
+      technique: "decomposition",
+      prompt_parent: "QueryDecompositionPrompt",
+    },
+  },
+];
+
+const TRANSFORMATION_PROMPTS = [
+  {
+    name: "DefaultQueryRewritingPrompt",
+    display_name: "Default Rewriting",
+    description: "",
+    metadata: { technique: "rewriting", variant: "default" },
+  },
+  {
+    name: "DefaultQueryExpansionPrompt",
+    display_name: "Default Expansion",
+    description: "",
+    metadata: { technique: "expansion", variant: "default" },
+  },
+  {
+    name: "DefaultQueryDecompositionPrompt",
+    display_name: "Default Decomposition",
+    description: "",
+    metadata: { technique: "decomposition", variant: "default" },
+  },
+];
+
+const GENERATORS = [
+  { name: "StubLLM", display_name: "Stub", description: "", downloaded: true },
+];
+
 const SESSION = {
   id: 1,
   name: "A session",
@@ -119,6 +180,15 @@ const CONFIGURATION = {
     preset_display_name: "Keyword",
     top_k: 5,
   },
+  query_transformation: {
+    section_name: "Transform",
+    component: null,
+    display_name: null,
+    description: null,
+    registered: false,
+    params: [],
+    enabled: false,
+  },
   generation_model: {
     section_name: "Model",
     component: "StubLLM",
@@ -151,6 +221,9 @@ beforeEach(() => {
   api.getRetrieverComponents.mockResolvedValue([]);
   api.updateGenerativeSessionParams.mockResolvedValue({});
   api.getDefaultPrompts.mockResolvedValue([]);
+  api.getGeneratorComponents.mockResolvedValue(GENERATORS);
+  api.getQueryTransformationComponents.mockResolvedValue(TRANSFORMERS);
+  api.getQueryTransformationPrompts.mockResolvedValue(TRANSFORMATION_PROMPTS);
   loadRetrieverKinds.mockResolvedValue({});
 });
 
@@ -172,7 +245,13 @@ async function renderPanel(props = {}) {
 
 test("renders one tab per section, labelled by the backend", async () => {
   await renderPanel();
-  for (const label of ["Chunking", "Retrieval", "Model", "Prompt"]) {
+  for (const label of [
+    "Chunking",
+    "Transform",
+    "Retrieval",
+    "Model",
+    "Prompt",
+  ]) {
     expect(
       screen.getByRole("tab", { name: new RegExp(label) }),
     ).toBeInTheDocument();
@@ -231,19 +310,20 @@ test("discarding puts every tab back to the saved configuration", async () => {
   expect(api.updateGenerativeSessionParams).not.toHaveBeenCalled();
 });
 
-test("the four sections sit two by two rather than in one scrolling row", async () => {
+test("the sections sit two by two rather than in one scrolling row", async () => {
   await renderPanel();
 
   // The panel can be squeezed to 15% of the window and the labels come from the
   // backend -- Spanish "Fragmentación"/"Recuperación" is the worst case at 37
-  // characters across four tabs. Four abreast either wrap or hide half of
-  // themselves behind a scroll button; two rows of two keep all four legible.
+  // characters across five tabs. Five abreast either wrap or hide half of
+  // themselves behind a scroll button; a two-column grid keeps every section
+  // legible, with the fifth simply starting a new row.
   const tablist = screen.getByRole("tablist");
   const style = getComputedStyle(tablist);
   expect(style.display).toBe("grid");
   expect(style.gridTemplateColumns).toBe("repeat(2, 1fr)");
 
-  expect(screen.getAllByRole("tab")).toHaveLength(4);
+  expect(screen.getAllByRole("tab")).toHaveLength(5);
   // Not the scrollable variant: nothing is parked off screen.
   expect(tablist.parentElement.className).not.toMatch(/scrollableX/);
 });
@@ -338,4 +418,193 @@ test("a job that finished cleanly raises no alarm", async () => {
   });
 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+// ─── Query transformation stage ────────────────────────────────────────
+// The optional stage is edited as a `{component, params}` reference; null is
+// how the session (and the endpoint) represent it being off.
+
+/** The transformation picker's root, scoped so hidden sections cannot leak in. */
+function transformationPicker() {
+  return screen.getByRole("switch").closest(".MuiStack-root");
+}
+
+test("a disabled query transformation shows its switch off and its technique cards", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: /Transform/ }));
+  await screen.findByText("Rewriter");
+
+  const picker = transformationPicker();
+  expect(within(picker).getByRole("switch")).not.toBeChecked();
+  for (const label of ["Rewriter", "Expander", "Decomposer"]) {
+    expect(within(picker).getByText(label)).toBeInTheDocument();
+  }
+  // No technique is applied yet, so no card is ticked.
+  expect(within(picker).queryByTestId("CheckIcon")).not.toBeInTheDocument();
+});
+
+test("choosing a technique enables the stage and ticks its card", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: /Transform/ }));
+  const card = await screen.findByText("Expander");
+  await userEvent.click(card);
+
+  const picker = transformationPicker();
+  await waitFor(() => expect(within(picker).getByRole("switch")).toBeChecked());
+  expect(within(picker).getByTestId("CheckIcon")).toBeInTheDocument();
+});
+
+test("saving an enabled transformation PUTs the component reference", async () => {
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: /Transform/ }));
+  const card = await screen.findByText("Expander");
+  await userEvent.click(card);
+
+  const save = screen.getByRole("button", { name: /Save/i });
+  await waitFor(() => expect(save).toBeEnabled());
+  await userEvent.click(save);
+
+  await waitFor(() =>
+    expect(api.updateGenerativeSessionParams).toHaveBeenCalledTimes(1),
+  );
+  const [, sent] = api.updateGenerativeSessionParams.mock.calls[0];
+  expect(sent.query_transformation).toEqual({
+    component: "LLMQueryExpander",
+    params: {
+      llm_model: { component: "StubLLM", params: {} },
+      prompt: {
+        component: "DefaultQueryExpansionPrompt",
+        params: { language: "en" },
+      },
+    },
+  });
+});
+
+const DEFAULT_AWARE_GENERATORS = [
+  {
+    name: "FirstLLM",
+    display_name: "First",
+    description: "",
+    downloaded: true,
+  },
+  {
+    name: "Qwen25_15BInstruct",
+    display_name: "Qwen 1.5B",
+    description: "",
+    downloaded: false,
+  },
+  { name: "LastLLM", display_name: "Last", description: "", downloaded: false },
+];
+
+/** The transformer schema the backend ships with the Qwen default declared. */
+const TRANSFORMERS_WITH_SCHEMA = TRANSFORMERS.map((transformer) => ({
+  ...transformer,
+  schema: {
+    properties: {
+      llm_model: {
+        placeholder: { component: "Qwen25_15BInstruct", params: {} },
+      },
+    },
+  },
+}));
+
+test("enabling a technique seeds the schema-declared default model", async () => {
+  api.getGeneratorComponents.mockResolvedValue(DEFAULT_AWARE_GENERATORS);
+  api.getQueryTransformationComponents.mockResolvedValue(
+    TRANSFORMERS_WITH_SCHEMA,
+  );
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: /Transform/ }));
+  await userEvent.click(await screen.findByText("Expander"));
+
+  const save = screen.getByRole("button", { name: /Save/i });
+  await waitFor(() => expect(save).toBeEnabled());
+  await userEvent.click(save);
+  await waitFor(() =>
+    expect(api.updateGenerativeSessionParams).toHaveBeenCalledTimes(1),
+  );
+  const [, sent] = api.updateGenerativeSessionParams.mock.calls[0];
+  expect(sent.query_transformation.params.llm_model).toEqual({
+    component: "Qwen25_15BInstruct",
+    params: {},
+  });
+});
+
+test("the seeded default falls back to the first downloaded model", async () => {
+  api.getGeneratorComponents.mockResolvedValue([
+    {
+      name: "OtherLLM",
+      display_name: "Other",
+      description: "",
+      downloaded: true,
+    },
+    {
+      name: "AnotherLLM",
+      display_name: "Another",
+      description: "",
+      downloaded: false,
+    },
+  ]);
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: /Transform/ }));
+  await userEvent.click(await screen.findByText("Expander"));
+
+  const save = screen.getByRole("button", { name: /Save/i });
+  await waitFor(() => expect(save).toBeEnabled());
+  await userEvent.click(save);
+  await waitFor(() =>
+    expect(api.updateGenerativeSessionParams).toHaveBeenCalledTimes(1),
+  );
+  const [, sent] = api.updateGenerativeSessionParams.mock.calls[0];
+  expect(sent.query_transformation.params.llm_model).toEqual({
+    component: "OtherLLM",
+    params: {},
+  });
+});
+
+test("switching the transformation off then saving sends null", async () => {
+  api.getRAGSession.mockResolvedValue({
+    ...SESSION,
+    parameters: {
+      ...SESSION.parameters,
+      query_transformation: {
+        component: "LLMQueryExpander",
+        params: {
+          history_window: 2,
+          llm_model: { component: "StubLLM", params: {} },
+          prompt: {
+            component: "DefaultQueryExpansionPrompt",
+            params: { language: "en" },
+          },
+        },
+      },
+    },
+  });
+  api.getSessionConfiguration.mockResolvedValue({
+    ...CONFIGURATION,
+    query_transformation: {
+      ...CONFIGURATION.query_transformation,
+      component: "LLMQueryExpander",
+      display_name: "Expander",
+      registered: true,
+      enabled: true,
+    },
+  });
+
+  await renderPanel();
+  await userEvent.click(screen.getByRole("tab", { name: /Transform/ }));
+
+  const toggle = within(transformationPicker()).getByRole("switch");
+  expect(toggle).toBeChecked();
+  await userEvent.click(toggle);
+
+  const save = screen.getByRole("button", { name: /Save/i });
+  await waitFor(() => expect(save).toBeEnabled());
+  await userEvent.click(save);
+
+  await waitFor(() =>
+    expect(api.updateGenerativeSessionParams).toHaveBeenCalledTimes(1),
+  );
+  const [, sent] = api.updateGenerativeSessionParams.mock.calls[0];
+  expect(sent.query_transformation).toBeNull();
 });

@@ -2,6 +2,7 @@ import {
   buildYupSchema,
   parseRAGTraceRow,
   preprocessSchema,
+  resolveRAGProgressText,
   splitRAGOutputRows,
 } from "./utils";
 
@@ -36,11 +37,12 @@ test("a field without a default is still required", async () => {
 
 const TRACE_DATA = '[{"query":"q1","retriever":{"name":"BM25Retriever"}}]';
 
-// New format: Queries, Dict, Trace, str (message last).
+// New format: Queries, Dict, Trace, Timings, str (message last).
 const NEW_FORMAT = [
   { data_type: "Queries", data: '["q1","q2"]' },
   { data_type: "Dict", data: "{}" },
   { data_type: "Trace", data: TRACE_DATA },
+  { data_type: "Timings", data: '{"transformation_ms":0}' },
   { data_type: "str", data: "the answer" },
 ];
 
@@ -57,13 +59,14 @@ const LEGACY_FORMAT = [
   { data_type: "Dict", data: "{}" },
 ];
 
-test("splitRAGOutputRows splits the new 4-row format", () => {
+test("splitRAGOutputRows splits the new 5-row format", () => {
   const { queryRow, referenceRow, traceRow, messageRows } =
     splitRAGOutputRows(NEW_FORMAT);
   expect(queryRow).toBe(NEW_FORMAT[0]);
   expect(referenceRow).toBe(NEW_FORMAT[1]);
   expect(traceRow).toBe(NEW_FORMAT[2]);
-  expect(messageRows).toEqual([NEW_FORMAT[3]]);
+  // The Timings row is recognised and never leaks into the message rows.
+  expect(messageRows).toEqual([NEW_FORMAT[4]]);
 });
 
 test("splitRAGOutputRows tolerates the 3-row format without a trace", () => {
@@ -85,13 +88,19 @@ test("splitRAGOutputRows tolerates the legacy 2-row format", () => {
 });
 
 test("splitRAGOutputRows is independent of row order", () => {
-  const shuffled = [NEW_FORMAT[3], NEW_FORMAT[0], NEW_FORMAT[2], NEW_FORMAT[1]];
+  const shuffled = [
+    NEW_FORMAT[4],
+    NEW_FORMAT[0],
+    NEW_FORMAT[3],
+    NEW_FORMAT[2],
+    NEW_FORMAT[1],
+  ];
   const { queryRow, referenceRow, traceRow, messageRows } =
     splitRAGOutputRows(shuffled);
   expect(queryRow).toBe(NEW_FORMAT[0]);
   expect(referenceRow).toBe(NEW_FORMAT[1]);
   expect(traceRow).toBe(NEW_FORMAT[2]);
-  expect(messageRows).toEqual([NEW_FORMAT[3]]);
+  expect(messageRows).toEqual([NEW_FORMAT[4]]);
 });
 
 test.each([
@@ -132,4 +141,50 @@ test.each([
 
 test("parseRAGTraceRow tolerates malformed JSON without crashing", () => {
   expect(parseRAGTraceRow({ data: "not json{" })).toBeNull();
+});
+
+describe("resolveRAGProgressText", () => {
+  test.each([
+    ["null", null],
+    ["undefined", undefined],
+  ])("returns null for %s progress", (_, progress) => {
+    expect(resolveRAGProgressText(progress as any)).toBeNull();
+  });
+
+  test.each([
+    ["missing stage", {}],
+    ["unknown stage", { stage: "unknown" }],
+  ])("returns null for a payload with a %s", (_, progress) => {
+    expect(resolveRAGProgressText(progress as any)).toBeNull();
+  });
+
+  test("maps the transforming stage to its i18n key", () => {
+    expect(resolveRAGProgressText({ stage: "transforming" })).toEqual({
+      key: "generative:rag.chatProgress.transformingQuery",
+    });
+  });
+
+  test("maps the retrieving stage to its i18n key with joined queries", () => {
+    expect(
+      resolveRAGProgressText({ stage: "retrieving", queries: ["a", "b"] }),
+    ).toEqual({
+      key: "generative:rag.chatProgress.searchingSources",
+      values: { queries: "a; b" },
+    });
+  });
+
+  test.each([
+    ["missing queries", { stage: "retrieving" }],
+    ["empty queries", { stage: "retrieving", queries: [] }],
+    ["non-array queries", { stage: "retrieving", queries: "a; b" }],
+    ["blank-string queries", { stage: "retrieving", queries: [""] }],
+  ])("returns null for retrieving with %s", (_, progress) => {
+    expect(resolveRAGProgressText(progress as any)).toBeNull();
+  });
+
+  test("maps the generating stage to its i18n key", () => {
+    expect(resolveRAGProgressText({ stage: "generating" })).toEqual({
+      key: "generative:rag.chatProgress.generatingAnswer",
+    });
+  });
 });

@@ -107,6 +107,23 @@ def _rewriter_ref(template: str | None = None) -> dict:
     }
 
 
+def _qwen_rewriter_ref(llm_params: dict | None = None) -> dict:
+    """Return a rewriter reference backed by the real GGUF Qwen component."""
+    return {
+        "component": "LLMQueryRewriter",
+        "params": {
+            "prompt": {
+                "component": "DefaultQueryRewritingPrompt",
+                "params": {"language": "en"},
+            },
+            "llm_model": {
+                "component": "Qwen25_15BInstruct",
+                "params": dict(llm_params or {}),
+            },
+        },
+    }
+
+
 # ===================================================================
 # POST — creation with a transformation stage
 # ===================================================================
@@ -136,6 +153,41 @@ class TestCreateWithTransformation:
         assert response.status_code == 201, response.text
         stored = response.json()["parameters"]["query_transformation"]
         assert stored["params"]["history_window"] == 2
+
+    def test_create_defaults_transformation_llm_context_window(
+        self, client: TestClient
+    ):
+        params = _base_session_params()
+        params["parameters"]["query_transformation"] = _qwen_rewriter_ref()
+
+        response = client.post("/api/v1/generative-session/", json=params)
+        assert response.status_code == 201, response.text
+        stored = response.json()["parameters"]["query_transformation"]
+        llm_params = stored["params"]["llm_model"]["params"]
+        assert llm_params["context_window"] == 2048
+        assert llm_params["max_tokens"] == 100
+
+        fetched = client.get("/api/v1/generative-session/" + str(response.json()["id"]))
+        assert fetched.status_code == 200, fetched.text
+        fetched_llm = fetched.json()["parameters"]["query_transformation"]["params"][
+            "llm_model"
+        ]["params"]
+        assert fetched_llm["context_window"] == 2048
+
+    def test_create_explicit_transformation_llm_context_window_wins(
+        self, client: TestClient
+    ):
+        params = _base_session_params()
+        params["parameters"]["query_transformation"] = _qwen_rewriter_ref(
+            {"context_window": 4096}
+        )
+
+        response = client.post("/api/v1/generative-session/", json=params)
+        assert response.status_code == 201, response.text
+        llm_params = response.json()["parameters"]["query_transformation"]["params"][
+            "llm_model"
+        ]["params"]
+        assert llm_params["context_window"] == 4096
 
     def test_create_without_transformation_omits_key(self, client: TestClient):
         params = _base_session_params()
@@ -363,6 +415,20 @@ class TestUpdateTransformation:
         stored = response.json()["parameters"]["query_transformation"]
         assert stored["component"] == "LLMQueryRewriter"
         assert "rewrite_query" in stored["params"]["prompt"]["params"]["template"]
+
+    def test_enable_defaults_transformation_llm_context_window(
+        self, client: TestClient
+    ):
+        session_id = self._create_session(client)
+        response = client.put(
+            f"/api/v1/generative-session/{session_id}/parameters",
+            json={"query_transformation": _qwen_rewriter_ref()},
+        )
+        assert response.status_code == 200, response.text
+        llm_params = response.json()["parameters"]["query_transformation"]["params"][
+            "llm_model"
+        ]["params"]
+        assert llm_params["context_window"] == 2048
 
     def test_disable_with_null(self, client: TestClient):
         session_id = self._create_session(client)

@@ -8,6 +8,7 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_OUTPUT_CHUNKS_TYPE,
     RAG_OUTPUT_MESSAGE_TYPE,
     RAG_OUTPUT_QUERIES_TYPE,
+    RAG_OUTPUT_TIMINGS_TYPE,
     RAG_OUTPUT_TRACE_TYPE,
 )
 from DashAI.back.models.RAG.RAG_pipeline import RAGGenerationOutput
@@ -26,6 +27,7 @@ class RAGTask(BaseGenerativeTask):
             RAG_OUTPUT_QUERIES_TYPE: {"min": 1, "max": 1},
             RAG_OUTPUT_CHUNKS_TYPE: {"min": 1, "max": 1},
             RAG_OUTPUT_TRACE_TYPE: {"min": 1, "max": 1},
+            RAG_OUTPUT_TIMINGS_TYPE: {"min": 1, "max": 1},
             RAG_OUTPUT_MESSAGE_TYPE: {"min": 1, "max": 1},
         },
     }
@@ -140,10 +142,11 @@ class RAGTask(BaseGenerativeTask):
     ) -> List[Tuple[str, str]]:
         """Process the output of a generative model.
 
-        Converts the generation output into the four typed output rows, in
+        Converts the generation output into the five typed output rows, in
         pipeline-chronological order: ``Queries`` (the JSON query list), then
         ``Dict`` (the JSON chunk map), then ``Trace`` (the JSON per-query
-        retrieval trace), then ``str`` (the answer message).
+        retrieval trace), then ``Timings`` (the JSON per-stage timings), then
+        ``str`` (the answer message).
 
         Parameters
         ----------
@@ -153,7 +156,7 @@ class RAGTask(BaseGenerativeTask):
         Returns
         -------
         List[Tuple[str, str]]
-            ``(data, type)`` rows ordered Queries, Dict, Trace, str.
+            ``(data, type)`` rows ordered Queries, Dict, Trace, Timings, str.
         """
         queries_json = json.dumps(list(output.queries), ensure_ascii=False)
         chunks_json = json.dumps(
@@ -161,10 +164,12 @@ class RAGTask(BaseGenerativeTask):
             ensure_ascii=False,
         )
         trace_json = json.dumps(list(output.trace), ensure_ascii=False)
+        timings_json = json.dumps(output.timings.to_dict(), ensure_ascii=False)
         return [
             (queries_json, RAG_OUTPUT_QUERIES_TYPE),
             (chunks_json, RAG_OUTPUT_CHUNKS_TYPE),
             (trace_json, RAG_OUTPUT_TRACE_TYPE),
+            (timings_json, RAG_OUTPUT_TIMINGS_TYPE),
             (str(output.message), RAG_OUTPUT_MESSAGE_TYPE),
         ]
 

@@ -4,15 +4,6 @@
     "createSession": "Sitzung erstellen",
     "generativeHub": "Generative Zentrale"
   },
-  "documentReferences": {
-    "chunkLabel": "Chunk {{position}}",
-    "chunkLabelWithPage": "Chunk {{position}}, Seite {{page}}",
-    "chunksCount_one": "Dieses Dokument lieferte {{count}} Chunk für diese Antwort:",
-    "chunksCount_other": "Dieses Dokument lieferte {{count}} Chunks für diese Antwort:",
-    "close": "Schließen",
-    "fallbackTitle": "Dokument {{id}}",
-    "openDocument": "Dokument öffnen"
-  },
   "documentsBar": {
     "addFromData": "Aus Daten hinzufügen",
     "addFromDataTitle": "Dokumente aus Daten hinzufügen",
@@ -129,6 +120,11 @@
       "rag": "RAG",
       "sessionSuffix": "Sitzung"
     },
+    "chatProgress": {
+      "generatingAnswer": "Quellen werden zum Generieren der Antwort verwendet",
+      "searchingSources": "Suche Quellen mit der Abfrage: {{queries}}",
+      "transformingQuery": "Abfrage wird umgewandelt…"
+    },
     "chunking": {
       "advancedButton": "Erweiterte Konfiguration öffnen"
     },
@@ -165,6 +161,18 @@
       "chunkCount_other": "{{count}} Chunks",
       "contextBudget": "Kontextbudget",
       "discard": "Verwerfen",
+      "queryTransformation": {
+        "advanced": "Erweiterte Konfiguration",
+        "enable": "Abfragetransformation aktivieren",
+        "historyWindow": "Verlaufsfenster",
+        "language": "Sprache",
+        "llm": "Sprachmodell",
+        "maxSubqueries": "Maximale Teilfragen",
+        "nQueries": "Anzahl der Anfragen",
+        "off": "Deaktiviert",
+        "prompt": "Prompt",
+        "unknownComponent": "dieser Transformierer ist nicht registriert; wählen Sie einen Prompt und ein Modell, um fortzufahren."
+      },
       "unsavedIn": "Nicht gespeicherte Änderungen in: {{sections}}"
     },
     "create": {
@@ -252,22 +260,44 @@
       "nameRequired": "Sitzungsname ist erforderlich"
     }
   },
-  "retrievalTrace": {
-    "chunksLabel_one": "{{count}} Chunk",
-    "chunksLabel_other": "{{count}} Chunks",
-    "queryLabel": "Abfrage {{index}}",
-    "scoresLabel": "Bewertungen",
-    "title": "Abrufverlauf"
-  },
   "sourcesDisplay": {
-    "chunk_one": "Chunk",
-    "chunk_other": "Chunks",
-    "fallbackTitle": "Quelle {{id}}",
-    "pages_one": "Seite {{pages}}",
-    "pages_other": "Seiten {{pages}}",
-    "provided": "bereitgestellt",
     "viewChunks": "Chunks anzeigen",
     "viewSources": "Nachrichtenquellen anzeigen"
+  },
+  "traceChunks": {
+    "allQueriesChip": "Alle",
+    "chunkLabel": "Chunk {{position}}",
+    "chunkLabelWithPage": "Chunk {{position}}, Seite {{page}}",
+    "chunksLabel_one": "{{count}} Chunk",
+    "chunksLabel_other": "{{count}} Chunks",
+    "chunksTab": "Chunks",
+    "discarded": "Dieser Chunk wurde verworfen: er erreichte nicht das Ende der Pipeline.",
+    "discardedCaption": "Diese Kandidaten wurden abgerufen, erreichten aber nicht das finale Set.",
+    "discardedTitle": "Während der Auswahl verworfen",
+    "emptyState": "Keine Chunks für diese Antwort abgerufen.",
+    "fallbackTitle": "Dokument {{id}}",
+    "foundBy": "Gefunden von {{retrievers}}",
+    "foundByQuery": "Abfrage {{index}}",
+    "openDocument": "Dokument öffnen",
+    "queryCandidates_one": "{{count}} Kandidat",
+    "queryCandidates_other": "{{count}} Kandidaten",
+    "queryTooltip": "Abfrage {{index}}",
+    "receivedCount_one": "{{chunks}} Chunk aus {{documents}} Dokument",
+    "receivedCount_other": "{{chunks}} Chunks aus {{documents}} Dokumenten",
+    "receivedTitle": "Für diese Antwort verwendete Chunks",
+    "retrieverTab": "Retriever",
+    "sectionsLabel": "Abschnitte der Nachrichtenquellen",
+    "selectedChunkHint": "Wähle einen Chunk aus dem Baum, um seinen Inhalt hier zu sehen.",
+    "showLess": "Weniger anzeigen",
+    "showMore": "Mehr anzeigen",
+    "storyDirect": "Der Retriever hat direkt mit deiner Nachricht gesucht.",
+    "storyKept": "{{kept}} von {{total}} abgerufenen Chunks haben die Antwort erreicht.",
+    "storyKeptAll_one": "Der {{count}} abgerufene Chunk hat die Antwort erreicht.",
+    "storyKeptAll_other": "Alle {{count}} abgerufenen Chunks haben die Antwort erreicht.",
+    "storyRewritten_one": "Deine Nachricht wurde in {{count}} Suchabfrage umgeschrieben.",
+    "storyRewritten_other": "Deine Nachricht wurde in {{count}} Suchabfragen umgeschrieben.",
+    "title": "Quellen der Nachricht",
+    "yourMessage": "Deine Nachricht war"
   },
   "validation": {
     "apiKeyMissingDescription": "Dieses Modell benötigt einen API-Schlüssel, um zu funktionieren. Öffnen Sie die erweiterte Konfiguration, um Ihren API-Schlüssel hinzuzufügen.",

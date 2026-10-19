@@ -1,6 +1,6 @@
 """Shared base for GGUF-backed text-generation models loaded via llama.cpp."""
 
-from typing import List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -12,6 +12,7 @@ from DashAI.back.core.schema_fields import (
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.downloads.downloadable import HFDownloadableMixin
 from DashAI.back.models.text_to_text_generation_model import (
+    FunctionCallResult,
     TextToTextGenerationTaskModel,
 )
 from DashAI.back.models.utils import (
@@ -19,6 +20,80 @@ from DashAI.back.models.utils import (
     LLAMA_DEVICE_PLACEHOLDER,
     LLAMA_DEVICE_TO_IDX,
 )
+
+#: ``type`` discriminator of the OpenAI-style ``tools`` / ``tool_choice`` envelope.
+_TOOL_TYPE = "function"
+
+#: Legacy single-call field of a llama.cpp chat response message.
+_FUNCTION_CALL_KEY = "function_call"
+
+#: Modern multi-call envelope of a llama.cpp chat response message.
+_TOOL_CALLS_KEY = "tool_calls"
+
+
+def _extract_function_call(message: Any, function_name: str) -> Dict[str, Any]:
+    """Extract the forced call from a llama.cpp chat response message.
+
+    Reads the legacy ``function_call`` field or the modern ``tool_calls``
+    envelope, both produced by llama.cpp's generic chat handler. Every
+    malformed envelope shape (``None``/non-mapping message, non-mapping call
+    payloads, malformed ``tool_calls`` entries) normalizes to the same
+    ``RuntimeError`` instead of leaking low-level exceptions past the
+    pipeline boundary.
+
+    Parameters
+    ----------
+    message : Any
+        The ``choices[0]["message"]`` value of the llama.cpp response.
+    function_name : str
+        The function the model was forced to call; used in the error message.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The ``{"name", "arguments"}`` mapping emitted by llama.cpp.
+
+    Raises
+    ------
+    RuntimeError
+        If no function call carrying a name was emitted, or the response
+        envelope is malformed.
+    """
+    function_call = _read_function_call(message)
+    if not isinstance(function_call, dict) or not function_call.get("name"):
+        raise RuntimeError(
+            "The function calling model did not emit a call for "
+            f"'{function_name}'. Response message: {message}"
+        )
+    return function_call
+
+
+def _read_function_call(message: Any) -> Any:
+    """Return the raw call payload of a llama.cpp message, or ``None``.
+
+    Parameters
+    ----------
+    message : Any
+        The ``choices[0]["message"]`` value of the llama.cpp response.
+
+    Returns
+    -------
+    Any
+        The legacy ``function_call`` payload or the first well-formed
+        ``tool_calls`` entry's ``function`` payload; ``None`` when the
+        message carries no usable call (malformed shapes included).
+    """
+    if not isinstance(message, dict):
+        return None
+    function_call = message.get(_FUNCTION_CALL_KEY)
+    if function_call is not None:
+        return function_call
+    tool_calls = message.get(_TOOL_CALLS_KEY)
+    if isinstance(tool_calls, list) and tool_calls:
+        first_entry = tool_calls[0]
+        if isinstance(first_entry, dict):
+            return first_entry.get("function")
+    return None
 
 
 class GGUFTextGenerationSchema(BaseSchema):
@@ -281,11 +356,12 @@ class GGUFTextGenerationModel(HFDownloadableMixin, TextToTextGenerationTaskModel
     DOWNLOAD_SIZE_BYTES: Optional[int] = None
     COMPATIBLE_COMPONENTS = ["TextToTextGenerationTask"]
     SCHEMA = GGUFTextGenerationSchema
+    SUPPORTS_FUNCTION_CALLING: ClassVar[bool] = True
 
     @classmethod
     def hf_repos(
         cls,
-    ) -> List[Union[tuple, tuple]]:
+    ) -> List[Tuple[str, str, List[str]]]:
         """Return the single HuggingFace repo entry for this checkpoint.
 
         Returns
@@ -364,7 +440,7 @@ class GGUFTextGenerationModel(HFDownloadableMixin, TextToTextGenerationTaskModel
             main_gpu=main_gpu,
         )
 
-    def generate(self, prompt: list) -> List[str]:
+    def generate(self, prompt: List[Dict[str, str]]) -> List[str]:
         """Generate a reply for the given chat prompt.
 
         Parameters
@@ -387,3 +463,63 @@ class GGUFTextGenerationModel(HFDownloadableMixin, TextToTextGenerationTaskModel
             frequency_penalty=self.frequency_penalty,
         )
         return [output["choices"][0]["message"]["content"]]
+
+    def generate_function_call(
+        self,
+        messages: List[Dict[str, str]],
+        functions: List[Dict[str, Any]],
+    ) -> FunctionCallResult:
+        """Produce a named function call via constrained sampling.
+
+        The notebook's pattern (llama-cpp-python ``Functions.ipynb``) is used:
+        the first function is forced through ``tool_choice`` so llama.cpp
+        derives a GBNF grammar from the function's JSON ``parameters`` schema
+        and the emitted arguments shape is deterministic rather than
+        prompt-based. The generation parameters (``max_tokens``,
+        ``temperature``, ``frequency_penalty``) are reused from ``generate``.
+
+        Parameters
+        ----------
+        messages : List[Dict[str, str]]
+            Chat messages (OpenAI format) as passed to ``generate``.
+        functions : List[Dict[str, Any]]
+            OpenAI-style function specs. The first spec is the one the model is
+            forced to call.
+
+        Returns
+        -------
+        FunctionCallResult
+            The called function name and its raw ``arguments`` payload (the
+            JSON-encoded string emitted by llama.cpp, left unresolved for the
+            caller).
+
+        Raises
+        ------
+        ValueError
+            If no function spec carrying a ``name`` is provided.
+        RuntimeError
+            If the model did not emit a function call for the forced function.
+        """
+        if not functions or "name" not in functions[0]:
+            raise ValueError(
+                "generate_function_call requires at least one function spec "
+                "carrying a 'name'."
+            )
+        function_name = functions[0]["name"]
+        response = self.model.create_chat_completion(
+            messages=messages,
+            tools=[{"type": _TOOL_TYPE, "function": functions[0]}],
+            tool_choice={
+                "type": _TOOL_TYPE,
+                "function": {"name": function_name},
+            },
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            frequency_penalty=self.frequency_penalty,
+        )
+        message = response["choices"][0]["message"]
+        function_call = _extract_function_call(message, function_name)
+        return FunctionCallResult(
+            name=function_call["name"],
+            arguments=function_call.get("arguments"),
+        )

@@ -31,6 +31,12 @@ from DashAI.back.models.RAG.transformation.base_query_transformation import (
     BaseQueryTransformation,
     QueryTransformationResult,
 )
+from DashAI.back.models.RAG.transformation.llm_output_parser import (
+    parse_function_call_output,
+    resolve_arguments_dict,
+    truncate_preview,
+)
+from DashAI.back.models.text_to_text_generation_model import FunctionCallResult
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +121,7 @@ class LLMQueryTransformationSchema(BaseSchema):
     )
     llm_model: schema_field(
         component_field(parent="TextToTextGenerationTaskModel"),
-        placeholder={"component": "", "params": {}},
+        placeholder={"component": "Qwen25_15BInstruct", "params": {}},
         description=MultilingualString(
             en="The language model that transforms the user message.",
             es="El modelo de lenguaje que transforma el mensaje del usuario.",
@@ -145,8 +151,15 @@ class LLMQueryTransformation(BaseQueryTransformation):
     """Shared implementation for the LLM-backed transformers.
 
     Subclasses set ``EXPECTED_FUNCTION`` and ``ARGUMENT_KEY``, implement
-    ``_render_prompt`` (to call the technique's prompt) and ``_parse_output``
-    (to validate the parsed shape).
+    ``_render_prompt`` (to call the technique's prompt) and ``_parse_arguments``
+    (to validate the parsed arguments mapping).
+
+    When the configured model reports function-calling support
+    (:meth:`TextToTextGenerationTaskModel.supports_function_calling`), the base
+    routes through :meth:`generate_function_call` with the technique's
+    ``FUNCTION_DESCRIPTION``/``FUNCTION_PARAMETERS`` so constrained sampling
+    makes the output shape deterministic. Otherwise it falls back to the
+    prompt-obedience text route parsed by the tolerant output parser.
     """
 
     SCHEMA = LLMQueryTransformationSchema
@@ -178,6 +191,13 @@ class LLMQueryTransformation(BaseQueryTransformation):
     #: to its own anchor so a mismatched prompt is rejected at the validation
     #: boundary instead of failing at runtime.
     TRANSFORMATION_PROMPT_BASE: ClassVar[type] = QueryTransformationPrompt
+    #: Whether bare top-level JSON arrays are tolerated by the text route.
+    TOLERATE_BARE_LISTS: bool = False
+    #: Description of the function exposed to function-calling backends.
+    FUNCTION_DESCRIPTION: str = ""
+    #: JSON schema (``type``/``properties``/``required``) of the technique's
+    #: function arguments for function-calling backends.
+    FUNCTION_PARAMETERS: ClassVar[Dict[str, Any]] = {}
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the transformer.
@@ -231,23 +251,173 @@ class LLMQueryTransformation(BaseQueryTransformation):
 
         Raises
         ------
+        RAGTransformationConfigError
+            If the function-calling route is selected but misconfigured, or the
+            prompt/model prerequisites are missing.
         RAGTransformationOutputError
-            If the model produced no usable output.
+            If the model produced no usable output or the function-calling
+            backend failed to emit a call.
         """
         history_block = format_history(history, self.history_window)
-        prompt_text = self._render_prompt(message, history_block)
-        output = self.llm_model.generate([{"role": "user", "content": prompt_text}])
-        raw = self._extract_raw_output(output)
-        parsed = self._parse_output(raw)
+        parsed = self._parse_arguments(self._obtain_arguments(message, history_block))
         cleaned = self._clean_queries(parsed)
         return QueryTransformationResult(queries=self._finalize_queries(cleaned))
+
+    def _obtain_arguments(self, message: str, history_block: str) -> Dict[str, Any]:
+        """Get the technique's raw arguments mapping from the model.
+
+        The technique prompt is rendered once and sent verbatim on both routes.
+        When the model supports function calling, the prompt is paired with the
+        technique's function schema (the format contract it also contains is
+        harmless under forced tool choice); otherwise the prompt is answered as
+        text and parsed by the tolerant output parser.
+
+        Parameters
+        ----------
+        message : str
+            The current user message.
+        history_block : str
+            The already-formatted conversation history block.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The raw arguments mapping emitted by the model.
+
+        Raises
+        ------
+        RAGTransformationOutputError
+            If the text route produced no usable function-call output.
+        RAGTransformationConfigError
+            If the function-calling route is selected but misconfigured.
+        """
+        prompt_text = self._render_prompt(message, history_block)
+        if self.llm_model.supports_function_calling():
+            return self._call_function_calling(prompt_text)
+        raw = self._extract_raw_output(
+            self.llm_model.generate([{"role": "user", "content": prompt_text}])
+        )
+        if self.TOLERATE_BARE_LISTS:
+            list_argument_key: str | None = self.ARGUMENT_KEY
+        else:
+            list_argument_key = None
+        return parse_function_call_output(
+            raw,
+            self.EXPECTED_FUNCTION,
+            self.ARGUMENT_KEY,
+            list_argument_key=list_argument_key,
+        )
+
+    def _call_function_calling(self, prompt_text: str) -> Dict[str, Any]:
+        """Call the LLM with the technique's function schema (function calling).
+
+        Parameters
+        ----------
+        prompt_text : str
+            The rendered technique prompt sent as the user message.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The validated arguments mapping emitted for the technique's
+            function.
+
+        Raises
+        ------
+        RAGTransformationConfigError
+            If the technique declares no function spec, or the model reports
+            function-calling support without implementing it.
+        RAGTransformationOutputError
+            If the backend failed to emit a call, the model did not call the
+            expected function, or it returned arguments that are not a JSON
+            object.
+        """
+        if not self.FUNCTION_DESCRIPTION or not self.FUNCTION_PARAMETERS:
+            raise RAGTransformationConfigError(
+                f"{type(self).__name__} does not declare a function spec to use "
+                "function calling; declare FUNCTION_DESCRIPTION and "
+                "FUNCTION_PARAMETERS or use a text route."
+            )
+        spec = {
+            "name": self.EXPECTED_FUNCTION,
+            "description": self.FUNCTION_DESCRIPTION,
+            "parameters": self.FUNCTION_PARAMETERS,
+        }
+        try:
+            result = self.llm_model.generate_function_call(
+                messages=[{"role": "user", "content": prompt_text}],
+                functions=[spec],
+            )
+        except NotImplementedError as err:
+            raise RAGTransformationConfigError(
+                "The transformation LLM reports function calling support but does "
+                "not implement generate_function_call."
+            ) from err
+        except Exception as err:
+            # Normalize every backend failure (RuntimeError/ValueError raised by
+            # the base implementations, or unexpected KeyError/TypeError from a
+            # drifted backend) so RAG_pipeline's RAGTransformationError handling
+            # degrades the chat turn gracefully.
+            raise RAGTransformationOutputError(
+                f"Function calling failed: {err}"
+            ) from err
+        return self._validate_function_call_result(result)
+
+    def _validate_function_call_result(self, result: Any) -> Dict[str, Any]:
+        """Validate the model's function-call response and resolve arguments.
+
+        Parameters
+        ----------
+        result : Any
+            The raw return value of ``generate_function_call``.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The arguments mapping, with a JSON-encoded string resolved to a
+            dict when necessary.
+
+        Raises
+        ------
+        RAGTransformationOutputError
+            If the result is not a :class:`FunctionCallResult`, it did not call
+            the expected function, or its arguments are not a JSON object.
+        """
+        if not isinstance(result, FunctionCallResult):
+            raise RAGTransformationOutputError(
+                "The function-calling model returned an unexpected output shape: "
+                f"{type(result).__name__}."
+            )
+        called_name = result.name
+        if not called_name:
+            raise RAGTransformationOutputError(
+                "The function-calling model did not report a function name."
+            )
+        if called_name != self.EXPECTED_FUNCTION:
+            raise RAGTransformationOutputError(
+                f"The model called '{called_name}' instead of the expected "
+                f"'{self.EXPECTED_FUNCTION}'."
+            )
+        arguments = resolve_arguments_dict(result.arguments)
+        if arguments is None:
+            raise RAGTransformationOutputError(
+                "The function-calling model did not return a JSON object for "
+                f"'{self.EXPECTED_FUNCTION}' arguments. "
+                f"Preview: {truncate_preview(result.arguments)}"
+            )
+        return arguments
 
     def _render_prompt(self, message: str, history_block: str) -> str:
         """Render the technique prompt. Implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement this method.")
 
-    def _parse_output(self, raw: str) -> List[str]:
-        """Parse and validate the model output. Implemented by subclasses."""
+    def _parse_arguments(self, arguments: Dict[str, Any]) -> List[str]:
+        """Parse and validate the model arguments. Implemented by subclasses.
+
+        Concrete techniques override this to validate the shape of
+        ``arguments`` (identified by :attr:`ARGUMENT_KEY`) and return the raw
+        query entries as strings.
+        """
         raise NotImplementedError("Subclasses must implement this method.")
 
     def _finalize_queries(self, queries: List[str]) -> List[str]:

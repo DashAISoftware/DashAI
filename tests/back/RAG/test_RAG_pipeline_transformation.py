@@ -8,6 +8,7 @@ LLM; the transformer is a mock too.
 
 from __future__ import annotations
 
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -20,6 +21,7 @@ from DashAI.back.models.RAG.exceptions import (
 )
 from DashAI.back.models.RAG.RAG_pipeline import (
     ModelRef,
+    PipelineStageTimings,
     RAGGenerationOutput,
     RAGPipeline,
     RAGPipelineConfig,
@@ -113,6 +115,41 @@ def _transformer(queries=None) -> MagicMock:
     result.queries = ["q1", "q2"] if queries is None else queries
     transformer.transform.return_value = result
     return transformer
+
+
+class _StubTransformer:
+    """Tiny non-mock transformer returning a fixed query list."""
+
+    def __init__(self, queries):
+        self.queries = list(queries)
+        self.calls = []
+
+    def transform(self, message, history):
+        self.calls.append({"message": message, "history": history})
+        result = MagicMock()
+        result.queries = list(self.queries)
+        return result
+
+
+class _SleepingTransformer:
+    """Non-mock transformer whose transform() sleeps to make timing observable."""
+
+    def __init__(self, sleep_seconds: float, queries=None):
+        self.sleep_seconds = sleep_seconds
+        self.queries = ["q1"] if queries is None else list(queries)
+
+    def transform(self, message, history):
+        time.sleep(self.sleep_seconds)
+        result = MagicMock()
+        result.queries = list(self.queries)
+        return result
+
+
+class _NoQueriesTransformer:
+    """Transformer returning a result object that lacks ``.queries``."""
+
+    def transform(self, message, history):
+        return object()
 
 
 # ===================================================================
@@ -280,6 +317,12 @@ class TestGenerateWithoutTransformation:
         pipeline = _make_pipeline()
         assert pipeline.query_transformation is None
 
+    def test_transformation_timing_is_exactly_zero(self):
+        pipeline = _make_pipeline()
+        result = pipeline.generate(({"role": "user", "content": "the message"},))
+        assert isinstance(result.timings, PipelineStageTimings)
+        assert result.timings.transformation_ms == 0.0
+
 
 # ===================================================================
 # RAGPipeline.generate — transformation enabled
@@ -389,6 +432,29 @@ class TestGenerateWithTransformation:
         ):
             pipeline.generate(({"role": "user", "content": "msg"},))
 
+    def test_unexpected_transformer_error_is_wrapped(self):
+        """A non-RAG error from transform() surfaces as RAGPipelineRuntimeError."""
+        transformer = MagicMock()
+        transformer.transform.side_effect = RuntimeError("backend blew up")
+        pipeline = _make_pipeline(
+            retriever=MagicMock(), query_transformation=transformer
+        )
+        with pytest.raises(
+            RAGPipelineRuntimeError, match="Query transformation failed"
+        ):
+            pipeline.generate(({"role": "user", "content": "msg"},))
+
+    def test_transformer_result_without_queries_is_wrapped(self):
+        """A result object without ``.queries`` surfaces as RAGPipelineRuntimeError."""
+        pipeline = _make_pipeline(
+            retriever=MagicMock(), query_transformation=_NoQueriesTransformer()
+        )
+        with pytest.raises(
+            RAGPipelineRuntimeError,
+            match="Query transformation returned no queries",
+        ):
+            pipeline.generate(({"role": "user", "content": "msg"},))
+
     def test_retrieval_error_propagates_as_runtime_error(self):
         retriever = MagicMock()
         retriever.retrieve.side_effect = RuntimeError("index gone")
@@ -430,3 +496,36 @@ class TestGenerateWithTransformation:
         ):
             pipeline.generate(({"role": "user", "content": "msg"},))
         retriever.retrieve.assert_not_called()
+
+    def test_stub_transformer_timing_and_result_flow_through(self):
+        """A real (non-mock) transformer is timed and its query is retrieved."""
+        transformer = _StubTransformer(["rewritten query"])
+        retriever = MagicMock()
+        retriever.retrieve.return_value = _retriever_stub([])
+        pipeline = _make_pipeline(retriever=retriever, query_transformation=transformer)
+
+        result = pipeline.generate(({"role": "user", "content": "raw"},))
+
+        retriever.retrieve.assert_called_once_with("rewritten query")
+        assert result.queries == ["rewritten query"]
+        assert transformer.calls == [{"message": "raw", "history": []}]
+        assert result.timings.transformation_ms >= 0.0
+        assert result.timings.retrieval_ms >= 0.0
+        assert result.timings.generation_ms >= 0.0
+        assert result.timings.total_ms >= max(
+            result.timings.transformation_ms,
+            result.timings.retrieval_ms,
+            result.timings.generation_ms,
+        )
+
+    def test_transformation_stage_is_actually_measured(self):
+        """A 10 ms transform must show up as transformation_ms >= 5 ms (not 0.0)."""
+        transformer = _SleepingTransformer(0.01)
+        retriever = MagicMock()
+        retriever.retrieve.return_value = _retriever_stub([])
+        pipeline = _make_pipeline(retriever=retriever, query_transformation=transformer)
+
+        timings = pipeline.generate(({"role": "user", "content": "raw"},)).timings
+
+        assert timings.transformation_ms >= 5.0
+        assert timings.total_ms >= 5.0

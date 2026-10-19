@@ -9,7 +9,7 @@ register under the same type.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Final, List, Sequence
+from typing import Any, Dict, Final, List, Sequence
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.schema_fields import BaseSchema
@@ -87,6 +87,24 @@ class BaseQueryTransformation(ConfigObject):
         de="Abfrage-Transformation",
         zh="查询转换",
     )
+
+    #: Inert technique metadata (``technique``, ``prompt_parent``, ...). It
+    #: carries no ``TYPE``-like semantics, so it never influences registry
+    #: base-type resolution; the frontend reads it to pair a transformer with
+    #: its prompt family without hardcoding class names.
+    metadata: Dict[str, Any] = {}
+
+    @classmethod
+    def get_metadata(cls) -> Dict[str, Any]:
+        """Return the technique metadata declared by the subclass.
+
+        Returns
+        -------
+        Dict[str, Any]
+            A copy of the class ``metadata`` attribute, or an empty dict when
+            the subclass does not declare one.
+        """
+        return dict(getattr(cls, "metadata", {}))
 
     def transform(
         self,

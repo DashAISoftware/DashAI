@@ -4,15 +4,6 @@
     "createSession": "Create a session",
     "generativeHub": "Generative Hub"
   },
-  "documentReferences": {
-    "chunkLabel": "Chunk {{position}}",
-    "chunkLabelWithPage": "Chunk {{position}}, page {{page}}",
-    "chunksCount_one": "This document provided {{count}} chunk for this response:",
-    "chunksCount_other": "This document provided {{count}} chunks for this response:",
-    "close": "Close",
-    "fallbackTitle": "Document {{id}}",
-    "openDocument": "Open document"
-  },
   "documentsBar": {
     "addFromData": "Add from Data",
     "addFromDataTitle": "Add documents from Data",
@@ -129,6 +120,11 @@
       "rag": "RAG",
       "sessionSuffix": "session"
     },
+    "chatProgress": {
+      "generatingAnswer": "Using sources to generate the answer",
+      "searchingSources": "Searching sources with query: {{queries}}",
+      "transformingQuery": "Transforming query…"
+    },
     "chunking": {
       "advancedButton": "Open advanced configuration"
     },
@@ -165,6 +161,18 @@
       "chunkCount_other": "{{count}} chunks",
       "contextBudget": "Context budget",
       "discard": "Discard",
+      "queryTransformation": {
+        "advanced": "Advanced configuration",
+        "enable": "Enable query transformation",
+        "historyWindow": "History window",
+        "language": "Language",
+        "llm": "Language model",
+        "maxSubqueries": "Max sub-queries",
+        "nQueries": "Number of queries",
+        "off": "Off",
+        "prompt": "Prompt",
+        "unknownComponent": "this transformer is not registered; choose a prompt and a model to continue."
+      },
       "unsavedIn": "Unsaved changes in: {{sections}}"
     },
     "create": {
@@ -252,22 +260,44 @@
       "nameRequired": "Session name is required"
     }
   },
-  "retrievalTrace": {
-    "chunksLabel_one": "{{count}} chunk",
-    "chunksLabel_other": "{{count}} chunks",
-    "queryLabel": "Query {{index}}",
-    "scoresLabel": "Scores",
-    "title": "Retrieval trace"
-  },
   "sourcesDisplay": {
-    "chunk_one": "chunk",
-    "chunk_other": "chunks",
-    "fallbackTitle": "sourcesDisplay.fallbackTitle",
-    "pages_one": "page {{pages}}",
-    "pages_other": "pages {{pages}}",
-    "provided": "provided",
     "viewChunks": "View chunks",
     "viewSources": "View message sources"
+  },
+  "traceChunks": {
+    "allQueriesChip": "All",
+    "chunkLabel": "Chunk {{position}}",
+    "chunkLabelWithPage": "Chunk {{position}}, page {{page}}",
+    "chunksLabel_one": "{{count}} chunk",
+    "chunksLabel_other": "{{count}} chunks",
+    "chunksTab": "Chunks",
+    "discarded": "This chunk was discarded: it did not reach the end of the pipeline.",
+    "discardedCaption": "These candidates were retrieved but did not reach the final set.",
+    "discardedTitle": "Discarded during selection",
+    "emptyState": "No chunks were retrieved for this response.",
+    "fallbackTitle": "Document {{id}}",
+    "foundBy": "Found by {{retrievers}}",
+    "foundByQuery": "query {{index}}",
+    "openDocument": "Open document",
+    "queryCandidates_one": "{{count}} candidate",
+    "queryCandidates_other": "{{count}} candidates",
+    "queryTooltip": "Query {{index}}",
+    "receivedCount_one": "{{chunks}} chunk from {{documents}} document",
+    "receivedCount_other": "{{chunks}} chunks from {{documents}} documents",
+    "receivedTitle": "Chunks used for this answer",
+    "retrieverTab": "Retriever",
+    "sectionsLabel": "Message source sections",
+    "selectedChunkHint": "Select a chunk from the tree to see its content here.",
+    "showLess": "Show less",
+    "showMore": "Show more",
+    "storyDirect": "The retriever searched with your message directly.",
+    "storyKept": "{{kept}} of {{total}} retrieved chunks reached the answer.",
+    "storyKeptAll_one": "The {{count}} retrieved chunk reached the answer.",
+    "storyKeptAll_other": "All {{count}} retrieved chunks reached the answer.",
+    "storyRewritten_one": "Your message was rewritten into {{count}} search query.",
+    "storyRewritten_other": "Your message was rewritten into {{count}} search queries.",
+    "title": "Message sources",
+    "yourMessage": "Your message was"
   },
   "validation": {
     "apiKeyMissingDescription": "This model requires an API key to function. Open Advanced Configuration to add your API key.",

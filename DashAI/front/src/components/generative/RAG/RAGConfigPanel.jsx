@@ -24,6 +24,7 @@ import PillTabs from "../../shared/PillTabs";
 import PresetCardList from "./PresetCardList";
 import PromptEditor from "./PromptEditor";
 import GeneratorPicker from "./GeneratorPicker";
+import QueryTransformationPicker from "./QueryTransformationPicker";
 import ChunkingAdvancedModal from "../../../pages/generative/RAGSession/advanced/ChunkingAdvancedModal";
 import RetrieverAdvancedModal from "../../../pages/generative/RAGSession/advanced/RetrieverAdvancedModal";
 import { loadRetrieverKinds } from "../../../pages/generative/RAGSession/retrieverKinds";
@@ -40,11 +41,12 @@ import { getApiErrorMessage } from "../../../utils/apiError";
 
 /**
  * Section keys, matching the RAG parameter keys the backend uses, in the order
- * the pipeline applies them: split the documents, retrieve from them, answer
- * with a model, phrase it with a prompt.
+ * the pipeline applies them: split the documents, transform the query, retrieve
+ * from them, answer with a model, phrase it with a prompt.
  */
 const SECTIONS = [
   "chunking_model",
+  "query_transformation",
   "retriever_model",
   "generation_model",
   "prompt",
@@ -112,6 +114,9 @@ export default function RAGConfigPanel({
           component: "",
           params: {},
         },
+        // Null, not `{component: ""}`: the stage is optional and its absent
+        // form is the null the endpoint expects back.
+        query_transformation: parameters.query_transformation ?? null,
         retriever_model: parameters.retriever_model || {
           component: "",
           params: {},
@@ -342,6 +347,13 @@ export default function RAGConfigPanel({
         .join(" · ");
     }
 
+    if (key === "query_transformation") {
+      if (!draft.query_transformation) {
+        return t("generative:rag.config.queryTransformation.off");
+      }
+      return section.display_name || "";
+    }
+
     return section.display_name || "";
   };
 
@@ -409,6 +421,16 @@ export default function RAGConfigPanel({
             }
           />
         </Stack>
+      );
+    }
+
+    if (key === "query_transformation") {
+      return (
+        <QueryTransformationPicker
+          value={draft.query_transformation}
+          onChange={(value) => updateSection("query_transformation", value)}
+          section={configuration.query_transformation}
+        />
       );
     }
 
@@ -553,11 +575,12 @@ export default function RAGConfigPanel({
           )}
 
         {/* Two by two rather than one scrolling row: the panel is 15-40% of
-            the viewport and the labels come from the backend, so four abreast
-            either wrap or hide half of themselves behind a scroll button. On
-            two rows all four sections are legible and reachable at once.
-            The indicator cannot follow a grid, so a selected tab is marked by
-            its own surface and underline instead. */}
+            the viewport and the labels come from the backend, so five abreast
+            would either wrap or hide half of themselves behind a scroll
+            button. On a grid every section is legible and reachable at once;
+            the odd fifth simply starts a new row. The indicator cannot follow
+            a grid, so a selected tab is marked by its own surface and
+            underline instead. */}
         <PillTabs
           value={activeSection}
           onChange={(_event, value) => setActiveSection(value)}

@@ -4,16 +4,6 @@
     "createSession": "Criar uma sessão",
     "generativeHub": "Central Generativa"
   },
-  "documentReferences": {
-    "chunkLabel": "Fragmento {{position}}",
-    "chunkLabelWithPage": "Fragmento {{position}}, página {{page}}",
-    "chunksCount_many": "Este documento forneceu {{count}} fragmentos para esta resposta:",
-    "chunksCount_one": "Este documento forneceu {{count}} fragmento para esta resposta:",
-    "chunksCount_other": "Este documento forneceu {{count}} fragmentos para esta resposta:",
-    "close": "Fechar",
-    "fallbackTitle": "Documento {{id}}",
-    "openDocument": "Abrir documento"
-  },
   "documentsBar": {
     "addFromData": "Adicionar de Dados",
     "addFromDataTitle": "Adicionar documentos de Dados",
@@ -134,6 +124,11 @@
       "rag": "RAG",
       "sessionSuffix": "sessão"
     },
+    "chatProgress": {
+      "generatingAnswer": "Usando as fontes para gerar a resposta",
+      "searchingSources": "Buscando fontes com a consulta: {{queries}}",
+      "transformingQuery": "Transformando a consulta…"
+    },
     "chunking": {
       "advancedButton": "Abrir configuração avançada"
     },
@@ -170,6 +165,18 @@
       "chunkCount_other": "{{count}} fragmentos",
       "contextBudget": "Orçamento de contexto",
       "discard": "Descartar",
+      "queryTransformation": {
+        "advanced": "Configuração avançada",
+        "enable": "Habilitar transformação de consultas",
+        "historyWindow": "Janela de histórico",
+        "language": "Idioma",
+        "llm": "Modelo de linguagem",
+        "maxSubqueries": "Subconsultas máximas",
+        "nQueries": "Número de consultas",
+        "off": "Desativada",
+        "prompt": "Prompt",
+        "unknownComponent": "este transformador não está registrado; escolha um prompt e um modelo para continuar."
+      },
       "unsavedIn": "Alterações não salvas em: {{sections}}"
     },
     "create": {
@@ -257,25 +264,49 @@
       "nameRequired": "O nome da sessão é obrigatório"
     }
   },
-  "retrievalTrace": {
-    "chunksLabel_many": "{{count}} fragmentos",
-    "chunksLabel_one": "{{count}} fragmento",
-    "chunksLabel_other": "{{count}} fragmentos",
-    "queryLabel": "Consulta {{index}}",
-    "scoresLabel": "Pontuações",
-    "title": "Rastreamento de recuperação"
-  },
   "sourcesDisplay": {
-    "chunk_many": "fragmentos",
-    "chunk_one": "fragmento",
-    "chunk_other": "fragmentos",
-    "fallbackTitle": "Fonte {{id}}",
-    "pages_many": "páginas {{pages}}",
-    "pages_one": "página {{pages}}",
-    "pages_other": "páginas {{pages}}",
-    "provided": "forneceu",
     "viewChunks": "Ver fragmentos",
     "viewSources": "Ver fontes da mensagem"
+  },
+  "traceChunks": {
+    "allQueriesChip": "todas",
+    "chunkLabel": "Fragmento {{position}}",
+    "chunkLabelWithPage": "Fragmento {{position}}, página {{page}}",
+    "chunksLabel_many": "{{count}} fragmento(s)",
+    "chunksLabel_one": "{{count}} fragmento(s)",
+    "chunksLabel_other": "{{count}} fragmento(s)",
+    "chunksTab": "Fragmentos",
+    "discarded": "Este fragmento foi descartado: não chegou ao final do pipeline.",
+    "discardedCaption": "Estes candidatos foram recuperados mas não chegaram ao conjunto final.",
+    "discardedTitle": "Descartados durante a seleção",
+    "emptyState": "Sem fragmentos recuperados para esta resposta.",
+    "fallbackTitle": "Documento {{id}}",
+    "foundBy": "Encontrado por {{retrievers}}",
+    "foundByQuery": "consulta {{index}}",
+    "openDocument": "Abrir documento",
+    "queryCandidates_many": "{{count}} candidatos",
+    "queryCandidates_one": "{{count}} candidato",
+    "queryCandidates_other": "{{count}} candidatos",
+    "queryTooltip": "Consulta {{index}}",
+    "receivedCount_many": "{{chunks}} fragmentos de {{documents}} documentos",
+    "receivedCount_one": "{{chunks}} fragmento de {{documents}} documento",
+    "receivedCount_other": "{{chunks}} fragmentos de {{documents}} documentos",
+    "receivedTitle": "Fragmentos usados para esta resposta",
+    "retrieverTab": "Recuperador",
+    "sectionsLabel": "Secções das fontes da mensagem",
+    "selectedChunkHint": "Selecione um fragmento da árvore para ver o seu conteúdo aqui.",
+    "showLess": "Mostrar menos",
+    "showMore": "Mostrar mais",
+    "storyDirect": "O recuperador buscou diretamente com a sua mensagem.",
+    "storyKept": "{{kept}} de {{total}} fragmentos recuperados chegaram à resposta.",
+    "storyKeptAll_many": "Os {{count}} fragmentos recuperados chegaram à resposta.",
+    "storyKeptAll_one": "O {{count}} fragmento recuperado chegou à resposta.",
+    "storyKeptAll_other": "Os {{count}} fragmentos recuperados chegaram à resposta.",
+    "storyRewritten_many": "A sua mensagem foi reescrita em {{count}} query de busca.",
+    "storyRewritten_one": "A sua mensagem foi reescrita em {{count}} query de busca.",
+    "storyRewritten_other": "A sua mensagem foi reescrita em {{count}} queries de busca.",
+    "title": "Fontes da mensagem",
+    "yourMessage": "A sua mensagem foi"
   },
   "validation": {
     "apiKeyMissingDescription": "Este modelo requer uma chave de API para funcionar. Abra a Configuração Avançada para adicionar sua chave de API.",

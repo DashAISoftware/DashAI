@@ -1,6 +1,6 @@
 import gc
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable, Dict
 
 from kink import di, inject
 from sqlalchemy import exc
@@ -33,6 +33,50 @@ if TYPE_CHECKING:
 _RAG_PARAM_KEYS = frozenset(RAG_PARAM_KEYS) | frozenset(RAG_OPTIONAL_MODEL_KEYS)
 
 log = logging.getLogger(__name__)
+
+
+def _make_progress_reporter(
+    session_factory: "sessionmaker", process_id: int
+) -> Callable[[Dict[str, Any]], None]:
+    """Build a best-effort live-progress reporter for a generative process.
+
+    The pipeline calls the returned closure once per stage while the run is in
+    flight. Each call opens a short-lived session, stores the payload on the
+    process's ``progress`` column, and commits — so the chat frontend polling
+    the process sees the current stage.
+
+    Reporting is best-effort: any failure is logged as a warning and swallowed.
+    A transient DB error must never fail the chat turn, so the guard lives here
+    rather than in the pipeline (which deliberately does not catch reporter
+    exceptions).
+
+    Parameters
+    ----------
+    session_factory : sessionmaker
+        SQLAlchemy session factory.
+    process_id : int
+        The generative process whose ``progress`` column is updated.
+
+    Returns
+    -------
+    Callable[[Dict[str, Any]], None]
+        A reporter accepting one stage payload.
+
+    """
+
+    def report(progress: Dict[str, Any]) -> None:
+        """Persist one stage payload, swallowing any failure."""
+        try:
+            with session_factory() as db:
+                process: GenerativeProcess = db.get(GenerativeProcess, process_id)
+                if process is None:
+                    return
+                process.set_progress(progress)
+                db.commit()
+        except Exception as e:
+            log.warning("Failed to report progress for process %s: %s", process_id, e)
+
+    return report
 
 
 class RAGJob(BaseJob):
@@ -92,6 +136,7 @@ class RAGJob(BaseJob):
                 return
             try:
                 process.set_status_as_error()
+                process.set_progress(None)
                 db.commit()
             except exc.SQLAlchemyError as e:
                 log.exception(e)
@@ -237,8 +282,9 @@ class RAGJob(BaseJob):
             raise JobError("Error during RAG pipeline setup.") from e
 
         # ── Generation (no DB session) ──────────────────────────────────
+        reporter = _make_progress_reporter(session_factory, process_id)
         try:
-            output: Any = model.generate(input_data)
+            output: Any = model.generate(input_data, progress_callback=reporter)
             log.debug("Generation completed for process %d", generative_process_id)
         except Exception as e:
             log.exception(e)
@@ -277,6 +323,7 @@ class RAGJob(BaseJob):
                 db.commit()
 
                 db.refresh(generative_process)
+                generative_process.set_progress(None)
                 generative_process.set_status_as_finished()
                 db.commit()
                 log.debug("Output saved for process %d", generative_process_id)

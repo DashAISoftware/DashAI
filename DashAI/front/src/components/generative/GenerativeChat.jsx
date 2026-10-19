@@ -3,6 +3,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { ChatBubble } from "./ChatBubble";
+import RAGChatProgress from "./RAGChatProgress";
 import {
   getProcessById,
   getProcessesBySessionId,
@@ -36,11 +37,36 @@ import JobQueueWidget from "../jobs/JobQueueWidget";
 import { getRunStatus } from "../../utils/runStatus";
 import TemplateModal from "../custom/TemplateModal";
 import SourcesDisplay from "./SourcesDisplay";
-import RetrievalTracePanel from "./RAG/RetrievalTracePanel";
 import { Trans, useTranslation } from "react-i18next";
 import { useGenerative } from "./GenerativeContext";
 import { useTheme } from "@mui/material/styles";
-import { parseRAGTraceRow, splitRAGOutputRows } from "./utils";
+import {
+  parseRAGTraceRow,
+  resolveRAGProgressText,
+  splitRAGOutputRows,
+} from "./utils";
+
+/**
+ * Extracts the user's message text from a process's input rows.
+ *
+ * RAGTask stores `[(input, "str")]`, and legacy rows may also be plain strings,
+ * so we keep the last non-empty row whose data_type is "str".
+ *
+ * @param {Array<{data_type?: string, data?: unknown}>|null|undefined} input
+ *   Process input rows.
+ * @returns {string} The user's message, or "" when none can be resolved.
+ */
+const extractUserMessage = (input) => {
+  if (!Array.isArray(input)) return "";
+  let message = "";
+  for (const row of input) {
+    if (row?.data_type !== "str") continue;
+    if (typeof row.data === "string" && row.data.length > 0) {
+      message = row.data;
+    }
+  }
+  return message;
+};
 
 /**
  * The conversation view, shared by every generative task.
@@ -80,9 +106,6 @@ export default function GenerativeChat({ indexStatus }) {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [sessionInfo, setSessionInfo] = useState(null);
   const [sessionInfoVisible, setSessionInfoVisible] = useState(false);
-  const [referenceModalOpen, setReferenceModalOpen] = useState(false);
-  const [selectedReferenceText, setSelectedReferenceText] = useState("");
-  const [referenceModalTitle, setReferenceModalTitle] = useState("");
   const [modelComponent, setModelComponent] = useState(null);
   const [modelsByName, setModelsByName] = useState({});
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
@@ -107,16 +130,6 @@ export default function GenerativeChat({ indexStatus }) {
     if (!chatContainerRef.current) return true;
     const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
     return Math.abs(scrollHeight - clientHeight - scrollTop) < 5; // 5px threshold
-  };
-
-  const handleOpenReference = (ref, key) => {
-    const title = `Document ${ref.document_id}${
-      ref.document_name ? ` (${ref.document_name})` : ""
-    }${ref.document_position ? ` - Chunk ${ref.document_position}` : ""}`;
-    setReferenceModalTitle(title);
-    // Convert escaped newlines to actual newlines
-    setSelectedReferenceText(ref.text.replace(/\\n/g, "\n"));
-    setReferenceModalOpen(true);
   };
 
   const handleScroll = () => {
@@ -198,7 +211,6 @@ export default function GenerativeChat({ indexStatus }) {
 
   const getMessages = () => {
     getProcessesBySessionId(sessionId).then((response) => {
-      console.log("Fetched messages:", response); // Add here
       setIsLoadingMessage(false);
       setMessages(response);
     });
@@ -326,11 +338,6 @@ export default function GenerativeChat({ indexStatus }) {
   }, [messages]);
 
   useEffect(() => {
-    console.log("Combining messages and history for display"); // Add here
-    console.log("Messages:", messages);
-    console.log("TASK NAME:", taskName);
-    console.log("session name:", sessionInfo?.name);
-    console.log("session description:", sessionInfo?.description);
     let messagesObject = messages.map((process) => {
       // Check if there's reference data in the output (only for RAGTask)
       let referenceOutput = null;
@@ -339,13 +346,13 @@ export default function GenerativeChat({ indexStatus }) {
       let mainOutput = process.output;
 
       if (taskName === "RAGTask") {
-        // Partition rows by data_type so the new 4-row format (Queries, Dict,
-        // Trace, str) and the legacy 2-row format (Dict, str) are all handled
-        // and row order is irrelevant.
+        // Partition rows by data_type so the new 5-row format (Queries, Dict,
+        // Trace, Timings, str) and the legacy 2-row format (Dict, str) are all
+        // handled and row order is irrelevant.
         const { queryRow, referenceRow, traceRow, messageRows } =
           splitRAGOutputRows(process.output);
-        // Message rows exclude the Dict, Queries and Trace rows, so none leaks
-        // into the rendered chat bubbles.
+        // Message rows exclude the Dict, Queries, Trace and Timings rows, so
+        // none leaks into the rendered chat bubbles.
         mainOutput = messageRows;
 
         // New "Queries" row: carried on the message for future display only,
@@ -423,12 +430,14 @@ export default function GenerativeChat({ indexStatus }) {
         timestamp: process.created,
         id: process.id,
         input: process.input,
+        userMessage: extractUserMessage(process.input),
         output: mainOutput,
         referenceOutput: referenceOutput,
         queriesOutput: queriesOutput,
         traceOutput: traceOutput,
         status: process.status,
         end_time: process.end_time,
+        progress: process.progress ?? null,
       };
     });
 
@@ -622,20 +631,11 @@ export default function GenerativeChat({ indexStatus }) {
                               sender={"Model"}
                               timestamp={null} // We'll handle timestamp separately
                             />
-                            {message.referenceOutput ? (
-                              <SourcesDisplay
-                                references={message.referenceOutput}
-                                onOpenReference={handleOpenReference}
-                                isUser={false}
-                              />
-                            ) : null}
-                            {message.traceOutput ? (
-                              <RetrievalTracePanel
-                                trace={message.traceOutput}
-                                references={message.referenceOutput}
-                                isUser={false}
-                              />
-                            ) : null}
+                            <SourcesDisplay
+                              references={message.referenceOutput}
+                              trace={message.traceOutput}
+                              userMessage={message.userMessage}
+                            />
                             {/* Add timestamp after sources with proper alignment */}
                             <Box
                               sx={{
@@ -671,7 +671,16 @@ export default function GenerativeChat({ indexStatus }) {
                       </>
                     ) : (
                       <>
-                        <ChatBubble isWaiting={true} sender="Model" />
+                        {/* Resolve here too: a truthy payload the helper
+                            cannot render (unknown stage, missing queries)
+                            must still fall back to the waiting bubble instead
+                            of leaving the in-flight row blank. */}
+                        {taskName === "RAGTask" &&
+                        resolveRAGProgressText(message.progress) ? (
+                          <RAGChatProgress progress={message.progress} />
+                        ) : (
+                          <ChatBubble isWaiting={true} sender="Model" />
+                        )}
                         {/* Only where the chat job still has to index: with
                             eager indexing this is the fallback path, and
                             "no_documents" never indexes at all. */}

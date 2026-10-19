@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, ClassVar, List
+from typing import Any, ClassVar, Dict, List
 
 from DashAI.back.core.schema_fields import (
     component_field,
@@ -13,9 +13,6 @@ from DashAI.back.core.schema_fields import (
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.prompts.transformation.transformation_prompt import (
     QueryExpansionPrompt,
-)
-from DashAI.back.models.RAG.transformation.llm_output_parser import (
-    parse_function_call_output,
 )
 from DashAI.back.models.RAG.transformation.llm_query_transformation import (
     LLMQueryTransformation,
@@ -88,6 +85,26 @@ class LLMQueryExpander(LLMQueryTransformation):
     EXPECTED_FUNCTION = "expand_query"
     ARGUMENT_KEY = "queries"
     TRANSFORMATION_PROMPT_BASE: ClassVar[type] = QueryExpansionPrompt
+    TOLERATE_BARE_LISTS: bool = True
+
+    FUNCTION_DESCRIPTION: str = (
+        "Rewrites the user message into several concise search queries that "
+        "broaden retrieval coverage; at least one preserves the original intent."
+    )
+    FUNCTION_PARAMETERS: Dict[str, Any] = {
+        "type": "object",
+        "properties": {
+            "queries": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "The list of expanded search queries.",
+                "minItems": 1,
+            }
+        },
+        "required": ["queries"],
+    }
+
+    metadata = {"technique": "expansion", "prompt_parent": "QueryExpansionPrompt"}
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the expansion transformer.
@@ -113,13 +130,13 @@ class LLMQueryExpander(LLMQueryTransformation):
             n=self.n_queries,
         )
 
-    def _parse_output(self, raw: str) -> List[str]:
-        """Parse the list of expanded queries from the model output.
+    def _parse_arguments(self, arguments: Dict[str, Any]) -> List[str]:
+        """Parse the list of expanded queries from the model arguments.
 
         Parameters
         ----------
-        raw : str
-            Raw model output.
+        arguments : Dict[str, Any]
+            The arguments mapping emitted by the model.
 
         Returns
         -------
@@ -129,11 +146,8 @@ class LLMQueryExpander(LLMQueryTransformation):
         Raises
         ------
         RAGTransformationOutputError
-            If the model output is not a non-empty ``queries`` list.
+            If the model arguments do not contain a non-empty ``queries`` list.
         """
-        arguments = parse_function_call_output(
-            raw, self.EXPECTED_FUNCTION, self.ARGUMENT_KEY
-        )
         return [str(entry) for entry in self._require_list(arguments)]
 
     def _finalize_queries(self, queries: List[str]) -> List[str]:

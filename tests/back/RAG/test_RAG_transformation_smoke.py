@@ -145,6 +145,50 @@ class TestRegistryResolution:
 
 
 # ===================================================================
+# smoke 4: technique metadata
+# ===================================================================
+
+
+class TestTechniqueMetadata:
+    """Transformers and prompts expose inert technique metadata."""
+
+    def test_transformer_metadata_pairs_technique_with_prompt_family(self, registry):
+        assert registry["LLMQueryRewriter"]["metadata"] == {
+            "technique": "rewriting",
+            "prompt_parent": "QueryRewritingPrompt",
+        }
+        assert registry["LLMQueryExpander"]["metadata"] == {
+            "technique": "expansion",
+            "prompt_parent": "QueryExpansionPrompt",
+        }
+        assert registry["LLMQueryDecomposer"]["metadata"] == {
+            "technique": "decomposition",
+            "prompt_parent": "QueryDecompositionPrompt",
+        }
+
+    def test_prompt_metadata_carries_technique_and_variant(self, registry):
+        default_metadata = registry["DefaultQueryRewritingPrompt"]["metadata"]
+        assert default_metadata["technique"] == "rewriting"
+        assert default_metadata["variant"] == "default"
+
+        custom_metadata = registry["CustomQueryRewritingPrompt"]["metadata"]
+        assert custom_metadata["technique"] == "rewriting"
+        assert custom_metadata["variant"] == "custom"
+
+    def test_prompt_variants_for_every_technique(self, registry):
+        expected = {
+            "DefaultQueryExpansionPrompt": ("expansion", "default"),
+            "CustomQueryExpansionPrompt": ("expansion", "custom"),
+            "DefaultQueryDecompositionPrompt": ("decomposition", "default"),
+            "CustomQueryDecompositionPrompt": ("decomposition", "custom"),
+        }
+        for name, (technique, variant) in expected.items():
+            metadata = registry[name]["metadata"]
+            assert metadata["technique"] == technique
+            assert metadata["variant"] == variant
+
+
+# ===================================================================
 # smoke 2: factory builds full transformers
 # ===================================================================
 

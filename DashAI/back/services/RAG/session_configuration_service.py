@@ -21,6 +21,7 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_CHUNKING_MODEL,
     RAG_PARAM_GENERATION_MODEL,
     RAG_PARAM_PROMPT,
+    RAG_PARAM_QUERY_TRANSFORMATION,
     RAG_PARAM_RETRIEVER_MODEL,
 )
 from DashAI.back.services.RAG import chunking_presets, retriever_presets
@@ -62,6 +63,13 @@ _SECTION_NAMES = {
         pt="Modelo",
         de="Modell",
         zh="模型",
+    ),
+    RAG_PARAM_QUERY_TRANSFORMATION: MultilingualString(
+        en="Query Transformation",
+        es="Transformación de consultas",
+        pt="Transformação de consultas",
+        de="Abfragetransformation",
+        zh="查询转换",
     ),
 }
 
@@ -113,12 +121,16 @@ class SessionConfigurationService:
         retriever = parameters.get(RAG_PARAM_RETRIEVER_MODEL) or {}
         prompt = parameters.get(RAG_PARAM_PROMPT) or {}
         generation = parameters.get(RAG_PARAM_GENERATION_MODEL) or {}
+        transformation = parameters.get(RAG_PARAM_QUERY_TRANSFORMATION) or {}
 
         return {
             RAG_PARAM_CHUNKING_MODEL: self._describe_chunking(chunking),
             RAG_PARAM_RETRIEVER_MODEL: self._describe_retriever(retriever),
             RAG_PARAM_PROMPT: self._describe_prompt(prompt),
             RAG_PARAM_GENERATION_MODEL: self._describe_generation(generation),
+            RAG_PARAM_QUERY_TRANSFORMATION: self._describe_transformation(
+                transformation
+            ),
             "context_budget": self._context_budget(
                 chunking, retriever, prompt, generation
             ),
@@ -189,6 +201,50 @@ class SessionConfigurationService:
             entry.get("credentials_satisfied", True)
         )
         section["required_credentials"] = list(entry.get("required_credentials") or [])
+        return section
+
+    def _describe_transformation(self, ref: Dict[str, Any]) -> Dict[str, Any]:
+        """Describe the optional query transformation stage.
+
+        The stage is optional, so the section always exists: when the stored
+        reference is absent, null or empty the section reports ``enabled`` as
+        ``False`` and leaves every resolved field empty. When enabled the
+        transformer is described through the shared component path, so an
+        uninstalled transformer degrades to ``registered=False`` instead of
+        failing the page.
+
+        This stage is deliberately excluded from ``context_budget``: it only
+        rewrites the user message before retrieval and contributes no chunks,
+        no prompt template and no generation tokens, so it consumes none of the
+        context window the budget accounts for.
+
+        Parameters
+        ----------
+        ref : Dict[str, Any]
+            The stored ``{component, params}`` reference, or an empty mapping
+            when the stage is disabled.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The resolved section, with ``enabled`` telling whether the stage
+            runs. Multilingual values are returned as
+            :class:`MultilingualString`; the caller localizes them.
+        """
+        enabled = isinstance(ref, dict) and bool(ref.get("component"))
+        if not enabled:
+            return {
+                "section_name": _SECTION_NAMES[RAG_PARAM_QUERY_TRANSFORMATION],
+                "component": None,
+                "display_name": None,
+                "description": None,
+                "registered": False,
+                "params": [],
+                "enabled": False,
+            }
+
+        section = self._describe_component(RAG_PARAM_QUERY_TRANSFORMATION, ref)
+        section["enabled"] = True
         return section
 
     # ── Shared building blocks ────────────────────────────────────────
