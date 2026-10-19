@@ -25,3 +25,5 @@ class SamplingConverter(BaseConverter):
     )
     ICON: Final[str] = Icon.Casino.value
     COLOR: Final[str] = "rgb(255, 159, 64)"
+    COLUMN_OPERATION = "rows"
+    ROWS_APPLY_TO = "train"

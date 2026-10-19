@@ -7,14 +7,16 @@ import { useTheme } from "@mui/material/styles";
  * @param {object} dataset - DatasetEntry object.
  * @param {boolean} selected - Whether this card is currently selected.
  * @param {function} onSelect - Called when the card is clicked.
+ * @param {string} [dataTour] - `data-tour` anchor for guided tours.
  */
-export default function DatasetCard({ dataset, selected, onSelect }) {
+export default function DatasetCard({ dataset, selected, onSelect, dataTour }) {
   const theme = useTheme();
 
   return (
     <Paper
       elevation={0}
       onClick={onSelect}
+      data-tour={dataTour}
       sx={{
         p: 1.5,
         cursor: "pointer",

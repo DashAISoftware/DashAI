@@ -79,6 +79,12 @@ function PrepareDatasetStep({
 
   const [splitsReady, setSplitsReady] = useState(false);
 
+  // Session preprocessing is fitted once per partition, so it is offered only
+  // once the strategy is known to carve some. One that carves nothing (the
+  // only one a task without a target offers) leaves nothing to fit it on.
+  const offersPreprocessing =
+    Boolean(strategyKind) && strategyKind !== STRATEGY_KINDS.FULL;
+
   useEffect(() => {
     if (
       datasetInfo &&
@@ -101,6 +107,8 @@ function PrepareDatasetStep({
       applyPreprocessing: applyPreprocessing,
     };
 
+    // A strategy that carves nothing resolves no splitter, so the session
+    // keeps the empty splits payload it started with.
     const splitterName = resolveSplitterName(strategyKind, cvType, holdoutType);
     if (splitterName) {
       updatedExpData.splits = buildSplitsPayload({
@@ -224,28 +232,32 @@ function PrepareDatasetStep({
         ) : null
       ) : null}
 
-      <Box
-        sx={{
-          mt: 2,
-          p: 6,
-          border: 1,
-          borderColor: "divider",
-          borderRadius: 2,
-        }}
-      >
-        <FormControlLabel
-          control={
-            <Switch
-              checked={applyPreprocessing}
-              onChange={(event) => setApplyPreprocessing(event.target.checked)}
-            />
-          }
-          label={t("models:label.applyPreprocessing")}
-        />
-        <Typography variant="caption" component="p" sx={{ color: "grey" }}>
-          {t("models:label.applyPreprocessingDescription")}
-        </Typography>
-      </Box>
+      {offersPreprocessing && (
+        <Box
+          sx={{
+            mt: 2,
+            p: 6,
+            border: 1,
+            borderColor: "divider",
+            borderRadius: 2,
+          }}
+        >
+          <FormControlLabel
+            control={
+              <Switch
+                checked={applyPreprocessing}
+                onChange={(event) =>
+                  setApplyPreprocessing(event.target.checked)
+                }
+              />
+            }
+            label={t("models:label.applyPreprocessing")}
+          />
+          <Typography variant="caption" component="p" sx={{ color: "grey" }}>
+            {t("models:label.applyPreprocessingDescription")}
+          </Typography>
+        </Box>
+      )}
     </React.Fragment>
   );
 }

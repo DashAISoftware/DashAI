@@ -38,7 +38,33 @@ const AVAILABLE_CONVERTERS = [
   },
 ];
 
-const datasetTypes = { age: { type: "Integer" }, text: { type: "Text" } };
+const column = (name, type, origin) => ({
+  kind: "column",
+  name,
+  type,
+  dtype: null,
+  origin,
+});
+
+const block = (step, slot, type, count) => ({
+  kind: "block",
+  step,
+  slot,
+  label: "output",
+  type,
+  dtype: null,
+  count,
+});
+
+const okStep = (added) => ({
+  status: "ok",
+  state: [],
+  added,
+  error: null,
+  warnings: [],
+});
+
+const structureOf = (steps) => ({ initial: [], steps, final: [], valid: true });
 
 describe("AppliedConvertersView", () => {
   let setPendingDropTool;
@@ -53,117 +79,178 @@ describe("AppliedConvertersView", () => {
     renderView({
       newExp: { preprocessing: [] },
       setNewExp: () => {},
-      datasetTypes,
     });
 
     expect(screen.getByText("No converter was added.")).toBeInTheDocument();
   });
 
-  it("shows a converter's real display name, scope and output type chip", async () => {
+  it("shows a converter's real display name, scope and estimated output", async () => {
     const newExp = {
       preprocessing: [
         {
           converter: "Binarizer",
           params: { threshold: 0.5 },
           scope: [{ kind: "raw", name: "age" }],
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
       ],
     };
+    const structure = structureOf([okStep([column("bin_age", "Integer", 0)])]);
 
-    renderView({ newExp, setNewExp: () => {}, datasetTypes });
+    renderView({ newExp, setNewExp: () => {}, structure });
 
     expect(await screen.findByText("Binarizador")).toBeInTheDocument();
     expect(screen.getByText("age")).toBeInTheDocument();
-    expect(screen.getByText("Binarizador: output")).toBeInTheDocument();
+    expect(screen.getAllByText("bin_age").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Integer").length).toBeGreaterThan(0);
   });
 
-  it("shows a chained converter's scope as the earlier converter's output group", async () => {
+  it("shows a chained converter's scope as the earlier converter's output", async () => {
     const newExp = {
       preprocessing: [
         {
           converter: "BagOfWordsConverter",
           params: {},
           scope: [{ kind: "raw", name: "text" }],
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
         {
           converter: "Binarizer",
           params: {},
           scope: [{ kind: "group", step: 0 }],
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
       ],
     };
+    const structure = structureOf([
+      okStep([block(0, null, "Integer", null)]),
+      okStep([block(1, null, "Integer", null)]),
+    ]);
 
-    renderView({ newExp, setNewExp: () => {}, datasetTypes });
+    renderView({ newExp, setNewExp: () => {}, structure });
 
     await screen.findByText("Bag of Words");
-    // The second card's scope shows the first converter's output label.
-    expect(screen.getAllByText("Bag of Words: output").length).toBe(2);
+    // The second card's scope names the first converter's output.
+    expect(screen.getByText("Bag of Words: output")).toBeInTheDocument();
+    // Each card's output block shows its size, N when unknown.
+    expect(screen.getAllByText("Bag of Words: output (N columns)").length).toBe(
+      1,
+    );
   });
 
-  it("shows one chip per declared slot when a step's scope mixed column types", async () => {
+  it("shows one chip per estimated block when a step's output mixes types", async () => {
     const newExp = {
       preprocessing: [
         {
-          converter: "SimpleImputer",
-          params: { strategy: "most_frequent" },
+          converter: "SelectKBest",
+          params: { k: 1 },
           scope: [
             { kind: "raw", name: "age" },
-            { kind: "raw", name: "text" },
-          ],
-          outputSlots: [
-            { slot: "Integer", type: "Integer", dtype: "int64" },
-            { slot: "Categorical", type: "Categorical", dtype: null },
+            { kind: "raw", name: "score" },
           ],
         },
       ],
     };
+    const structure = structureOf([
+      okStep([
+        block(0, "Integer", "Integer", null),
+        block(0, "Float", "Float", null),
+      ]),
+    ]);
 
-    renderView({
-      newExp,
-      setNewExp: () => {},
-      datasetTypes: {
-        ...datasetTypes,
-        // "SimpleImputer" isn't in AVAILABLE_CONVERTERS, so its display
-        // name falls back to the raw converter name — fine here, this
-        // test only cares about the output chips.
-      },
-    });
+    renderView({ newExp, setNewExp: () => {}, structure });
 
-    // No "(slot)" suffix: each slot already gets its own colored type chip
-    // (asserted below), so both chips share the same label text.
-    expect(await screen.findAllByText("SimpleImputer: output")).toHaveLength(2);
-    expect(screen.getByText("Integer")).toBeInTheDocument();
-    expect(screen.getByText("Categorical")).toBeInTheDocument();
+    expect(
+      await screen.findAllByText("SelectKBest: output (N columns)"),
+    ).toHaveLength(2);
+    expect(screen.getByText("Float")).toBeInTheDocument();
   });
 
-  it("numbers two converters of the same type so their cards and output labels don't collide", async () => {
+  it("numbers two converters of the same type so their cards don't collide", async () => {
     const newExp = {
       preprocessing: [
         {
           converter: "Binarizer",
           params: { threshold: 0.5 },
           scope: [{ kind: "raw", name: "age" }],
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
         {
           converter: "Binarizer",
           params: { threshold: 1 },
           scope: [{ kind: "raw", name: "text" }],
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
       ],
     };
 
-    renderView({ newExp, setNewExp: () => {}, datasetTypes });
+    renderView({ newExp, setNewExp: () => {}, structure: null });
 
     expect(await screen.findByText("Binarizador")).toBeInTheDocument();
     expect(screen.getByText("Binarizador (2)")).toBeInTheDocument();
-    expect(screen.getByText("Binarizador: output")).toBeInTheDocument();
-    expect(screen.getByText("Binarizador (2): output")).toBeInTheDocument();
+  });
+
+  it("flags a step that cannot work and dims the ones after it", async () => {
+    const newExp = {
+      preprocessing: [
+        {
+          converter: "Binarizer",
+          params: {},
+          scope: [{ kind: "raw", name: "age" }],
+        },
+        {
+          converter: "Binarizer",
+          params: {},
+          scope: [{ kind: "raw", name: "text" }],
+        },
+      ],
+    };
+    const structure = {
+      ...structureOf([]),
+      valid: false,
+      steps: [
+        {
+          status: "error",
+          state: [],
+          added: [],
+          error: { code: "missing_ref", params: { ref: "age" } },
+          warnings: [],
+        },
+        { status: "blocked", state: [], added: [], error: null, warnings: [] },
+      ],
+    };
+
+    renderView({ newExp, setNewExp: () => {}, structure });
+
+    expect(
+      await screen.findByText(
+        '"age" does not exist at this point of the chain: an earlier step may have consumed it.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("session-converter-card-0")).toHaveAttribute(
+      "data-status",
+      "error",
+    );
+    expect(screen.getByTestId("session-converter-card-1")).toHaveAttribute(
+      "data-status",
+      "blocked",
+    );
+    expect(
+      screen.getByText("Fix the previous step to check this one."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the dataset state after the whole chain", async () => {
+    const structure = {
+      ...structureOf([]),
+      final: [column("age", "Integer", null), block(0, null, "Float", 2)],
+    };
+
+    renderView({
+      newExp: { preprocessing: [] },
+      setNewExp: () => {},
+      structure,
+    });
+
+    expect(
+      await screen.findByText("Dataset after preprocessing"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("age")).toBeInTheDocument();
   });
 
   it("cascades deletion to every converter configured after the deleted one", async () => {
@@ -174,18 +261,16 @@ describe("AppliedConvertersView", () => {
           converter: "BagOfWordsConverter",
           params: {},
           scope: [{ kind: "raw", name: "text" }],
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
         {
           converter: "Binarizer",
           params: {},
           scope: [{ kind: "group", step: 0 }],
-          outputSlots: [{ slot: null, type: "Integer", dtype: "int64" }],
         },
       ],
     };
 
-    renderView({ newExp, setNewExp, datasetTypes });
+    renderView({ newExp, setNewExp, structure: null });
 
     await screen.findByText("Bag of Words");
     const deleteButtons = screen.getAllByRole("button", { name: "Remove" });
@@ -211,7 +296,6 @@ describe("AppliedConvertersView", () => {
     renderView({
       newExp: { preprocessing: [] },
       setNewExp: () => {},
-      datasetTypes,
     });
 
     const dropZone = screen.getByText("No converter was added.").parentElement;
@@ -225,7 +309,6 @@ describe("AppliedConvertersView", () => {
     renderView({
       newExp: { preprocessing: [] },
       setNewExp: () => {},
-      datasetTypes,
     });
 
     const dropZone = screen.getByText("No converter was added.").parentElement;

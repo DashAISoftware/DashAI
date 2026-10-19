@@ -125,3 +125,25 @@ def test_converter_sequence_model_dump_round_trips():
     dumped = sequence.model_dump(mode="json")
     restored = ConverterSequence.model_validate(dumped)
     assert restored == sequence
+
+
+def test_named_group_ref_resolves_to_that_one_column():
+    refs = [GroupColumnRef(step=0, name="date_month")]
+    resolved = resolve_refs(refs, {0: ["date_year", "date_month"]})
+    assert resolved == ["date_month"]
+
+
+def test_named_group_ref_to_a_column_the_step_never_produced_raises_key_error():
+    with pytest.raises(KeyError):
+        resolve_refs([GroupColumnRef(step=0, name="age")], {0: ["date_year"]})
+
+
+def test_group_ref_cannot_have_both_a_slot_and_a_name():
+    with pytest.raises(ValueError, match="slot"):
+        GroupColumnRef(step=0, slot="Integer", name="date_year")
+
+
+def test_parse_column_refs_round_trips_a_named_group_ref():
+    raw = [{"kind": "group", "step": 1, "name": "date_month"}]
+    (ref,) = parse_column_refs(raw)
+    assert (ref.step, ref.name, ref.slot) == (1, "date_month", None)

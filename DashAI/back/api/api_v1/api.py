@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from DashAI.back.api.api_v1.endpoints.app_config import router as app_config
 from DashAI.back.api.api_v1.endpoints.components import router as components
 from DashAI.back.api.api_v1.endpoints.converters import router as converters
 from DashAI.back.api.api_v1.endpoints.credentials import router as credentials
@@ -32,6 +33,7 @@ from DashAI.back.api.api_v1.endpoints.runs import router as runs
 from DashAI.back.api.api_v1.endpoints.statistical_tests import (
     router as statistical_tests,
 )
+from DashAI.back.api.api_v1.endpoints.system import router as system
 
 api_router_v1 = APIRouter()
 api_router_v1.include_router(converters, prefix="/converter")
@@ -60,3 +62,5 @@ api_router_v1.include_router(statistical_tests, prefix="/statistical-tests")
 api_router_v1.include_router(folders, prefix="/folder")
 api_router_v1.include_router(credentials, prefix="/credential")
 api_router_v1.include_router(rag, prefix="/rag")
+api_router_v1.include_router(system, prefix="/system")
+api_router_v1.include_router(app_config, prefix="/app-config")

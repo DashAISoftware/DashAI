@@ -26,6 +26,7 @@ from DashAI.back.metrics.regression.mse import MSE
 from DashAI.back.models.scikit_learn.mlp_regression import MLPRegression
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
 from DashAI.back.types.value_types import Float
+from DashAI.back.units.fit_model_unit import FitModelUnit
 
 EPOCHS = 3
 N_TRIALS = 4
@@ -36,15 +37,28 @@ HIDDEN_SIZE_SPACE = (2, 40)
 
 
 def _holdout_evaluate(model, input_dataset, output_dataset, metric):
-    """The real holdout evaluation path, on a strategy with no factory.
+    """The real objective of a holdout search: one fit, then score validation.
 
-    ``evaluate`` reads which partitions its strategy scores, so it needs a real
-    instance rather than None for self. Building one through ``__init__`` would
-    need a ``ModelFactory`` this test does not have, and does not need: the
-    only thing read off the instance is a class attribute.
+    It used to be ``HoldoutEvaluationStrategy.evaluate``. The strategies now
+    only declare how a run is evaluated, and the unit that fits carries it out,
+    so the objective the optimizer measures comes from there. Which partitions
+    a trial records is still the strategy's declaration: the job reads
+    SCORED_SPLITS off it and hands it over, minus the test partition, which a
+    trial may never score, so it is read off the class here too.
     """
-    strategy = HoldoutEvaluationStrategy.__new__(HoldoutEvaluationStrategy)
-    return strategy.evaluate(model, input_dataset, output_dataset, metric)
+    trial_splits = [
+        split.name
+        for split in HoldoutEvaluationStrategy.SCORED_SPLITS
+        if split.name != "TEST"
+    ]
+    unit = FitModelUnit(
+        optimizer={"component": "", "params": {}},
+        goal_metric="",
+        run_id=None,
+        artifact_prefix=None,
+        trial_splits=trial_splits,
+    )
+    return unit._score_one_trial(model, input_dataset, output_dataset, metric)
 
 
 @pytest.fixture(scope="module", name="regression_splits")

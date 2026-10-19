@@ -72,6 +72,7 @@ class Binarizer(EncodingConverter, SklearnWrapper, BinarizerOperation):
     IMAGE_PREVIEW = "binarizer.png"
 
     PREFIX = "bin_"
+    ONE_COLUMN_PER_INPUT = True
 
     metadata = {
         "allowed_types": [Float, Integer],

@@ -11,8 +11,39 @@ import {
   normalizeEmptyValue,
 } from "../../utils/schema";
 import { evaluateRules } from "../../utils/ruleEngine";
-import { Stack } from "@mui/material";
+import { FormCardProvider } from "../../contexts/FormCardContext";
+import { Box, Stack, Typography } from "@mui/material";
 import PropTypes from "prop-types";
+
+const getInitialValueFromSchema = (schema) => {
+  if (schema.type !== "object") {
+    return schema.placeholder;
+  }
+
+  return Object.keys(schema.properties ?? {}).reduce((acc, key) => {
+    acc[key] = getInitialValueFromSchema(schema.properties[key]);
+    return acc;
+  }, {});
+};
+
+const resolveConditionalSchema = (schema, values) => {
+  if (!schema?.dependsOn || !schema?.conditionalSchemas) {
+    return schema;
+  }
+
+  const selectedValue = values?.[schema.dependsOn];
+  const conditionalSchema = schema.conditionalSchemas[selectedValue];
+
+  if (!conditionalSchema) {
+    return schema;
+  }
+
+  return {
+    ...schema,
+    ...conditionalSchema,
+    properties: conditionalSchema.properties ?? schema.properties,
+  };
+};
 
 // Extracted to its own component so useMemo is called at the top level (Rules of Hooks)
 function SubFieldItem({
@@ -34,12 +65,57 @@ function SubFieldItem({
   );
 
   return (
-    <FormSchemaField
-      objName={`${objName}.${subField}`}
-      setError={setError}
-      paramJsonSchema={fieldSubschema}
-      field={subFieldObj}
-    />
+    <Box
+      sx={{
+        mb: 4,
+        "& .MuiInputLabel-root": { display: "none" },
+        "& .MuiOutlinedInput-notchedOutline legend > span": {
+          display: "none",
+        },
+      }}
+    >
+      <SubFieldHeader
+        label={fieldSubschema.title ?? subField}
+        paramKey={subField}
+      />
+      <FormCardProvider>
+        <FormSchemaField
+          objName={`${objName}.${subField}`}
+          setError={setError}
+          paramJsonSchema={fieldSubschema}
+          field={subFieldObj}
+        />
+      </FormCardProvider>
+      {fieldSubschema.description && (
+        <Typography
+          variant="caption"
+          color="text.disabled"
+          sx={{ display: "block", mt: 2, lineHeight: 1.5 }}
+        >
+          {fieldSubschema.description}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+function SubFieldHeader({ label, paramKey }) {
+  return (
+    <Box sx={{ mb: 1 }}>
+      <Typography variant="body2" fontWeight={600} color="text.primary">
+        {label}
+      </Typography>
+      {paramKey && paramKey !== label && (
+        <Typography
+          component="span"
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontFamily: "monospace" }}
+        >
+          {paramKey}
+        </Typography>
+      )}
+    </Box>
   );
 }
 
@@ -51,6 +127,11 @@ SubFieldItem.propTypes = {
   handleChange: PropTypes.func.isRequired,
   setError: PropTypes.func,
   fieldSubschema: PropTypes.object.isRequired,
+};
+
+SubFieldHeader.propTypes = {
+  label: PropTypes.string,
+  paramKey: PropTypes.string,
 };
 
 function FormSchemaRenderFields({
@@ -69,19 +150,55 @@ function FormSchemaRenderFields({
   const handleChange = useCallback(
     (name, subName) => (rawValue) => {
       const fieldPath = subName ? `${name}.${subName}` : name;
+      const dependentValues = {};
+
       // One place decides what an emptied input means, so no leaf input has to
       // know: a cleared box on a nullable field submits null instead of the
       // empty string that used to reach sklearn as a column named "".
       const fieldSchema = subName
-        ? modelSchema?.[name]?.properties?.[subName]
+        ? resolveConditionalSchema(modelSchema?.[name], formik.values)
+            ?.properties?.[subName]
         : modelSchema?.[name];
       const value = normalizeEmptyValue(rawValue, fieldSchema);
       formik.setFieldValue(fieldPath, value, true);
       // Always pass complete formik.values so handleUpdateSchema receives
       // ALL fields regardless of whether the context store has been
       // initialised yet (prevents race-condition with useEffect init).
+      let updatedValues = { ...formik.values, [fieldPath]: value };
+
+      if (subName) {
+        // A sub-field also has to land nested, not only under its dotted path.
+        updatedValues = {
+          ...updatedValues,
+          [name]: {
+            ...(formik.values?.[name] ?? {}),
+            [subName]: value,
+          },
+        };
+      } else {
+        Object.entries(modelSchema ?? {}).forEach(
+          ([schemaKey, schemaValue]) => {
+            if (
+              schemaValue?.dependsOn === name &&
+              schemaValue?.conditionalSchemas?.[value]
+            ) {
+              const dependentSchema = {
+                ...schemaValue,
+                ...schemaValue.conditionalSchemas[value],
+                properties:
+                  schemaValue.conditionalSchemas[value].properties ??
+                  schemaValue.properties,
+              };
+              const initialValue = getInitialValueFromSchema(dependentSchema);
+              dependentValues[schemaKey] = initialValue;
+              formik.setFieldValue(schemaKey, initialValue, true);
+            }
+          },
+        );
+      }
+
       handleUpdateSchema(
-        { ...formik.values, [fieldPath]: value },
+        { ...updatedValues, ...dependentValues },
         autoSave ? onFormSubmit : null,
       );
     },
@@ -123,7 +240,10 @@ function FormSchemaRenderFields({
       // because they are decided above before any branch is chosen.
       const disabled = isIrrelevant && fieldState.effect === "disable";
 
-      const fieldSchema = modelSchema[key];
+      const fieldSchema = resolveConditionalSchema(
+        modelSchema[key],
+        formik?.values,
+      );
       // The cards render their description as markdown, so the reason a
       // control is inert sits right under it in italics rather than leaving
       // the user to wonder why they cannot type into it.
@@ -197,6 +317,7 @@ function FormSchemaRenderFields({
               label={fieldSchema.title}
               description={fieldSchema.description}
               errorMessage={errorsMessage?.[objName]?.message}
+              defaultExpanded={Boolean(fieldSchema?.dependsOn)}
             >
               {fieldSchema?.properties &&
                 Object.keys(fieldSchema.properties).map((subField) => (

@@ -17,6 +17,8 @@ import { getComponents } from "../../api/component";
 import { getDatafile } from "../../api/hub";
 import { useDatasetsAndNotebooks } from "../../components/custom/contexts/DatasetsAndNotebooksContext";
 import { loadsDataKind } from "../../utils/dataKinds";
+import { TourProvider } from "../../components/tour/TourProvider";
+import { TOUR_KEYS } from "../../constants/tours";
 
 export default function HubImportPage() {
   const { datafileId } = useParams();
@@ -208,20 +210,24 @@ export default function HubImportPage() {
               <Typography color="error">{t("hub:downloadError")}</Typography>
             </Box>
           ) : (
-            <HubImportPanel
-              dataset={dataset}
-              sourceName={sourceName}
-              datafile={datafile}
-              step={step}
-              onStepChange={handleStepChange}
-              selectedLoader={selectedLoader}
-              onSelectedLoaderChange={handleLoaderChange}
-              formValues={formValues}
-              formHasErrors={formHasErrors}
-              onCancel={handleCancel}
-              onImported={handleImported}
-              computeMetadata={computeMetadata}
-            />
+            // Mounted only once the datafile is ready, so the tour auto-starts
+            // when its targets exist rather than over the loading spinner.
+            <TourProvider tourKey={TOUR_KEYS.HUB_IMPORT}>
+              <HubImportPanel
+                dataset={dataset}
+                sourceName={sourceName}
+                datafile={datafile}
+                step={step}
+                onStepChange={handleStepChange}
+                selectedLoader={selectedLoader}
+                onSelectedLoaderChange={handleLoaderChange}
+                formValues={formValues}
+                formHasErrors={formHasErrors}
+                onCancel={handleCancel}
+                onImported={handleImported}
+                computeMetadata={computeMetadata}
+              />
+            </TourProvider>
           )}
         </CenterPanel>
 

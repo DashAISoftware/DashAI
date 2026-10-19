@@ -1,0 +1,21 @@
+{
+  "addToDashAI": "<0><0>Add to dashAI</0><1>Once the download finishes, the button changes to \"Add to dashAI\".</1><2><0>Click \"Add to dashAI\" to import the datafile as a dataset.</0></2><3>💡 Downloading iris only takes a few seconds. If the button still says \"Downloading...\", wait a moment.</3></0>",
+  "datafileInfo": "<0><0>Datafile information</0><1>Here is a summary of the datafile: its source, size, tags and a link to the original page.</1></0>",
+  "datafilesList": "<0><0>Your Datafiles</0><1>The datafiles you have downloaded appear here, along with the source they come from. While they download, you can follow their status in this list.</1><2>You can come back to a datafile at any time to import it, or delete it when you no longer need it.</2></0>",
+  "datasetName": "<0><0>Dataset name</0><1>This is the name the dataset will have in your list. It defaults to the datafile's name, but you can change it.</1></0>",
+  "download": "<0><0>Download to dashAI</0><1>The right panel shows the dataset's description, size and tags, plus a link to its page on the source.</1><2><0>Click \"Download to dashAI\" to fetch the files.</0></2></0>",
+  "fileNext": "<0><0>Continue</0><1>Click \"Next\" to choose how the file will be loaded.</1></0>",
+  "hubIntro": "<0><0>Datafile Hub</0><1>From here you can search public datasets on external sources such as HuggingFace, OpenML, Kaggle or Zenodo, and bring them into dashAI without leaving the app.</1><2>What you download is stored as a Datafile: a local copy of the original files. You then import it as a dataset to explore it and train models. Let's try it with the classic iris dataset!</2></0>",
+  "importDataset": "<0><0>Import the Datafile</0><1><0>Click \"Import Datafile\" to create the dataset.</0></1><2>When it finishes, the new dataset opens, ready to explore in a Notebook or to train models with.</2></0>",
+  "importIntro": "<0><0>Import the Datafile</0><1>Now we'll turn the downloaded datafile into a dashAI dataset. It takes three steps:</1><2><0>Choose the file to import</0><1>Choose the DataLoader that can read it</1><2>Review the preview and configure the load</2></2></0>",
+  "loaderConfig": "<0><0>DataLoader configuration</0><1>In this panel you adjust the load parameters and whether dashAI should compute the dataset's metadata on import.</1><2>💡 <0>Tip:</0> the default settings work well for iris, so you can leave them as they are.</2></0>",
+  "loaderNext": "<0><0>See the preview</0><1>With the DataLoader selected, click \"Next\" to see how your data will look.</1></0>",
+  "preview": "<0><0>Preview</0><1>Here you see the first rows of the dataset exactly as they will be loaded.</1><2>You can review the type detected for each column, change it or rename columns before importing.</2></0>",
+  "search": "<0><0>Search for a dataset</0><1>Use the search bar to find datasets by name. Many HuggingFace datasets share a name, so it's best to search by their full identifier.</1><2><0>Type \"scikit-learn/iris\" in the search bar.</0></2><3>💡 You can also filter by tags in the second field: type a tag and press Enter.</3></0>",
+  "selectDataset": "<0><0>Select the dataset</0><1>Each card shows the dataset's name, a description and its tags.</1><2><0>Click the iris card to see its details.</0></2></0>",
+  "selectFile": "<0><0>Select the file</0><1>A datafile can contain several files; here you choose which one to import. The iris download includes the CSV and a SQLite copy.</1><2><0>Click \"Iris.csv\" to select it.</0></2></0>",
+  "selectLoader": "<0><0>Select the DataLoader</0><1>DataLoaders are what know how to read each file format.</1><2>Since the chosen file is a CSV, we'll use the CSV Data Loader.</2><3><0>Click \"CSV Data Loader\" to select it.</0></3></0>",
+  "selectSource": "<0><0>Choose a source</0><1>Each card is an external data source. The key icon marks optional credentials: HuggingFace only needs them for private datasets, so there's nothing to set up for this example.</1><2><0>Click HuggingFace Hub to select it.</0></2></0>",
+  "sourceDetails": "<0><0>Source details</0><1>This panel shows the selected source's description, the kind of datasets it offers and a link to its website.</1></0>",
+  "sourceNext": "<0><0>Browse the source</0><1>Click \"Next\" to see the datasets available on HuggingFace.</1></0>"
+}

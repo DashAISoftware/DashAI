@@ -25,7 +25,10 @@ function DivideDatasetColumns({
   inputHelperText = "",
   outputError = false,
   outputHelperText = "",
+  requiresTarget = true,
   disabled = false,
+  inputLabel,
+  outputDisabled = false,
 }) {
   const { t } = useTranslation(["experiments", "common", "models"]);
   const theme = useTheme();
@@ -145,7 +148,7 @@ function DivideDatasetColumns({
           <TextField
             {...params}
             required
-            label={t("models:label.inputColumns")}
+            label={inputLabel || t("models:label.inputColumns")}
             error={inputError}
             helperText={inputHelperText}
             placeholder={
@@ -159,35 +162,37 @@ function DivideDatasetColumns({
         disabled={disabled || inputOptions.length === 0}
       />
 
-      <Autocomplete
-        data-tour="dataset-output-columns-autocomplete"
-        multiple
-        id="dataset-output-columns-autocomplete"
-        options={allColumnNames}
-        value={selectedOutputColumnNames}
-        onChange={handleOutputAutocompleteChange}
-        getOptionLabel={getOptionLabel}
-        renderOption={renderColumnOption}
-        renderTags={renderTags}
-        filterSelectedOptions
-        fullWidth
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            required
-            label={t("models:label.outputColumns")}
-            error={outputError}
-            helperText={outputHelperText}
-            placeholder={
-              allColumnNames.length > 0
-                ? t("common:selectColumns")
-                : t("common:loadingColumns")
-            }
-          />
-        )}
-        sx={{ mb: 8 }}
-        disabled={disabled || allColumnNames.length === 0}
-      />
+      {requiresTarget && (
+        <Autocomplete
+          data-tour="dataset-output-columns-autocomplete"
+          multiple
+          id="dataset-output-columns-autocomplete"
+          options={allColumnNames}
+          value={selectedOutputColumnNames}
+          onChange={handleOutputAutocompleteChange}
+          getOptionLabel={getOptionLabel}
+          renderOption={renderColumnOption}
+          renderTags={renderTags}
+          filterSelectedOptions
+          fullWidth
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              required
+              label={t("models:label.outputColumns")}
+              error={outputError}
+              helperText={outputHelperText}
+              placeholder={
+                allColumnNames.length > 0
+                  ? t("common:selectColumns")
+                  : t("common:loadingColumns")
+              }
+            />
+          )}
+          sx={{ mb: 8 }}
+          disabled={disabled || outputDisabled || allColumnNames.length === 0}
+        />
+      )}
     </React.Fragment>
   );
 }
@@ -208,7 +213,12 @@ DivideDatasetColumns.propTypes = {
   inputHelperText: PropTypes.string,
   outputError: PropTypes.bool,
   outputHelperText: PropTypes.string,
+  requiresTarget: PropTypes.bool,
   disabled: PropTypes.bool,
+  // Overrides the input selector's label (defaults to "Input columns").
+  inputLabel: PropTypes.string,
+  // Shows the output as fixed, e.g. when it was chosen in an earlier step.
+  outputDisabled: PropTypes.bool,
 };
 
 export default DivideDatasetColumns;

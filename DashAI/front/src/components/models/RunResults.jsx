@@ -16,6 +16,8 @@ import ReportResultsTab from "./runResults/ReportResultsTab";
 import FoldMetricsChart from "./FoldMetricsChart";
 import OuterFoldMetricsTable from "./OuterFoldMetricsTable";
 import { getReports } from "../../api/report";
+import { useStrategyKind } from "../../hooks/useStrategyKind";
+import { STRATEGY_KINDS } from "../../utils/splitsPayload";
 
 /**
  * Shows a run's results as two tab groups (metrics: live/hyperparameters,
@@ -61,6 +63,12 @@ export default function RunResults({
     handleExplainerDeleted,
     handlePredictionDeleted,
   } = useRunResultsData({ run, session, onRefresh, explainerRefreshTrigger });
+
+  // A session whose strategy carves nothing (clustering) trains on the whole
+  // dataset and has no held-out rows to predict on or to report on, so it
+  // offers neither tab.
+  const supportsPredictions =
+    useStrategyKind(session?.evaluation_strategy) !== STRATEGY_KINDS.FULL;
 
   const [internalVisible, setInternalVisible] = useState(() => {
     if (run.status === 0) return false;
@@ -136,6 +144,11 @@ export default function RunResults({
   const setRunDetailTab = modelsContext?.setRunDetailTab;
   const isDetailView = String(params.runId ?? "") === String(run.id);
   useEffect(() => {
+    if ((activeTab === 2 || activeTab === REPORTS_TAB) && !supportsPredictions)
+      setActiveTab(0);
+  }, [activeTab, supportsPredictions]);
+
+  useEffect(() => {
     if (!isDetailView || !setRunDetailTab) return;
     setRunDetailTab(activeTab);
     return () => setRunDetailTab(null);
@@ -149,6 +162,7 @@ export default function RunResults({
       optimizables={optimizables}
       explainerCount={globalExplainers.length + localExplainers.length}
       predictionCount={predictions.length}
+      supportsPredictions={supportsPredictions}
       reportCount={reportCount}
       run={run}
     />
@@ -181,7 +195,7 @@ export default function RunResults({
         />
       )}
 
-      {activeTab === 2 && isFinished && (
+      {activeTab === 2 && isFinished && supportsPredictions && (
         <PredictionResultsTab
           run={run}
           session={session}
@@ -215,7 +229,7 @@ export default function RunResults({
         </Box>
       )}
 
-      {activeTab === REPORTS_TAB && isFinished && (
+      {activeTab === REPORTS_TAB && isFinished && supportsPredictions && (
         <ReportResultsTab
           run={run}
           session={session}
@@ -278,6 +292,7 @@ RunResults.propTypes = {
     id: PropTypes.number,
     name: PropTypes.string,
     task_name: PropTypes.string,
+    splits: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   }),
   onRefresh: PropTypes.func,
   explainerRefreshTrigger: PropTypes.number,

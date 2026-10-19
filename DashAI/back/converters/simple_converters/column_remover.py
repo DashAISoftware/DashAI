@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.category.basic_preprocessing import (
@@ -6,6 +6,7 @@ from DashAI.back.converters.category.basic_preprocessing import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import StateItem, StructureDelta
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Text
 
@@ -27,6 +28,7 @@ class ColumnRemover(BasicPreprocessingConverter, BaseConverter):
 
     SCHEMA = ColumnRemoverSchema
     LEARNS_FROM_DATA = False
+    COLUMN_OPERATION = "select"
     DESCRIPTION = MultilingualString(
         en="Removes the columns selected in scope from the dataset.",
         es="Elimina las columnas seleccionadas en el alcance del conjunto de datos.",
@@ -62,6 +64,21 @@ class ColumnRemover(BasicPreprocessingConverter, BaseConverter):
         """
         super().__init__()
         self.columns = []
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: every scope column is removed, nothing added.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            An empty delta: no input survives and no column is created.
+        """
+        return StructureDelta()
 
     def fit(self, x: "DashAIDataset", y: "DashAIDataset" = None) -> "ColumnRemover":
         """Record the column names that will be removed during ``transform``.

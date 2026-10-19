@@ -330,7 +330,6 @@ async def delete_prediction(
 @inject
 async def preview_manual_prediction(
     request: Request,
-    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
     """Run a synchronous manual prediction and return results without persisting.
@@ -413,7 +412,6 @@ async def preview_manual_prediction(
         run_manual_prediction,
         run_id=run_id_int,
         manual_input_data=rows_data,
-        component_registry=component_registry,
         session_factory=session_factory,
     )
     return {"columns": columns, "rows": rows}

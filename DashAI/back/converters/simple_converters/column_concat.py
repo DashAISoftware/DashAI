@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.category.feature_engineering import (
@@ -12,6 +12,12 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    ColumnItem,
+    StateItem,
+    StructureDelta,
+    type_fields,
+)
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Text
@@ -269,7 +275,43 @@ class ColumnConcat(FeatureEngineeringConverter, BaseConverter):
             selected column is not string-like (Text or Categorical), or if
             a single column is selected without a valid ``constant``.
         """
-        columns = list(x.column_names)
+        types = {name: type(x.types.get(name)).__name__ for name in x.column_names}
+        (
+            self.operand_b_mode,
+            self.column_a,
+            self.column_b,
+            self._result_column_name,
+        ) = self._plan(list(x.column_names), types)
+        return self
+
+    def _plan(
+        self, columns: List[str], types: Dict[str, str]
+    ) -> Tuple[str, str, Optional[str], str]:
+        """Work out the operands and the result name from the scope.
+
+        Shared by ``fit`` and ``infer_output_columns``, so the estimated
+        column is exactly the one ``transform`` appends.
+
+        Parameters
+        ----------
+        columns : List[str]
+            The scope column names, in dataset order.
+        types : Dict[str, str]
+            Each scope column's DashAI type name (e.g. "Text").
+
+        Returns
+        -------
+        tuple
+            (operand_b_mode, column_a, column_b, result_column_name);
+            column_b is None in "constant" mode.
+
+        Raises
+        ------
+        ValueError
+            If the number of selected columns is not one or two, if a
+            selected column is not string-like (Text or Categorical), or if
+            a single column is selected without a valid ``constant``.
+        """
         if len(columns) not in (1, 2):
             raise ValueError(
                 "ColumnConcat requires selecting one or two columns in "
@@ -277,35 +319,61 @@ class ColumnConcat(FeatureEngineeringConverter, BaseConverter):
             )
 
         for col in columns:
-            if not isinstance(x.types.get(col), (Text, Categorical)):
+            if types.get(col) not in ("Text", "Categorical"):
                 raise ValueError(
                     f"Column '{col}' must be a string (Text or Categorical) "
                     "to be used in ColumnConcat."
                 )
 
         if len(columns) == 2:
-            self.operand_b_mode = "column"
-            first, second = columns
+            operand_b_mode = "column"
+            column_a, column_b = columns
             if self.swap_operands:
-                first, second = second, first
-            self.column_a = first
-            self.column_b = second
-            operand_b_label = self.column_b
+                column_a, column_b = column_b, column_a
+            operand_b_label = column_b
         else:
             if not isinstance(self.constant, str):
                 raise ValueError(
                     "'constant' must be a string when a single column is "
                     "selected in scope."
                 )
-            self.operand_b_mode = "constant"
-            self.column_a = columns[0]
-            self.column_b = None
+            operand_b_mode = "constant"
+            column_a, column_b = columns[0], None
             operand_b_label = self.constant
 
-        self._result_column_name = self.output_column_name or (
-            f"{self.column_a}_concat_{operand_b_label}"
+        result_column_name = self.output_column_name or (
+            f"{column_a}_concat_{operand_b_label}"
         )
-        return self
+        return operand_b_mode, column_a, column_b, result_column_name
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: the scope kept, plus the Text result column.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The unchanged inputs, plus the single result column.
+
+        Raises
+        ------
+        ValueError
+            If the scope or ``constant`` is invalid (see ``_plan``).
+        """
+        if not all(isinstance(item, ColumnItem) for item in inputs):
+            return super().infer_output_columns(inputs)
+        _, _, _, name = self._plan(
+            [item.name for item in inputs], {item.name: item.type for item in inputs}
+        )
+        type_name, dtype = type_fields(self.get_output_type())
+        return StructureDelta(
+            kept=list(inputs),
+            added=[ColumnItem(name=name, type=type_name, dtype=dtype)],
+        )
 
     def transform(
         self, x: "DashAIDataset", y: Union["DashAIDataset", None] = None

@@ -17,10 +17,55 @@ that both live in the same space, and must query the model through
 the already prepared matrix a second time.
 """
 
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+
+
+def as_shap_predictor(model: Any) -> Callable:
+    """Wrap the model's prepared-matrix prediction so SHAP gets a plain function.
+
+    SHAP suppresses scikit-learn's "X does not have valid feature names"
+    warning by blanking ``feature_names_in_`` on whatever object the callable
+    is bound to (``shap.utils._legacy.convert_to_model``). It reaches that
+    object through ``__self__``, so it only does this when handed a *bound
+    method*, and it assumes the attribute is writable.
+
+    That assumption does not hold for estimators that expose
+    ``feature_names_in_`` as a read-only ``property`` — a common shape among
+    third party wrappers — where the assignment raises ``AttributeError:
+    property 'feature_names_in_' ... has no setter`` and the explanation fails
+    before it starts.
+
+    Handing over a plain closure instead leaves ``__self__`` absent, so SHAP
+    skips that step entirely — a function is SHAP's primary documented
+    interface for ``model``. The only thing lost is the suppression of a
+    cosmetic scikit-learn warning.
+
+    It routes to ``predict_prepared``, not to ``predict``. Callers hand SHAP a
+    background already moved into the model's feature space with
+    ``prepare_model_input``, and SHAP then queries the model with perturbed
+    copies of *that* matrix. Going through ``predict`` would run the model's
+    input preparation a second time over an already prepared matrix — and SHAP
+    passes plain arrays, which the preparation cannot consume at all.
+
+    Parameters
+    ----------
+    model : Any
+        The trained model being explained.
+
+    Returns
+    -------
+    Callable
+        A one-argument function calling ``model.predict_prepared``
+        positionally, the same way SHAP calls it.
+    """
+
+    def predict(x):
+        return model.predict_prepared(x)
+
+    return predict
 
 
 def prepare_model_input(model: Any, dataset: "DashAIDataset") -> "DashAIDataset":
