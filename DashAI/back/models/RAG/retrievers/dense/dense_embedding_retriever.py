@@ -102,6 +102,13 @@ class DenseEmbeddingRetriever(UnitRetriever):
         " die Ähnlichkeitssuche verwendet.",
         zh="使用任何已注册的文本嵌入进行相似性搜索的稠密检索器。",
     )
+    CATEGORY: MultilingualString = MultilingualString(
+        en="Dense retrievers",
+        es="Recuperadores densos",
+        pt="Recuperadores densos",
+        de="Dense-Retriever",
+        zh="稠密检索器",
+    )
 
     def __init__(self, **kwargs):
         """Initialize the dense embedding retriever.

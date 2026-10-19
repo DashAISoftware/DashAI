@@ -29,6 +29,13 @@ class SparseRetriever(UnitRetriever):
         " Darstellungen verwendet.",
         zh="使用基于词频表示的稀疏检索器。",
     )
+    CATEGORY: MultilingualString = MultilingualString(
+        en="Keyword retrievers",
+        es="Recuperadores por palabras clave",
+        pt="Recuperadores por palavras-chave",
+        de="Stichwort-Retriever",
+        zh="关键词检索器",
+    )
 
     def _chunks_by_id(self) -> Dict[int, Chunk]:
         """Return the chunks the retriever was given, keyed by chunk id.
