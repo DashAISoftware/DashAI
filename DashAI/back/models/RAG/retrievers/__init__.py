@@ -11,10 +11,7 @@ from DashAI.back.models.RAG.retrievers.cross_encoder import (
     CrossEncoderRetriever,
     SentenceTransformerCrossEncoderRetriever,
 )
-from DashAI.back.models.RAG.retrievers.dense import (
-    DenseEmbeddingRetriever,
-    DenseRetriever,
-)
+from DashAI.back.models.RAG.retrievers.dense import DenseEmbeddingRetriever
 from DashAI.back.models.RAG.retrievers.enums import MergeStrategy
 from DashAI.back.models.RAG.retrievers.exceptions import (
     CompositeValidationError,
@@ -38,7 +35,6 @@ __all__ = [
     "CompositeValidationError",
     "CrossEncoderRetriever",
     "DenseEmbeddingRetriever",
-    "DenseRetriever",
     "MergeStrategy",
     "MissingParameterError",
     "MMRRerankerRetriever",

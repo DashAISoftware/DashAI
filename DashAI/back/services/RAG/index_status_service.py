@@ -33,7 +33,9 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_DOCUMENTS,
     RAG_PARAM_RETRIEVER_MODEL,
 )
-from DashAI.back.models.RAG.retrievers.dense.dense_retriever import DenseRetriever
+from DashAI.back.models.RAG.retrievers.dense.dense_embedding_retriever import (
+    DenseEmbeddingRetriever,
+)
 from DashAI.back.models.RAG.retrievers.sparse.sparse_retriever import SparseRetriever
 from DashAI.back.services.RAG.chunking_service import ChunkingService
 from DashAI.back.services.RAG.index_job_service import get_index_job, get_live_index_job
@@ -380,7 +382,7 @@ class IndexStatusService:
         model_class = self._registry[component]["class"]
         sorted_params = dict(sorted(params.items()))
         try:
-            if issubclass(model_class, DenseRetriever):
+            if issubclass(model_class, DenseEmbeddingRetriever):
                 return (
                     self._retrievers.find_dense(component, sorted_params, chunk_set_id)
                     is not None
