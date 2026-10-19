@@ -14,17 +14,21 @@ Endpoints (api/api_v1/endpoints/)
   └── DELETE ...
        │
        ▼
-RAGSessionValidationService (services/RAG/)
+SessionValidationService (services/RAG/)
   ├── prepare_RAG_params()       — POST validation (strict, recursive)
-  └── validate_update_payload()  — PUT validation (partial, recursive)
+  ├── validate_update_payload()  — PUT validation (partial, recursive)
+  └── QueryTransformationValidationService — optional query_transformation stage
        │
        ▼
 Services (services/RAG/)
   │
   ├── SetupService              — indexing (build_index) + pipeline assembly
   ├── IndexStatusService        — read-only view of a session's index state
-  ├── IndexJobService           — resolving / cancelling a live indexing job
-  ├── DocumentService           — document CRUD, file I/O, extractors, hydration
+  ├── index_job_service.py      — functions to resolve / cancel a live indexing job
+  ├── DocumentService           — loads parsed Data documents for the pipeline
+  ├── SessionDocumentService    — session ↔ Data document links (attach/detach)
+  ├── SessionDefaultsService    — server-side defaults for a new session
+  ├── SessionConfigurationService — resolved configuration for the panel
   ├── ChunkingService           — chunk set identity (SHA-256), chunking lifecycle
   ├── PromptService             — prompt CRUD, get_or_create via parameters_hash
   ├── LLMService                — LLM lookup-or-create via parameters_hash
@@ -39,11 +43,10 @@ Models (models/RAG/) — pure domain definitions
   │     ├── PromptFactory        — resolve registry → instantiate
   │     ├── ChunkingModelFactory — instantiate → chunk documents
   │     ├── RetrieverFactory     — resolve registry → validate → inject infra → init
-  │     └── LLMFactory           — resolve registry → instantiate
+  │     ├── LLMFactory           — resolve registry → instantiate
+  │     └── TransformationFactory — resolve registry → validate → fill objects → instantiate
   ├── RAGPipeline                — inference orchestration
-  ├── extractors/                — 4 extractor types (PlainText, Pypdf, PyMuPDF,
-  │                                 EasyOCR) with schema-driven params
-  └── documents/, chunking_models/, retrievers/, prompts/ — pure domain models
+  └── documents/, chunking_models/, retrievers/, prompts/, transformation/ — pure domain models
 
 Core (core/)
   └── component_validation.py — generic recursive component ref validation
@@ -55,17 +58,17 @@ Core (core/)
 | `RAG_constants.py`                          | Canonical parameter key constants, shared across all layers   |
 | `services/RAG/utils.py`                     | normalize_params(), build_parameters_hash() (SHA-256)         |
 | `models/RAG/utils.py`                       | Utility functions (`hash_function` for SHA-256 hashing)       |
-| `exceptions/`                               | Unified exception hierarchy (RAGWorkflowError + 8 sub-trees)  |
+| `exceptions/`                               | Unified exception hierarchy (RAGWorkflowError + 10 sub-trees) |
 | `retrievers/enums.py`                       | `MergeStrategy` enum for parallel retriever merge behavior    |
 | `retrievers/persistence.py`                 | `SparsePersistence` / `DensePersistence` dataclasses          |
 ```
 
 ## Service Layer
 
-Each service receives a `db: Session` in its constructor. Services are NOT
-registered in the DI container — they are instantiated per request/job.
+Each DB-backed service receives a `db: Session` in its constructor. Services
+are NOT registered in the DI container — they are instantiated per request/job.
 
-### RAGSessionValidationService
+### SessionValidationService
 
 Centralized validation for RAG session creation (POST) and parameter updates
 (PUT). Two public methods with shared private helpers:
@@ -73,20 +76,57 @@ Centralized validation for RAG session creation (POST) and parameter updates
 - `prepare_RAG_params()` — POST validation. Only `generation_model` is
   required; `prompt`, `chunking_model` and `retriever_model` are filled from
   backend defaults when omitted. Resolves `prompt_id` → `prompt` **before**
-  structural validation. `documents` always starts empty and is *rejected* if
-  sent: there is no session to attach documents to yet, and saying so beats
-  silently dropping the list.
+  structural validation. `documents` always starts empty and a non-empty list
+  is *rejected* if sent: there is no session to attach documents to yet, and
+  saying so beats silently dropping the list.
 - `validate_update_payload()` — PUT validation. Only validates keys present in
-  the partial payload, and rejects `documents` outright — the foreign key on
-  `document` is the authority, and the document endpoints keep the session's
-  list in step with it.
+  the partial payload, and rejects `documents` outright — the
+  `rag_session_document` links are the authority, and the session-document
+  endpoints keep the session's list in step with them.
 
 Both methods use `_validate_component_params()` which **recursively** validates
 every `{component, params}` reference (including nested sub-components like
 `BM25Vectorizer` inside `BM25Retriever`) against its own `SCHEMA`. If any fails
-→ HTTP 400. The only exception: `DefaultRAGGenerationPrompt` and
-`DefaultQARAGenerationPrompt` auto-inject `template` from a language-based
-`TEMPLATES` dict. No other component auto-fills missing parameters.
+→ HTTP 400. The only tolerated incomplete payloads are the default prompts:
+`DefaultRAGGenerationPrompt` / `DefaultQARAGenerationPrompt`, and the
+transformation trio `DefaultQueryRewritingPrompt` /
+`DefaultQueryExpansionPrompt` / `DefaultQueryDecompositionPrompt`. Each
+auto-injects `template` from a language-based `TEMPLATES` dict before
+validation. No other component auto-fills missing parameters.
+
+Both POST and PUT additionally delegate the optional `query_transformation`
+stage to `QueryTransformationValidationService` (see below), which is wired
+into this service's constructor.
+
+### QueryTransformationValidationService
+
+Single-responsibility service for the optional `query_transformation`
+parameter, extracted from `SessionValidationService`. It receives the
+component registry plus `PromptService.validate_prompt_template` injected as a
+callable, so it never reaches into prompt internals.
+
+- `validate(normalized)` — structural and class checks. An **absent** key
+  leaves the stage disabled; an explicit `None` is preserved as disabled (a PUT
+  can use it to turn an existing stage off); a `dict` enables it and is checked:
+  the outer `component` must resolve to a registered
+  `BaseQueryTransformation` subclass; `params.prompt` must be present, be a
+  `QueryTransformationPrompt`, and belong to the transformer's
+  `TRANSFORMATION_PROMPT_BASE` family; `params.llm_model` must be present and
+  be a `TextToTextGenerationTaskModel`. A caller-provided template for a
+  non-default prompt must be a non-blank string with the required placeholders
+  (validated through the injected callable); default transformation prompts may
+  omit or blank theirs.
+- `apply_defaults(normalized)` — resolves the transformer's own schema
+  defaults plus the nested prompt's and LLM's placeholders, sitting under
+  whatever the caller sent. The nested LLM's `context_window` is defaulted to
+  2048 via `transformation_llm_overrides()` — between the model schema's
+  conservative 512 and the generation window — while a caller-sent value always
+  wins.
+
+`SessionValidationService` calls `validate()` after model-key structure
+validation and `apply_defaults()` alongside the generation-model defaults, on
+both the POST (`prepare_RAG_params()`) and PUT (`validate_update_payload()`)
+paths.
 
 ### SetupService
 
@@ -96,30 +136,39 @@ every `{component, params}` reference (including nested sub-components like
   that makes documents retrievable, returned as an `IndexResult`. Takes an
   optional `progress(fraction, message)` callback so a job can report progress
   without this service knowing the job system exists.
-- `build_pipeline()` — calls `build_index()`, then adds LLM → prompt and
-  returns a `RAGPipeline` instance.
+- `build_pipeline()` — calls `build_index()`, then adds LLM → prompt, builds
+  the optional query transformer via
+  `RAGModelsFactory.create_query_transformation(...)` when
+  `config.query_transformation` is not `None`, and returns a `RAGPipeline`
+  instance.
 
 The split exists because `LLMService.get_or_create` *instantiates* the
 generation model: indexing that went through `build_pipeline` would load LLM
-weights it never uses. `build_pipeline` delegates rather than repeating the
+weights it never uses. The transformation stage follows the same rule — its
+nested `llm_model` is instantiated only in `build_pipeline`, so `build_index()`
+never loads any LLM. `build_pipeline` delegates rather than repeating the
 steps, so the two paths cannot drift.
 
-No validation logic — that lives in `RAGSessionValidationService`.
+No validation logic — that lives in `SessionValidationService`.
 
 ### DocumentService
 
-CRUD for documents + file storage + document hydration (replaces `DocumentLoader`).
+Reads the parsed content of the Data-module documents a pipeline indexes:
+`load(document_ids)` resolves each `DataDocument` (a missing row or one whose
+status is not `FINISHED` raises `ValueError`), loads its stored parse with
+`load_document`, and builds a `RAGDocument` that keeps only the `Text` items
+and maps character offsets back to pages. Documents are parsed once by the Data
+module and never change afterwards, so RAG never extracts text itself. See
+[`06-document-processing.md`](./06-document-processing.md) for the loader
+system, storage layout, and the attach/detach rules.
 
-Key methods: `upload()` (session-scoped), `load()`, `validate_exist()`,
-`validate_belong_to_session()`, `get_by_session()`, `delete()`,
-`delete_by_session()`, `extract_text()`, `update_extractor()`.
+### SessionDocumentService
 
-Documents belong to exactly one session; see
-[`06-document-processing.md`](./06-document-processing.md) for ownership, the
-content-addressed file layout, and the extractor lifecycle.
-
-File type mapping uses `DocumentFileType` enum from
-`models/RAG/documents/file_type.py` for single-source-of-truth strings.
+Owns the `rag_session_document` links between sessions and Data documents:
+`attach()` / `detach()` validate the session and the documents, discard the
+session's indexes, and rebuild `parameters["documents"]` with a history entry.
+Documents belong to the Data module, so detaching (or deleting the session)
+removes the link, never the document.
 
 ### ChunkingService
 
@@ -132,8 +181,10 @@ Chunk set identity via SHA-256 signature (migrated from `chunk_set_utils.py`)
 
 Prompt CRUD + get_or_create via deterministic `parameters_hash` (SHA-256 of
 `json.dumps(params, sort_keys=True)`). Uses `services/RAG/utils.py` shared
-helpers. Template validation (`validate_template()`) checks for required
-placeholders (`{input}`, `{chunks}`). Session-scoped prompt copies.
+helpers. Template validation delegates to the component's declared
+`required_placeholders` (for generation prompts `{input}` and `{chunks}`; for
+transformation prompts `{input}` and `{history}`, plus `{n}` for expansion).
+Session-scoped prompt copies.
 
 ### LLMService
 
@@ -163,19 +214,18 @@ recursive child setup.
 Cascade deletion of RAG resources when a session is deleted or parameters
 change. Retriever cleanup BEFORE chunking cleanup (critical ordering).
 
-`invalidate_document_artifacts()` takes `commit=False` and `defer_paths` so a
-caller can fold it into a larger transaction — `update_extractor()` needs the
-extractor reassignment and the re-extraction to succeed or fail together, and
-`rmtree` cannot be rolled back, so the paths are deleted only after the
-caller's commit.
+`invalidate_session_artifacts()` deletes every chunk set the session owns
+together with everything fitted on it. It takes `commit=False` so a caller can
+fold the deletion into a larger unit of work; on-disk storage folders are
+queued with `remove_after_commit` and removed only after the caller's commit,
+since an `rmtree` cannot be rolled back.
 
 `_other_sessions_with_same_config()` is gone, but the protection it was meant
-to provide is not — it is just keyed on the right thing now. That function
-compared `documents`, which per-session ownership makes unique, so it could
-only ever return `False`; and even before that it was the wrong question, since
-it also blocked cleanup for two sessions that merely shared a configuration.
-
-Which rows are actually shared decides the guard:
+to provide is not — it is just keyed on what is actually shared now. The old
+function compared the session's `documents` list, so it blocked cleanup for
+two sessions that merely shared a configuration while saying nothing useful
+about what was safe to delete. Which rows are actually shared decides the
+guard:
 
 - **Per chunk set** — retrievers, embedding matrices, chunks. A chunk set
   belongs to one session now, so nothing else can be using them and they are
@@ -190,7 +240,7 @@ Which rows are actually shared decides the guard:
 
 ## Pure Factories (no DB or FS)
 
-After the refactor, all four sub-factories are **pure** — they only construct
+After the refactor, all sub-factories are **pure** — they only construct
 domain objects.
 
 ### PromptFactory
@@ -232,13 +282,41 @@ class RetrieverFactory:
 Accepts an optional `persistence` parameter for pre-built DensePersistence or
 SparsePersistence objects.
 
+### TransformationFactory
+
+```python
+class TransformationFactory:
+    def __init__(self, registry: ComponentRegistry): ...
+    def create(self, component_name, params) -> TransformationFactoryResult:
+        # normalize params → resolve registry → schema validate → fill objects → instantiate
+```
+
+`create()` normalizes the params, resolves the component name in the registry,
+asserts the class is a `BaseQueryTransformation`, validates params against the
+class `SCHEMA`, fills nested component objects via `fill_objects`, and
+instantiates the transformer. An unknown name raises
+`RAGComponentNotFoundError`; a registered class that is not a transformer
+raises `RAGTransformationConfigError`.
+
+The unified `RAGModelsFactory` exposes it as
+`create_query_transformation(component, params)`, which is what
+`SetupService.build_pipeline()` calls. The LLM-backed family lives in
+`models/RAG/transformation/`: `BaseQueryTransformation` defines the contract
+(`transform(message, history) -> QueryTransformationResult`),
+`LLMQueryTransformation` owns the shared prompt/LLM/parse pipeline, and the
+concrete techniques are `LLMQueryRewriter` (1 query), `LLMQueryExpander`
+(up to `n_queries`) and `LLMQueryDecomposer` (model-decided sub-queries).
+`llm_output_parser.py` parses the tolerant function-call output contract.
+
 ## Validation
 
-Validation is centralized in `RAGSessionValidationService` — endpoints are thin
+Validation is centralized in `SessionValidationService` — endpoints are thin
 delegators. The backend follows a **strict validation contract**: every
 `{component, params}` reference is recursively validated against its own
-`SCHEMA`. Any failure → HTTP 400. The backend never fills missing defaults
-(except for default prompt templates).
+`SCHEMA`. Any failure → HTTP 400. The backend only fills schema placeholders
+(the default prompt templates, the picked generation model's omitted params,
+and the optional transformation stage's defaults); it never guesses component
+identity.
 
 ### Generic Component Validation (`core/component_validation.py`)
 
@@ -252,33 +330,48 @@ Two functions that work for ANY parameter structure, not just RAG:
 
 ### RAG Session Creation Validation (POST)
 
-Delegated to `RAGSessionValidationService.prepare_RAG_params()`:
+Delegated to `SessionValidationService.prepare_RAG_params()` (the model/task
+check happens first, in the endpoint):
 
 1. Model and task are checked against the component registry.
-2. `documents` is forced to `[]`; sending a non-empty list is an error.
-3. Parameters are normalized via `normalize_payload()`.
+2. Parameters are normalized via `normalize_payload()`.
+3. Backend defaults fill `chunking_model`, `retriever_model` and `prompt` for
+   the keys the caller omitted (an explicit `prompt_id` suppresses the default
+   prompt). Explicitly sent values win.
 4. If `prompt_id` is present, resolved to a `prompt` component ref **before**
    structural validation.
-5. **Recursive schema validation** — every `{component, params}` ref (including
+5. Model-key structure validation — with defaults applied, every model key must
+   be a `{component, params}` mapping.
+6. The optional `query_transformation` stage is checked by
+   `QueryTransformationValidationService` (structure plus class checks).
+7. Component refs checked against the registry (`validate_component_refs()`).
+8. Generation-model and transformation defaults — omitted parameters are
+   resolved from the picked classes' schemas (the transformation LLM's
+   `context_window` defaults to 2048).
+9. **Recursive schema validation** — every `{component, params}` ref (including
    nested sub-components like `BM25Vectorizer` inside `BM25Retriever`) is
-   validated against its own `SCHEMA`. If any fails → HTTP 400.
-6. **Default prompt exception** — `DefaultRAGGenerationPrompt` and
-   `DefaultQARAGenerationPrompt` auto-inject `template` from language-based
-   `TEMPLATES` dict. No other component auto-fills missing parameters.
-7. Component refs checked against the registry.
-8. Prompt template placeholders validated when explicit template is provided.
+   validated against its own `SCHEMA`. If any fails → HTTP 400. On this pass the
+   default generation and transformation prompts auto-inject `template` from a
+   language-based `TEMPLATES` dict, so an absent or blank default template is
+   never persisted. No other component auto-fills missing parameters.
+10. `documents` is forced to `[]`; sending a non-empty list is an error.
+11. Prompt template placeholders validated when an explicit template is
+    provided.
 
 ### RAG Parameter Update Validation (PUT)
 
-Delegated entirely to `RAGSessionValidationService.validate_update_payload()`:
+Delegated entirely to `SessionValidationService.validate_update_payload()`:
 
 1. Normalize via `normalize_payload()`.
 2. Resolve `prompt_id` → `prompt` (step 0, before validation — mirrors POST).
 3. Validate structure of each sent component ref (`component` + `params` keys).
-4. **Recursive schema validation** of every present component ref.
+4. The optional `query_transformation` stage is checked by
+   `QueryTransformationValidationService` (structure plus class checks).
 5. `validate_component_refs()` — validate all components exist in registry.
-6. Reject `documents` if sent (managed by the document endpoints).
-7. Returns validated dict. Then the endpoint merges with old params and
+6. Generation-model and transformation defaults, then **recursive schema
+   validation** of every present component ref.
+7. Reject `documents` if sent (managed by the session-document endpoints).
+8. Returns validated dict. Then the endpoint merges with old params and
    calls `CleanupService.cleanup_orphaned_resources()`.
 
 ## RAGPipeline
@@ -292,12 +385,13 @@ class RAGPipeline(BaseGenerativeModel):
         config: RAGPipelineConfig,
         pipeline_id: int,
         chunking_model_id: int,
-        documents: Dict[int, BaseDocument],
+        documents: Dict[int, RAGDocument],
         chunks: Dict[int, Dict[int, Chunk]],
-        prompt_model: Prompt,
+        prompt_model: BasePrompt,
         chunking_model: BaseChunkingModel,
-        retriever: RetrieverModel,
+        retriever: BaseRetriever,
         llm_model: TextToTextGenerationTaskModel,
+        query_transformation: Optional[BaseQueryTransformation] = None,
     ):
         self.session_id = config.session_id
         self.pipeline_id = pipeline_id
@@ -309,30 +403,44 @@ class RAGPipeline(BaseGenerativeModel):
         self.chunks = chunks
         self.retriever = retriever
         self.llm_model = llm_model
+        self.query_transformation = query_transformation
 ```
 
 No DB access, no factory calls, no wiring — purely assigns attributes.
 
 ### Generation Flow
 
-`generate(input_data)`:
+`generate(input_data, progress_callback=None)`:
 
 1. Extract the current message + history from the last entry in the input tuple.
-2. Resolve the query list: the optional transformation stage (rewriting → 1
-   query, expansion/decomposition → n queries), or when disabled the current
-   message as a one-element list. The list is always populated.
+2. Resolve the query list (`_resolve_queries`). When the transformation stage is
+   disabled (`query_transformation is None`), the queries are the one-element
+   `[input_message]` and the transformed-query list is `None`. When enabled, the
+   transformer runs (rewriting → 1 query, expansion/decomposition → n queries);
+   a `RAGTransformationError` is wrapped in `RAGPipelineRuntimeError`, and an
+   empty result also raises `RAGPipelineRuntimeError`. The resolved list is
+   always non-empty and is what retrieval runs over.
 3. Per-query retrieve through the single `multi_query_retrieval` path. Every
    retriever's `retrieve()` returns a `(chunks, trace)` tuple, so this step
    collects one trace node per query (`{"query", "retriever"}`) and merges the
-   per-query chunk lists round-robin by `merge_round_robin` (a one-element list
-   is effectively a no-op, preserving its content and order).
+   per-query chunk lists round-robin by `merge_round_robin`, de-duplicating by
+   `(document_id, document_position)`; a one-element list is effectively a
+   no-op, preserving its content and order.
 4. `_build_chunk_references(chunks)` → format chunks into text + dict. The
    dict keys come from the shared `trace_utils.chunk_ref` helper, so the trace
    nodes' chunk references and the `Dict` row keys are byte-identical.
 5. `prompt_model.format(input, chunks, queries)` → render prompt. The `{queries}`
-   placeholder stays optional: it is `None` when no transformation ran.
+   placeholder stays optional: it is `None` when no transformation ran, and
+   otherwise the transformed queries joined with `"; "`.
 6. `llm_model.generate(history + [{"role": "user", "content": prompt}])` → response.
-7. Return `RAGGenerationOutput(message, chunks, queries, trace)`.
+7. Return `RAGGenerationOutput(message, chunks, queries, trace, timings)`.
+
+The optional `progress_callback` receives one small payload per stage:
+`{"stage": "transforming"}` (only when the transformation stage is enabled),
+`{"stage": "retrieving", "queries": [...]}` once the queries are resolved, and
+`{"stage": "generating"}` just before the LLM call. The pipeline deliberately
+does not catch reporter exceptions; the job layer's reporter is the one that
+swallows failures (see [RAGJob](#ragjob)).
 
 ## RAGJob
 
@@ -343,9 +451,31 @@ setup_service = SetupService(db, component_registry, config["RAG_PATH"])
 model = setup_service.build_pipeline(pipeline_config)
 ```
 
-Since indexing is content-addressed and idempotent, this is a cache hit for a
-session that was already indexed — and remains the fallback for one that was
-not.
+Since the chunk-set signature makes indexing idempotent, this is a cache hit
+for a session that was already indexed — and remains the fallback for one that
+was not.
+
+Before building the config the job filters the session's stored parameters down
+to a whitelist, `_RAG_PARAM_KEYS = RAG_PARAM_KEYS | RAG_OPTIONAL_MODEL_KEYS`, so
+only pipeline-shaped keys (including the optional `query_transformation` stage)
+reach `RAGPipelineConfig`.
+
+`run()` deliberately uses **two** database sessions so a connection is never
+held open during LLM inference, which may take minutes:
+
+1. **Session 1** loads the process/session, builds the pipeline, prepares the
+   input and marks the process started.
+2. **No session** — the generation call runs, receiving a best-effort progress
+   reporter.
+3. **Session 2** re-opens a session to persist the output rows and mark the
+   process finished.
+
+The progress reporter (`_make_progress_reporter`) opens a short-lived session
+per stage, stores the payload on `GenerativeProcess.progress` and commits, so a
+polling frontend sees the current stage. Reporting is best-effort: any failure
+is logged as a warning and swallowed, because a transient DB error must never
+fail the chat turn (the pipeline itself does not catch reporter exceptions).
+The process's `progress` is cleared on finish and on error.
 
 ## RAGIndexJob
 
@@ -369,40 +499,35 @@ a stale id resolves to nothing and is overwritten by the next request. The
 queue's watchdog flips a dead job to `killed` within ~10s, so nothing gets
 stuck.
 
-Four write paths cancel a live run *before* mutating, because
+Four write routes cancel a live run *before* mutating, because
 `CleanupService` would otherwise delete the very rows the job is writing:
-`PUT /generative-session/{id}/parameters`, `DELETE /document/{id}`,
-`PUT /document/{id}/extractor`, and `DELETE /generative-session/{id}`. Upload
-does not — it only appends, and the running job's output stays valid for the
-signature it is working on.
+`PUT /generative-session/{id}/parameters`, `DELETE /generative-session/{id}`,
+and the session's document attach/detach routes (`POST` / `DELETE`
+`/api/v1/rag/sessions/{id}/documents`). Uploading a document into the Data
+module does not cancel anything — the session is only touched by the attach
+call that follows the parse.
 
-## RAGPipelineConfig (unchanged)
+## RAGPipelineConfig
 
-Validated parameter dataclass. Used by `RAGSetupService` and `RAGJob`.
-Parses raw kwargs dict and provides typed field access. Reads parameter
-keys from `RAG_constants.py` (`RAG_PARAM_KEYS`, `RAG_MODEL_KEYS`,
-`RAG_INFRA_KEYS`).
+Validated parameter dataclass. Used by `SetupService` and `RAGJob`. Parses the
+raw kwargs dict once into typed fields and raises `RAGPipelineConfigError` on
+missing required keys, malformed `{component, params}` refs, or unknown keys.
+Reads parameter keys from `RAG_constants.py` (`RAG_INFRA_KEYS`,
+`RAG_MODEL_KEYS`, `RAG_PARAM_KEYS`, `RAG_PARAM_QUERY_TRANSFORMATION`, and
+`RAG_PARAM_KEYS_ALL` for the unknown-key guard).
 
-## DocumentFileType Enum
-
-```python
-class DocumentFileType(str, Enum):
-    TXT = "txt"
-    PDF = "pdf"
-    MD = "md"
-    RST = "rst"
-    TEX = "tex"
-    CSV = "csv"
-```
-
-Single source of truth for file extension strings across all layers.
+`query_transformation` is an optional `ModelRef`: `from_kwargs()` parses it when
+present, treats an absent key or a `None` value as "stage disabled", and rejects
+any other non-dict value. The unknown-keys guard accepts exactly
+`RAG_PARAM_KEYS_ALL` (the infra, model and optional-model keys); anything else
+raises rather than being silently ignored.
 
 ## Retriever Architecture
 
 ### Class Hierarchy
 
 ```
-RetrieverModel (ABC, DashAI Component)
+BaseRetriever (ABC, DashAI Component)
   ├── UnitRetriever (ABC, leaf node)
   │     ├── SparseRetriever (ABC)
   │     │     ├── TFIDFRetriever
@@ -452,10 +577,11 @@ The dense retriever separates concerns into two layers:
 
 1. **Embedding layer** (`DenseEmbedding` subclasses) — Handle model loading,
    tokenization, pooling, and vector generation. These are DashAI Components
-   registered in the component registry. Available: `BERTEmbedding`,
-   `DistilBERTEmbedding`, `E5Embedding`, `FastTextEmbedding`, `GemmaEmbedding`,
-   `HuggingFaceEmbedding`, `InstructorEmbedding`, `LaBSEmbedding`,
-   `OpenAIEmbedding`, `RoBERTaEmbedding`, `SentenceTransformerEmbedding`.
+   registered in the component registry. Registered today:
+   `SentenceTransformerEmbedding`, `BERTEmbedding`, `DistilBERTEmbedding`,
+   `RoBERTaEmbedding`, `E5Embedding`, `InstructorEmbedding`, `LaBSEmbedding`.
+   `HuggingFaceEmbedding` is the abstract base of the HF-backed family, and
+   `FastTextEmbedding` exists in the package but is not registered.
 2. **Retriever layer** (shared `DenseEmbeddingRetriever` class) — Accepts any
    `DenseEmbedding` via a `component_field` schema parameter. The embedding
    family is selected at configuration time.
@@ -478,44 +604,33 @@ Composite child links are stored in `rag_retriever_child`.
 
 ## Chunk Set Caching
 
-`ChunkingService.get_or_create_chunk_set()` computes a deterministic SHA-256
+`ChunkingService.build_chunk_set_signature` computes a deterministic SHA-256
 hash of:
 
+- The owning `session_id`
 - Sorted document IDs
 - Sorted chunking configuration (e.g., chunking model component + params)
 
-If a chunk set with this signature exists, it is reused. This avoids
-re-chunking the same documents with the same parameters.
+The signature is UNIQUE, so a chunk set with the same signature is reused —
+re-chunking the same documents with the same parameters is avoided, and two
+sessions over the same Data documents still get separate chunk sets.
 
-**Note:** Uses SELECT-then-INSERT without a lock. Safe for single-user
-operation but could create duplicate chunk sets under concurrent requests.
+**Note:** `get_or_create_chunk_set()` uses SELECT-then-INSERT without a lock.
+A concurrent race cannot persist duplicate signatures; the losing request
+surfaces a database error instead.
 
-## Document Extractors
+## Document Loaders
 
-Documents can be assigned an extractor at upload time via
-`DocumentService.upload()`. Extractors are ConfigObject components with
-schema-driven parameters exposed to the frontend:
-
-| Extractor            | Default for            | Description                                        |
-| -------------------- | ---------------------- | -------------------------------------------------- |
-| `PlainTextExtractor` | txt, md, rst, tex, csv | Reads file as UTF-8 plain text                     |
-| `PypdfExtractor`     | —                      | `pypdf`-based PDF extraction (`strict` mode)       |
-| `PyMuPDFExtractor`   | pdf                    | fitz/pymupdf-based extraction (default PDF parser) |
-| `EasyOCRExtractor`   | —                      | OCR-based extraction (requires easyocr)            |
-
-Each extractor exposes its parameters via `schema_field()` with `description`
-and `default` for UI form auto-generation. The `extractor_id` column on
-`document` is `NOT NULL` with `FK RESTRICT` — assigned at upload, never
-ambiguous. `PdfDocument._extract_text()` uses the assigned extractor with
-a `_default_extract()` fallback.
-
-Endpoints:
-
-- `POST /api/v1/document/{id}/extract` — on-demand extraction (`persist=false`
-  for preview)
-- `PUT /api/v1/document/{id}/extractor` — commit extractor choice. One
-  transaction, extraction first, artifacts invalidated unconditionally; `422`
-  when extraction fails, having changed nothing.
+Documents are uploaded and parsed by the **Data module**, not by RAG. Parsing
+is a `DocumentDataLoader` component (`dataloaders/classes/`) selected at
+upload time; the four registered loaders are
+`PlainTextDocumentDataLoader` (txt, md, rst, tex, csv),
+`PypdfDocumentDataLoader`, `PdfPlumberDocumentDataLoader` and
+`PdfMinerDocumentDataLoader` (pdf). A loader turns one file into a
+`DashAIDocument` — an ordered list of `Text` / `DashAIImage` items with pages —
+and RAG keeps only the `Text` items. See
+[`06-document-processing.md`](./06-document-processing.md) for the loader
+parameters, storage layout, upload flow, and the document endpoints.
 
 ## Parameters Hash
 
@@ -546,13 +661,18 @@ JSON comparison (pending migration).
 `RAGTask` extends `BaseGenerativeTask` and:
 
 - Prepares input by folding chat history into the message list.
-- Processes output into four typed `ProcessData` rows, in pipeline order:
+- Processes output into five typed `ProcessData` rows, in pipeline order:
   `Queries` (JSON list of the queries used for retrieval), `Dict` (JSON map of
-  the retrieved chunks), `Trace` (JSON list of per-query retrieval trace nodes)
-  and `str` (the answer message). The `Queries` row is always emitted; without
-  the transformation stage it holds the one-element `[input message]` list. The
+  the retrieved chunks), `Trace` (JSON list of per-query retrieval trace nodes),
+  `Timings` (JSON object of per-stage wall-clock milliseconds) and `str` (the
+  answer message). The `Queries` row is always emitted; without the
+  transformation stage it holds the one-element `[input message]` list. The
   `Trace` row references chunks by the same `"<document_id>_<position>"` keys
   as `Dict`, so the frontend can join them without duplicating chunk payloads.
+  The `Timings` row serializes `PipelineStageTimings.to_dict()` — exactly the
+  keys `transformation_ms`, `retrieval_ms`, `generation_ms` and `total_ms` —
+  with `transformation_ms` exactly `0.0` when the transformation stage is
+  disabled.
 - Declares `USE_HISTORY = True` to enable history folding in the job layer.
 
 ## Typed Return Values
@@ -564,7 +684,9 @@ The pipeline uses typed dataclasses instead of raw dicts or lists:
 | `RAGPipelineConfig`   | Validated pipeline parameters                    |
 | `ModelRef`            | Parsed `{component, params}` reference           |
 | `ChunkReference`      | A single retrieved chunk with document info      |
-| `RAGGenerationOutput` | Typed pipeline output (message + chunks + queries + trace; `queries` feeds the `Queries` output row and `trace` feeds the `Trace` row) |
+| `RAGGenerationOutput` | Typed pipeline output (message + chunks + queries + trace + timings; `queries` feeds the `Queries` output row, `trace` feeds the `Trace` row and `timings` feeds the `Timings` row) |
+| `PipelineStageTimings` | Per-stage wall-clock milliseconds (`transformation_ms`, `retrieval_ms`, `generation_ms`, `total_ms`); `to_dict()` serializes them for the `Timings` output row |
+| `QueryTransformationResult` | Typed transformer output; `queries` is the list retrieval runs over (one element for rewriting) |
 | `*FactoryResult`      | Each factory returns a typed result              |
 | `SparsePersistence`   | On-disk reference for sparse retrievers          |
 | `DensePersistence`    | Embedding matrix references for dense retrievers |
