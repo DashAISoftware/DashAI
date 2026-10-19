@@ -131,6 +131,7 @@
     "confirmBulkDeleteDatasets_other": "Are you sure you want to delete the {{count}} selected datasets? This action cannot be undone.",
     "confirmBulkDeleteData_one": "Are you sure you want to delete the selected item? This action cannot be undone.",
     "confirmBulkDeleteData_other": "Are you sure you want to delete the {{count}} selected items? This action cannot be undone.",
+    "confirmBulkDeleteData": "Are you sure you want to delete the {{count}} selected items? This action cannot be undone.",
     "selectDatasetsToDelete": "Select datasets to delete",
     "selectDataToDelete": "Select data to delete",
     "confirmDeleteNotebook": "Are you sure you want to delete the notebook \"{{name}}\"? This action cannot be undone.",

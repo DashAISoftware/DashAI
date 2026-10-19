@@ -170,6 +170,7 @@
     "confirmBulkDeleteData_many": "Tem certeza de que deseja excluir os {{count}} itens selecionados? Esta ação não pode ser desfeita.",
     "confirmBulkDeleteData_one": "Tem certeza de que deseja excluir o item selecionado? Esta ação não pode ser desfeita.",
     "confirmBulkDeleteData_other": "Tem certeza de que deseja excluir os {{count}} itens selecionados? Esta ação não pode ser desfeita.",
+    "confirmBulkDeleteData": "Tem certeza de que deseja excluir os {{count}} itens selecionados? Esta ação não pode ser desfeita.",
     "confirmBulkDeleteNotebooks": "Tem certeza de que deseja excluir os {{count}} cadernos selecionados? Esta ação não pode ser desfeita.",
     "confirmBulkDeleteNotebooks_many": "Tem certeza de que deseja excluir os {{count}} cadernos selecionados? Esta ação não pode ser desfeita.",
     "confirmBulkDeleteNotebooks_one": "Tem certeza de que deseja excluir o caderno selecionado? Esta ação não pode ser desfeita.",

@@ -163,6 +163,7 @@
     "confirmBulkDeleteDatasets_other": "确定要删除所选的 {{count}} 个数据集吗？此操作无法撤销。",
     "confirmBulkDeleteData_one": "确定要删除选中的 {{count}} 项吗？此操作无法撤销。",
     "confirmBulkDeleteData_other": "确定要删除选中的 {{count}} 项吗？此操作无法撤销。",
+    "confirmBulkDeleteData": "确定要删除选中的 {{count}} 项吗？此操作无法撤销。",
     "confirmBulkDeleteNotebooks": "确定要删除所选的 {{count}} 个笔记本吗？此操作无法撤销。",
     "confirmBulkDeleteNotebooks_one": "确定要删除所选的笔记本吗？此操作无法撤销。",
     "confirmBulkDeleteNotebooks_other": "确定要删除所选的 {{count}} 个笔记本吗？此操作无法撤销。",
