@@ -15,6 +15,7 @@ import pytest
 from DashAI.back.models.RAG.exceptions import RAGTaskInputError
 from DashAI.back.models.RAG.RAG_pipeline import (
     ChunkReference,
+    PipelineStageTimings,
     RAGGenerationOutput,
 )
 from DashAI.back.tasks.RAG_task import RAGTask
@@ -29,6 +30,21 @@ def _make_process_data(data: str) -> MagicMock:
     pd = MagicMock()
     pd.data = data
     return pd
+
+
+def _make_timings(
+    transformation_ms: float = 1.25,
+    retrieval_ms: float = 2.5,
+    generation_ms: float = 3.75,
+    total_ms: float = 7.5,
+) -> PipelineStageTimings:
+    """Build a PipelineStageTimings with predictable values."""
+    return PipelineStageTimings(
+        transformation_ms=transformation_ms,
+        retrieval_ms=retrieval_ms,
+        generation_ms=generation_ms,
+        total_ms=total_ms,
+    )
 
 
 # ===================================================================
@@ -160,10 +176,10 @@ def _make_output_row(data: str, data_type: str) -> MagicMock:
 
 
 class TestRAGTaskProcessOutput:
-    """Verify process_output() emits the four typed output rows in order."""
+    """Verify process_output() emits the five typed output rows in order."""
 
-    def test_four_typed_rows_in_pipeline_order(self):
-        """process_output returns Queries, Dict, Trace, then str."""
+    def test_five_typed_rows_in_pipeline_order(self):
+        """process_output returns Queries, Dict, Trace, Timings, then str."""
         task = RAGTask()
         chunks = {
             "1_0": ChunkReference(
@@ -179,17 +195,20 @@ class TestRAGTaskProcessOutput:
                 "retriever": {"name": "BM25Retriever", "chunks": ["1_0"]},
             }
         ]
+        timings = _make_timings()
         output = RAGGenerationOutput(
             message="the answer",
             chunks=chunks,
             queries=["q one", "q two"],
             trace=trace,
+            timings=timings,
         )
         result = task.process_output(output)
         assert [data_type for _data, data_type in result] == [
             "Queries",
             "Dict",
             "Trace",
+            "Timings",
             "str",
         ]
         # First tuple: retrieval queries as a JSON list.
@@ -209,17 +228,33 @@ class TestRAGTaskProcessOutput:
         trace_str, trace_type = result[2]
         assert trace_type == "Trace"
         assert json.loads(trace_str) == trace
+        # Fourth tuple: the stage timings as JSON with exactly four keys.
+        timings_str, timings_type = result[3]
+        assert timings_type == "Timings"
+        parsed_timings = json.loads(timings_str)
+        assert list(parsed_timings) == [
+            "transformation_ms",
+            "retrieval_ms",
+            "generation_ms",
+            "total_ms",
+        ]
+        assert parsed_timings == timings.to_dict()
         # Last tuple: the message as str.
-        assert result[3] == ("the answer", "str")
+        assert result[4] == ("the answer", "str")
 
     def test_empty_chunks(self):
-        """Empty chunks/trace → still returns the four valid rows."""
+        """Empty chunks/trace → still returns the five valid rows."""
         task = RAGTask()
+        timings = _make_timings()
         output = RAGGenerationOutput(
-            message="no context answer", chunks={}, queries=["no context"], trace=[]
+            message="no context answer",
+            chunks={},
+            queries=["no context"],
+            trace=[],
+            timings=timings,
         )
         result = task.process_output(output)
-        assert len(result) == 4
+        assert len(result) == 5
         assert result[0] == (
             json.dumps(["no context"], ensure_ascii=False),
             "Queries",
@@ -227,7 +262,9 @@ class TestRAGTaskProcessOutput:
         assert result[1][1] == "Dict"
         assert json.loads(result[1][0]) == {}
         assert result[2] == ("[]", "Trace")
-        assert result[3] == ("no context answer", "str")
+        assert result[3][1] == "Timings"
+        assert json.loads(result[3][0]) == timings.to_dict()
+        assert result[4] == ("no context answer", "str")
 
     def test_multiple_chunks(self):
         """Multiple chunks are all serialized in the Dict row."""
@@ -238,7 +275,11 @@ class TestRAGTaskProcessOutput:
             "3_2": ChunkReference(3, "c.txt", 2, "text C"),
         }
         output = RAGGenerationOutput(
-            message="multi", chunks=chunks, queries=["multi"], trace=[]
+            message="multi",
+            chunks=chunks,
+            queries=["multi"],
+            trace=[],
+            timings=_make_timings(),
         )
         result = task.process_output(output)
         parsed = json.loads(result[1][0])
@@ -255,15 +296,22 @@ class TestRAGTaskProcessOutput:
             chunks={},
             queries=["q"],
             trace=[],  # type: ignore
+            timings=_make_timings(),
         )
         result = task.process_output(output)
-        assert result[3] == ("42", "str")
+        assert result[4] == ("42", "str")
 
     def test_queries_serialized_without_ascii_escaping(self):
         """The Queries row preserves non-ASCII characters and the list shape."""
         task = RAGTask()
         queries = ["consultá", "quería"]
-        output = RAGGenerationOutput(message="m", chunks={}, queries=queries, trace=[])
+        output = RAGGenerationOutput(
+            message="m",
+            chunks={},
+            queries=queries,
+            trace=[],
+            timings=_make_timings(),
+        )
         result = task.process_output(output)
         assert result[0][0] == json.dumps(queries, ensure_ascii=False)
         assert json.loads(result[0][0]) == queries
@@ -285,10 +333,41 @@ class TestRAGTaskProcessOutput:
             }
         ]
         output = RAGGenerationOutput(
-            message="m", chunks={}, queries=["q1"], trace=trace
+            message="m",
+            chunks={},
+            queries=["q1"],
+            trace=trace,
+            timings=_make_timings(),
         )
         result = task.process_output(output)
         assert json.loads(result[2][0]) == trace
+
+    def test_timings_row_has_the_exact_four_keys_in_order(self):
+        """The Timings row JSON keys are exactly the four timing fields."""
+        task = RAGTask()
+        output = RAGGenerationOutput(
+            message="m",
+            chunks={},
+            queries=["q"],
+            trace=[],
+            timings=_make_timings(),
+        )
+        result = task.process_output(output)
+        assert [data_type for _data, data_type in result] == [
+            "Queries",
+            "Dict",
+            "Trace",
+            "Timings",
+            "str",
+        ]
+        parsed = json.loads(result[3][0])
+        assert list(parsed.keys()) == [
+            "transformation_ms",
+            "retrieval_ms",
+            "generation_ms",
+            "total_ms",
+        ]
+        assert all(isinstance(value, float) for value in parsed.values())
 
 
 # ===================================================================
@@ -343,6 +422,7 @@ class TestRAGOutputRowTypeConstants:
         assert RAG_constants.RAG_OUTPUT_QUERIES_TYPE == "Queries"
         assert RAG_constants.RAG_OUTPUT_CHUNKS_TYPE == "Dict"
         assert RAG_constants.RAG_OUTPUT_TRACE_TYPE == "Trace"
+        assert RAG_constants.RAG_OUTPUT_TIMINGS_TYPE == "Timings"
         assert RAG_constants.RAG_OUTPUT_MESSAGE_TYPE == "str"
 
 
@@ -396,15 +476,17 @@ class TestRAGTaskMetadata:
         assert metadata["inputs"]["str"]["max"] == 1
 
     def test_metadata_outputs(self):
-        """Metadata declares the four output row types, one each."""
+        """Metadata declares the five output row types, one each."""
         task = RAGTask()
         metadata = task.get_metadata()
         assert "outputs" in metadata
         assert "Queries" in metadata["outputs"]
         assert "Dict" in metadata["outputs"]
         assert "Trace" in metadata["outputs"]
+        assert "Timings" in metadata["outputs"]
         assert "str" in metadata["outputs"]
         assert metadata["outputs"]["Queries"] == {"min": 1, "max": 1}
         assert metadata["outputs"]["Dict"] == {"min": 1, "max": 1}
         assert metadata["outputs"]["Trace"] == {"min": 1, "max": 1}
+        assert metadata["outputs"]["Timings"] == {"min": 1, "max": 1}
         assert metadata["outputs"]["str"] == {"min": 1, "max": 1}

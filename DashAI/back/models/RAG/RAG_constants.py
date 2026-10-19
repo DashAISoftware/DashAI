@@ -4,7 +4,7 @@ Also covers composite retriever names.
 
 Output rows
 -----------
-A finished RAG process emits four typed ``ProcessData`` output rows
+A finished RAG process emits five typed ``ProcessData`` output rows
 (``is_input=False``) in pipeline-chronological order:
 
 1. ``Queries`` — the JSON list of queries used for retrieval. Always emitted;
@@ -13,7 +13,9 @@ A finished RAG process emits four typed ``ProcessData`` output rows
 2. ``Dict`` — the JSON map ``{ref: chunk_info}`` of retrieved chunks.
 3. ``Trace`` — the JSON list of per-query retrieval trace nodes. Trace chunk
    references use the SAME ``"<document_id>_<position>"`` keys as ``Dict``.
-4. ``str`` — the LLM answer message.
+4. ``Timings`` — the JSON object of per-stage wall-clock milliseconds
+   (``transformation_ms``, ``retrieval_ms``, ``generation_ms``, ``total_ms``).
+5. ``str`` — the LLM answer message.
 """
 
 RAG_PARAM_DOCUMENTS = "documents"
@@ -45,11 +47,12 @@ RAG_MODEL_KEYS = (
 # Optional model component keys (model-key shaped but not required)
 RAG_OPTIONAL_MODEL_KEYS = (RAG_PARAM_QUERY_TRANSFORMATION,)
 
-# ProcessData ``data_type`` values of the four output rows, in the order the
-# task emits them: Queries → Dict (chunks) → Trace → str (message).
+# ProcessData ``data_type`` values of the five output rows, in the order the
+# task emits them: Queries → Dict (chunks) → Trace → Timings → str (message).
 RAG_OUTPUT_QUERIES_TYPE = "Queries"
 RAG_OUTPUT_CHUNKS_TYPE = "Dict"
 RAG_OUTPUT_TRACE_TYPE = "Trace"
+RAG_OUTPUT_TIMINGS_TYPE = "Timings"
 RAG_OUTPUT_MESSAGE_TYPE = "str"
 
 # Live stage progress
@@ -61,8 +64,9 @@ RAG_OUTPUT_MESSAGE_TYPE = "str"
 #   stage is enabled, before the transformer runs.
 # - ``{"stage": "retrieving", "queries": ["q1", "q2"]}`` — emitted after the
 #   queries are resolved; ``queries`` is the resolved list actually retrieved.
-# - ``{"stage": "generating"}`` — emitted after the prompt is built, right
-#   before the LLM runs.
+# - ``{"stage": "generating"}`` — emitted after the queries are resolved and
+#   before the prompt is built, so the reporter's own overhead is not charged
+#   to the generation stage timing.
 #
 # The column is set back to ``None`` when the process finishes or errors.
 RAG_PROGRESS_STAGE_KEY = "stage"

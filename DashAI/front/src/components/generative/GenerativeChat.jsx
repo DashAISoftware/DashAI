@@ -346,13 +346,13 @@ export default function GenerativeChat({ indexStatus }) {
       let mainOutput = process.output;
 
       if (taskName === "RAGTask") {
-        // Partition rows by data_type so the new 4-row format (Queries, Dict,
-        // Trace, str) and the legacy 2-row format (Dict, str) are all handled
-        // and row order is irrelevant.
+        // Partition rows by data_type so the new 5-row format (Queries, Dict,
+        // Trace, Timings, str) and the legacy 2-row format (Dict, str) are all
+        // handled and row order is irrelevant.
         const { queryRow, referenceRow, traceRow, messageRows } =
           splitRAGOutputRows(process.output);
-        // Message rows exclude the Dict, Queries and Trace rows, so none leaks
-        // into the rendered chat bubbles.
+        // Message rows exclude the Dict, Queries, Trace and Timings rows, so
+        // none leaks into the rendered chat bubbles.
         mainOutput = messageRows;
 
         // New "Queries" row: carried on the message for future display only,

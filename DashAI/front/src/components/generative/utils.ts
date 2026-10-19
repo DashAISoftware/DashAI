@@ -106,6 +106,7 @@ export function buildYupSchema(
 export const RAG_QUERIES_DATA_TYPE = "Queries";
 export const RAG_REFERENCE_DATA_TYPE = "Dict";
 export const RAG_TRACE_DATA_TYPE = "Trace";
+export const RAG_TIMINGS_DATA_TYPE = "Timings";
 export const RAG_MESSAGE_DATA_TYPE = "str";
 
 export const RAG_PROGRESS_STAGE_TRANSFORMING = "transforming";
@@ -115,16 +116,17 @@ export const RAG_PROGRESS_STAGE_GENERATING = "generating";
 /**
  * Partitions a RAG process's output rows by their data_type.
  *
- * New processes store four rows: a "Queries" JSON list, a "Dict" sources map,
- * a "Trace" JSON retrieval trace and a "str" answer. Older processes omit the
- * "Trace" row, and legacy ones store only "Dict" and "str" (no "Queries"
- * either). Rows are matched by data_type, never by position, so every format
- * is handled. Null/undefined rows are ignored.
+ * New processes store five rows: a "Queries" JSON list, a "Dict" sources map,
+ * a "Trace" JSON retrieval trace, a "Timings" JSON stage-duration map and a
+ * "str" answer. Older processes omit the "Timings" and/or "Trace" rows, and
+ * legacy ones store only "Dict" and "str" (no "Queries" either). Rows are
+ * matched by data_type, never by position, so every format is handled.
+ * Null/undefined rows are ignored.
  *
  * @param output - The process output rows, possibly null or empty.
  * @returns The first query row, the first reference row, the first trace row
- *   (or null when absent), and the message rows (everything that is neither a
- *   query, reference nor trace row).
+ *   (or null when absent), and the message rows (every row that is neither a
+ *   query, reference, trace nor timings row).
  */
 export function splitRAGOutputRows<T extends { data_type?: string }>(
   output: Array<T | undefined | null> | undefined | null,
@@ -147,6 +149,9 @@ export function splitRAGOutputRows<T extends { data_type?: string }>(
       referenceRow = referenceRow ?? row;
     } else if (row.data_type === RAG_TRACE_DATA_TYPE) {
       traceRow = traceRow ?? row;
+    } else if (row.data_type === RAG_TIMINGS_DATA_TYPE) {
+      // Stage durations are not rendered yet; dropping the row here keeps it
+      // from ever being mistaken for a message.
     } else {
       messageRows.push(row);
     }

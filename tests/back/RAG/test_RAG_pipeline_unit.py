@@ -9,6 +9,7 @@ The generate() tests use MagicMock for all dependencies.
 
 from __future__ import annotations
 
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -19,10 +20,15 @@ from DashAI.back.models.RAG.exceptions import (
     RAGPipelineInputError,
     RAGPipelineRuntimeError,
 )
-from DashAI.back.models.RAG.RAG_constants import RAG_INFRA_KEYS
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_INFRA_KEYS,
+    RAG_PROGRESS_STAGE_GENERATING,
+    RAG_PROGRESS_STAGE_KEY,
+)
 from DashAI.back.models.RAG.RAG_pipeline import (
     ChunkReference,
     ModelRef,
+    PipelineStageTimings,
     RAGGenerationOutput,
     RAGPipeline,
     RAGPipelineConfig,
@@ -107,6 +113,18 @@ def _make_pipeline(
         retriever=retriever,
         llm_model=llm_model,
     )
+
+
+class _SleepingRetriever:
+    """Non-mock retriever whose retrieve() sleeps to make timing observable."""
+
+    def __init__(self, sleep_seconds: float, chunks=None):
+        self.sleep_seconds = sleep_seconds
+        self.chunks = [] if chunks is None else chunks
+
+    def retrieve(self, query):
+        time.sleep(self.sleep_seconds)
+        return _retriever_stub(self.chunks)
 
 
 # ===================================================================
@@ -475,6 +493,78 @@ class TestRAGPipelineGenerateHappyPath:
         assert "2_1" in result.chunks
         assert result.chunks["1_0"].document_name == "doc1.txt"
         assert result.chunks["2_1"].document_name == "doc2.txt"
+
+
+# ===================================================================
+# RAGPipeline.generate() — stage timings
+# ===================================================================
+
+
+class TestRAGPipelineTimings:
+    """The pipeline measures each stage with perf_counter."""
+
+    def _run(self):
+        retriever = MagicMock()
+        retriever.retrieve.return_value = _retriever_stub([])
+        llm = MagicMock()
+        llm.generate.return_value = ["answer"]
+        pipeline = _make_pipeline(retriever=retriever, llm_model=llm)
+        return pipeline.generate(({"role": "user", "content": "hello"},))
+
+    def test_timings_fields_are_non_negative_floats(self):
+        timings = self._run().timings
+        assert isinstance(timings, PipelineStageTimings)
+        for value in timings.to_dict().values():
+            assert isinstance(value, float)
+            assert value >= 0.0
+
+    def test_total_covers_the_largest_stage(self):
+        timings = self._run().timings
+        assert timings.total_ms >= max(
+            timings.transformation_ms,
+            timings.retrieval_ms,
+            timings.generation_ms,
+        )
+
+    def test_disabled_transformation_is_exactly_zero(self):
+        assert self._run().timings.transformation_ms == 0.0
+
+    def test_retrieval_stage_is_actually_measured(self):
+        """A 10 ms retrieve must show up as retrieval_ms >= 5 ms (not 0.0)."""
+        pipeline = _make_pipeline(retriever=_SleepingRetriever(0.01))
+        timings = pipeline.generate(({"role": "user", "content": "hello"},)).timings
+        assert timings.retrieval_ms >= 5.0
+        assert timings.total_ms >= 5.0
+
+    def test_generating_report_is_outside_generation_timing(self):
+        """Reporter overhead on the generating stage is not charged to generation_ms."""
+        seen_stages = []
+
+        def reporter(payload):
+            stage = payload[RAG_PROGRESS_STAGE_KEY]
+            seen_stages.append(stage)
+            if stage == RAG_PROGRESS_STAGE_GENERATING:
+                time.sleep(0.05)
+
+        pipeline = _make_pipeline()
+        timings = pipeline.generate(
+            ({"role": "user", "content": "hello"},), progress_callback=reporter
+        ).timings
+
+        assert RAG_PROGRESS_STAGE_GENERATING in seen_stages
+        # generation_ms covers only prompt build + LLM, so the 50 ms reporter
+        # sleep that fires on the generating stage must not appear in it; the
+        # mock LLM returns instantly, so a tight bound still has plenty of
+        # margin while catching partial leaks too.
+        assert timings.generation_ms < 10.0
+
+    def test_to_dict_has_exactly_the_four_keys(self):
+        assert list(self._run().timings.to_dict()) == [
+            "transformation_ms",
+            "retrieval_ms",
+            "generation_ms",
+            "total_ms",
+        ]
 
 
 # ===================================================================
