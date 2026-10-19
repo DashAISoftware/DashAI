@@ -144,11 +144,8 @@
       "addChild": "Retriever-Knoten hinzufügen",
       "allChunks": "Alle Chunks",
       "chunkFusion": "Chunk-Fusion",
-      "compositeGroup": "Zusammengesetzte Retriever",
       "compositeInstructions": "Klicken Sie auf die +-Schaltfläche, um diesem Composite einen Kind-Retriever hinzuzufügen. Klicken Sie auf eine Retriever-Karte, um dessen Parameter zu bearbeiten oder ein anderes Modell zu wählen.",
       "configureNode": "Knoten konfigurieren",
-      "denseGroup": "Dense-Retriever",
-      "keywordGroup": "Stichwort-Retriever",
       "mergeStrategyInterleave": "Verketten",
       "mergeStrategyRoundRobin": "Round robin",
       "nestedCompositeNote": "Dies ist ein zusammengesetzter Retriever. Seine Kindknoten können im unteren Baum konfiguriert werden.",
@@ -157,8 +154,7 @@
       "reranking": "Reranking",
       "retrieverDescription": "Wählen Sie einen Retriever, um seine Parameter zu konfigurieren. Stichwort-Retriever (BM25, TF-IDF) finden Dokumente nach Termhäufigkeit. Embedding-Retriever erfassen semantische Bedeutung mit dichten Vektoren. Zusammengesetzte Retriever verketten mehrere Retriever, sequenziell oder parallel.",
       "selectModel": "Retriever-Modell auswählen",
-      "selectedChunks": "Ausgewählte Chunks",
-      "simpleGroup": "Einfache Retriever"
+      "selectedChunks": "Ausgewählte Chunks"
     },
     "config": {
       "advanced": "Erweiterte Konfiguration",

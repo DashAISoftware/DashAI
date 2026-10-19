@@ -148,11 +148,8 @@
       "addChild": "Añadir nodo recuperador",
       "allChunks": "Todos los fragmentos",
       "chunkFusion": "Fusión de chunks",
-      "compositeGroup": "Recuperadores compuestos",
       "compositeInstructions": "Haz clic en el botón + para añadir un recuperador hijo a este compuesto. Haz clic sobre una tarjeta para editar sus parámetros o elegir otro modelo.",
       "configureNode": "Configurar nodo",
-      "denseGroup": "Recuperadores densos",
-      "keywordGroup": "Recuperadores por palabras clave",
       "mergeStrategyInterleave": "Intercalar",
       "mergeStrategyRoundRobin": "Round robin",
       "nestedCompositeNote": "Este es un recuperador compuesto. Sus hijos pueden configurarse en el árbol inferior.",
@@ -161,8 +158,7 @@
       "reranking": "Reordenamiento",
       "retrieverDescription": "Elige un recuperador para configurar sus parámetros. Los recuperadores por palabras clave (BM25, TF-IDF) encuentran documentos por frecuencia de términos, los recuperadores densos capturan el significado semántico con vectores densos llamados embeddings y los recuperadores compuestos encadenan varios recuperadores, de forma secuencial o en paralelo.",
       "selectModel": "Seleccionar modelo recuperador",
-      "selectedChunks": "Fragmentos seleccionados",
-      "simpleGroup": "Recuperadores simples"
+      "selectedChunks": "Fragmentos seleccionados"
     },
     "config": {
       "advanced": "Configuración avanzada",
