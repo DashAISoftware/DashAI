@@ -1,0 +1,41 @@
+{
+  "title": "Atualizações",
+  "subtitle": "Versão do dashAI e novas versões",
+  "installedVersion": "Versão instalada",
+  "latestVersion": "Última versão",
+  "unknownVersion": "Desconhecida",
+  "upToDate": "Você tem a versão mais recente.",
+  "updateAvailable": "Uma nova versão está disponível: {{version}}",
+  "updateAvailableTooltip": "Nova versão disponível: {{version}}",
+  "checkFailed": "Não foi possível verificar atualizações. Verifique sua conexão com a internet.",
+  "disabled": "A verificação de atualizações está desativada nesta instalação.",
+  "releaseNotes": "Novidades",
+  "download": "Baixar",
+  "viewOnGitHub": "Ver no GitHub",
+  "hint": {
+    "windows": "Baixe a atualização e instale-a daqui. O Windows pedirá permissão. Seus dados e experimentos são mantidos.",
+    "macos": "Baixe a atualização e abra-a daqui. O dashAI será fechado para que você arraste a nova versão para Aplicativos. Seus dados e experimentos são mantidos.",
+    "appimage": "Baixe a atualização e instale-a daqui. O dashAI reiniciará com a nova versão. Seus dados e experimentos são mantidos.",
+    "pip": "Atualize com este comando e depois reinicie o dashAI:",
+    "source": "Atualize o repositório com estes comandos e depois reinicie o dashAI:",
+    "docker": "Reconstrua a imagem Docker com a nova versão.",
+    "unknown": "Baixe a nova versão no GitHub."
+  },
+  "downloadUpdate": "Baixar atualização ({{size}})",
+  "downloading": "Baixando atualização... {{percent}}%",
+  "downloadingShort": "Baixando...",
+  "downloadFailed": "Não foi possível baixar a atualização.",
+  "installRestart": "Instalar e reiniciar",
+  "openInstaller": "Abrir instalador",
+  "installing": "Instalando...",
+  "installFailed": "Não foi possível instalar a atualização. {{error}}",
+  "jobsRunningWarning": "Há tarefas em andamento. Instalar fecha o dashAI e as interrompe.",
+  "installAnyway": "Instalar mesmo assim",
+  "cancel": "Cancelar",
+  "manualDownload": "Baixar manualmente",
+  "installed": {
+    "windows": "Aceite o aviso do Windows para continuar. O dashAI será fechado e aberto novamente ao terminar a instalação.",
+    "appimage": "O dashAI está reiniciando com a nova versão.",
+    "macos": "O instalador está aberto. Arraste o dashAI para Aplicativos, substitua a versão anterior e abra-o novamente."
+  }
+}

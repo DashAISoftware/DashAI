@@ -68,6 +68,7 @@ dependencies = [
     "imblearn",
     "numba>=0.60",
     "llvmlite>=0.43",
+    "faiss-cpu",
     "huey",
     "ijson",
     "greenery==3.2",

@@ -17,6 +17,7 @@ export interface IRun {
   train_metrics: object;
   test_metrics: object;
   validation_metrics: object;
+  full_metrics: object;
   artifacts: object;
   run_name: string;
   run_description: string;

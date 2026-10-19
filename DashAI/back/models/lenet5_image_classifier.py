@@ -10,8 +10,8 @@ from DashAI.back.core.schema_fields import (
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.image_explainable_model import GradCamCompatibleModel
+from DashAI.back.models.supervised_model import SupervisedModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 
@@ -319,7 +319,7 @@ def _build_lenet5_model(input_channels, input_size, num_classes, dropout_rate):
     return _LeNet5(input_channels, input_size, num_classes, dropout_rate)
 
 
-class LeNet5ImageClassifier(BaseModel, GradCamCompatibleModel):
+class LeNet5ImageClassifier(SupervisedModel, GradCamCompatibleModel):
     """LeNet-5 image classifier (LeCun et al., 1998).
 
     The original convolutional neural network architecture, featuring two

@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from sklearn.feature_selection import SelectKBest as SelectKBestOperation
 
 from DashAI.back.converters.category.feature_selection import FeatureSelectionConverter
@@ -10,6 +12,7 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import StateItem, known_width
 from DashAI.back.types.value_types import Float, Integer
 
 
@@ -92,3 +95,11 @@ class SelectKBest(FeatureSelectionConverter, SklearnWrapper, SelectKBestOperatio
             schema fields. Forwarded to the underlying scikit-learn class.
         """
         super().__init__(**kwargs)
+
+    def _selected_count(self, inputs: List[StateItem]) -> Optional[int]:
+        """Keep exactly ``k`` columns, or every column for ``k="all"``."""
+        if self.k == "all":
+            return known_width(inputs)
+        if isinstance(self.k, int) and not isinstance(self.k, bool):
+            return self.k
+        return None

@@ -3,6 +3,7 @@ import type {
   IColumnRef,
   IConverterStep,
   IModelSession,
+  IStructureResult,
 } from "../types/modelSession";
 
 const endpointURL = "/v1/model-session";
@@ -84,7 +85,9 @@ export const validateColumns = async (
   inputColumns: string[],
   outputColumns: string[],
   inputRefs?: IColumnRef[],
-  converterOutputTypes?: Record<string, string>,
+  // With preprocessing, the backend types every input ref from the chain's
+  // estimated structure.
+  preprocessing?: IConverterStep[],
 ): Promise<object> => {
   const formData = {
     task_name: taskName,
@@ -92,11 +95,44 @@ export const validateColumns = async (
     inputs_columns: inputColumns,
     outputs_columns: outputColumns,
     input_refs: inputRefs,
-    converter_output_types: converterOutputTypes,
+    preprocessing: preprocessing?.map(({ converter, params, scope }) => ({
+      converter,
+      params,
+      scope,
+    })),
   };
   const response = await api.post<object>(
     "/v1/model-session/validation",
     formData,
+  );
+  return response.data;
+};
+
+// Estimate the dataset state after every step of a preprocessing chain,
+// without fitting anything (see the backend's infer_structure).
+export const getPreprocessingStructure = async ({
+  datasetId,
+  candidates,
+  outputColumns,
+  steps,
+}: {
+  datasetId: number;
+  candidates: string[];
+  outputColumns: string[];
+  steps: IConverterStep[];
+}): Promise<IStructureResult> => {
+  const response = await api.post<IStructureResult>(
+    `${endpointURL}/preprocessing/structure`,
+    {
+      dataset_id: datasetId,
+      candidates,
+      output_columns: outputColumns,
+      steps: steps.map(({ converter, params, scope }) => ({
+        converter,
+        params,
+        scope,
+      })),
+    },
   );
   return response.data;
 };

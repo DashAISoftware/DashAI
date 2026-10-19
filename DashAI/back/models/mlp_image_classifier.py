@@ -11,8 +11,8 @@ from DashAI.back.core.schema_fields import (
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.image_explainable_model import OcclusionSaliencyCompatibleModel
+from DashAI.back.models.supervised_model import SupervisedModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 
@@ -351,7 +351,7 @@ def _build_mlp_model(input_dim, output_dim, hidden_dims, dropout_rate=0.0):
     return _MLP(input_dim, output_dim, hidden_dims, dropout_rate)
 
 
-class MLPImageClassifier(BaseModel, OcclusionSaliencyCompatibleModel):
+class MLPImageClassifier(SupervisedModel, OcclusionSaliencyCompatibleModel):
     """MLP-based image classifier.
 
     A feed-forward neural network that flattens image pixels and passes them

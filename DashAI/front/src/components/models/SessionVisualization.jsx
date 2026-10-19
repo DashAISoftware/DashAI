@@ -74,8 +74,11 @@ export default function SessionVisualization() {
   const theme = useTheme();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const isCrossValidation =
-    useStrategyKind(session?.evaluation_strategy) === STRATEGY_KINDS.CV;
+  const strategyKind = useStrategyKind(session?.evaluation_strategy);
+  const isCrossValidation = strategyKind === STRATEGY_KINDS.CV;
+  // A strategy that carves nothing records a single full-dataset score per
+  // metric, so there is no split to switch between.
+  const usesFullMetrics = strategyKind === STRATEGY_KINDS.FULL;
 
   // This component stays mounted across session navigations (same route,
   // different :sessionId), so metricSplit would otherwise carry over from
@@ -180,6 +183,14 @@ export default function SessionVisualization() {
     () => datasets.find((d) => d.id === session?.dataset_id)?.name,
     [datasets, session?.dataset_id],
   );
+
+  useEffect(() => {
+    if (usesFullMetrics) {
+      setMetricSplit("full");
+    } else if (metricSplit === "full") {
+      setMetricSplit("test");
+    }
+  }, [usesFullMetrics, metricSplit, session?.id]);
 
   // Check which metrics are available. This re-scan only needs to happen
   // when `runs` itself changes, not on every render (e.g. drag state, tour
@@ -671,33 +682,37 @@ export default function SessionVisualization() {
                     flexWrap: "wrap",
                   }}
                 >
-                  {/* Metric Split Selector: controls both table and graph views */}
-                  {(hasTrainMetrics ||
-                    hasValidationMetrics ||
-                    hasTestMetrics) && (
-                    <PillToggleButtonGroup
-                      value={effectiveSplit}
-                      onChange={(e, newValue) => {
-                        if (newValue !== null) setMetricSplit(newValue);
-                      }}
-                    >
-                      {hasTrainMetrics && (
-                        <ToggleButton value="train">
-                          {t("common:train")}
-                        </ToggleButton>
-                      )}
-                      {hasValidationMetrics && (
-                        <ToggleButton value="validation">
-                          {t("common:validation")}
-                        </ToggleButton>
-                      )}
-                      {hasTestMetrics && (
-                        <ToggleButton value="test">
-                          {t("common:test")}
-                        </ToggleButton>
-                      )}
-                    </PillToggleButtonGroup>
-                  )}
+                  {/* Metric Split Selector: controls both table and graph views.
+                      Hidden when the session only ever has one metric set
+                      (clustering's full-dataset runs): there is nothing to
+                      switch between. */}
+                  {!usesFullMetrics &&
+                    (hasTrainMetrics ||
+                      hasValidationMetrics ||
+                      hasTestMetrics) && (
+                      <PillToggleButtonGroup
+                        value={effectiveSplit}
+                        onChange={(e, newValue) => {
+                          if (newValue !== null) setMetricSplit(newValue);
+                        }}
+                      >
+                        {hasTrainMetrics && (
+                          <ToggleButton value="train">
+                            {t("common:train")}
+                          </ToggleButton>
+                        )}
+                        {hasValidationMetrics && (
+                          <ToggleButton value="validation">
+                            {t("common:validation")}
+                          </ToggleButton>
+                        )}
+                        {hasTestMetrics && (
+                          <ToggleButton value="test">
+                            {t("common:test")}
+                          </ToggleButton>
+                        )}
+                      </PillToggleButtonGroup>
+                    )}
                 </Box>
               </Box>
 

@@ -12,7 +12,6 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.dashai_data_type import DashAIDataType
 
 
 class RUSchema(BaseSchema):
@@ -120,25 +119,3 @@ class RandomUnderSamplerConverter(
             Keyword arguments forwarded to :class:`ImbalancedLearnWrapper`.
         """
         super().__init__(**kwargs)
-
-    def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Not implemented; type preservation is handled in ``transform``.
-
-        RandomUnderSampler only removes rows; it does not change column types.
-        Types from the input dataset are copied directly in ``transform``.
-
-        Parameters
-        ----------
-        column_name : str or None, optional
-            Name of the column whose output type is queried. Ignored because
-            this method always raises. Default ``None``.
-
-        Raises
-        ------
-        NotImplementedError
-            Always, because type determination is delegated to ``transform``.
-        """
-        raise NotImplementedError(
-            "RandomUnderSampler preserves input types. "
-            "Types are handled in the transform method."
-        )

@@ -32,6 +32,11 @@ jobs:
   pytest:
     needs: react-build-test
     runs-on: ${{ matrix.os }}
+    # Without this a hung test holds the runner for GitHub's six hour default.
+    # The suite takes four to nine minutes depending on the platform, so thirty
+    # leaves plenty of headroom while turning a deadlock into a red job with a
+    # readable log instead of a silent afternoon of runner time.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:

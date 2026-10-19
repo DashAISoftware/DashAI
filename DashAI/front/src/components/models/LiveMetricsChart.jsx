@@ -15,6 +15,7 @@ import PillToggleButtonGroup from "../shared/PillToggleButtonGroup";
 import PlotActions from "../shared/PlotActions";
 import { getTraceColors } from "../../utils/chartColors";
 import { useStrategyMetadata } from "../../hooks/useStrategyKind";
+import { STRATEGY_KINDS } from "../../utils/splitsPayload";
 import { useModels } from "./ModelsContext";
 
 const SPLITS = ["TRAIN", "VALIDATION", "TEST"];
@@ -49,6 +50,13 @@ function toFallbackBuckets(rawMetrics) {
   return { TRIAL: formatted, STEP: formatted, EPOCH: formatted };
 }
 
+// A clustering run has no curve at all: it produces one value over the whole
+// dataset, which the backend writes at LAST level.
+function toFallbackLastBucket(rawMetrics) {
+  const buckets = toFallbackBuckets(rawMetrics);
+  return buckets ? { LAST: buckets.TRIAL } : null;
+}
+
 function hasAnyRealMetrics(splitData) {
   if (!splitData) return false;
   return ["TRIAL", "STEP", "EPOCH"].some(
@@ -61,18 +69,26 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
   const theme = useTheme();
   const [level, setLevel] = useState(null);
   const [split, setSplit] = useState("TRAIN");
+  const strategyName =
+    useModels()?.selectedSession?.evaluation_strategy ?? null;
+  const strategyMetadata = useStrategyMetadata(strategyName);
+  // A strategy that carves nothing (clustering) records one full-dataset score
+  // per metric and nothing else, so FULL is the only split there is to show.
+  const usesFullMetrics = strategyMetadata?.kind === STRATEGY_KINDS.FULL;
   const [data, setData] = useState({});
   const [selectedMetrics, setSelectedMetrics] = useState([]);
   const [availableMetrics, setAvailableMetrics] = useState({
     TRAIN: [],
     VALIDATION: [],
     TEST: [],
+    FULL: [],
   });
 
   const selectedMetricsPerSplit = useRef({
     TRAIN: null,
     VALIDATION: null,
     TEST: null,
+    FULL: null,
   });
   const socketRef = useRef(null);
 
@@ -89,6 +105,7 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
         TRAIN: null,
         VALIDATION: null,
         TEST: null,
+        FULL: null,
       };
     }
   }, [run.status]);
@@ -165,12 +182,20 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
   // once by the parent (useRunResultsData) and passed down, instead of this
   // component independently re-fetching the same /model-session/{id}.
   useEffect(() => {
+    if (usesFullMetrics) setSplit("FULL");
+  }, [usesFullMetrics]);
+
+  useEffect(() => {
     if (!modelSessionDetail) return;
-    setAvailableMetrics({
+
+    // Merged into the previous value rather than replacing it: the FULL entry
+    // is written by its own effect below and must survive this one.
+    setAvailableMetrics((prev) => ({
+      ...prev,
       TRAIN: modelSessionDetail.train_metrics ?? [],
       VALIDATION: modelSessionDetail.validation_metrics ?? [],
       TEST: modelSessionDetail.test_metrics ?? [],
-    });
+    }));
   }, [modelSessionDetail]);
 
   // Fallback bucket per split, built from the run's final metrics rather
@@ -182,12 +207,28 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
       TRAIN: toFallbackBuckets(run.train_metrics),
       VALIDATION: toFallbackBuckets(run.validation_metrics),
       TEST: toFallbackBuckets(run.test_metrics),
+      FULL: toFallbackLastBucket(run.full_metrics),
     }),
-    [run.train_metrics, run.validation_metrics, run.test_metrics],
+    [
+      run.train_metrics,
+      run.validation_metrics,
+      run.test_metrics,
+      run.full_metrics,
+    ],
   );
 
   const splitHasRealData = hasAnyRealMetrics(data[split]);
   const splitFallback = fallbackBySplit[split];
+
+  // Unlike TRAIN/VALIDATION/TEST, FULL has no session-level config to fetch —
+  // its metric names come straight from the computed run.full_metrics, so
+  // this updates independently without re-fetching the session.
+  useEffect(() => {
+    setAvailableMetrics((prev) => ({
+      ...prev,
+      FULL: run.full_metrics ? Object.keys(run.full_metrics) : [],
+    }));
+  }, [run.full_metrics]);
 
   const filteredMetrics = useMemo(() => {
     const metrics = splitHasRealData
@@ -243,6 +284,11 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
   const hasEpochData = splitHasRealData
     ? Boolean(data[split]?.EPOCH && Object.keys(data[split].EPOCH).length > 0)
     : splitHasFallbackData;
+  // FULL only ever carries a single final value, which the backend writes at
+  // LAST level, so this one reads its own fallback bucket.
+  const hasLastData = splitHasRealData
+    ? Boolean(data[split]?.LAST && Object.keys(data[split].LAST).length > 0)
+    : Object.keys(splitFallback?.LAST ?? {}).length > 0;
 
   const levelLabel = useMemo(() => {
     if (!level) return "";
@@ -250,6 +296,11 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
   }, [level, t]);
 
   useEffect(() => {
+    if (usesFullMetrics) {
+      setLevel(hasLastData ? "LAST" : null);
+      return;
+    }
+
     const currentLevelHasData =
       (level === "TRIAL" && hasTrialData) ||
       (level === "STEP" && hasStepData) ||
@@ -263,7 +314,15 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
     else if (hasStepData) setLevel("STEP");
     else if (hasTrialData) setLevel("TRIAL");
     else setLevel(null);
-  }, [split, hasEpochData, hasStepData, hasTrialData, level]);
+  }, [
+    split,
+    usesFullMetrics,
+    hasEpochData,
+    hasStepData,
+    hasTrialData,
+    hasLastData,
+    level,
+  ]);
 
   const filteredMetricKeys = useMemo(
     () => Object.keys(filteredMetrics).sort().join(","),
@@ -324,10 +383,6 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
     return (modelSessionDetail.test_metrics ?? []).length > 0;
   }, [modelSessionDetail]);
 
-  const strategyName =
-    useModels()?.selectedSession?.evaluation_strategy ?? null;
-  const strategyMetadata = useStrategyMetadata(strategyName);
-
   const availableSplits = useMemo(() => {
     const scored = strategyMetadata?.scored_splits;
     const offered = Array.isArray(scored)
@@ -341,8 +396,12 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
 
   // Never leave the group pointing at a button that is no longer rendered.
   useEffect(() => {
+    // FULL is never among the offered splits: a clustering run sets it on
+    // purpose and it must survive this reset.
     setSplit((current) =>
-      availableSplits.includes(current) ? current : availableSplits[0],
+      current === "FULL" || availableSplits.includes(current)
+        ? current
+        : availableSplits[0],
     );
   }, [availableSplits]);
 
@@ -368,45 +427,48 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
 
       {/* Spans every row below it so its containing block covers the whole
           scrollable panel, not just this header row - otherwise it would
-          stop sticking as soon as the header row itself scrolls out of view. */}
-      <Box
-        sx={{
-          gridColumn: "2",
-          gridRow: "1 / -1",
-          justifySelf: "end",
-          alignSelf: "start",
-          position: "sticky",
-          top: 0,
-          zIndex: 2,
-        }}
-      >
-        <PillToggleButtonGroup
-          value={split}
-          onChange={(e, newValue) => {
-            if (newValue !== null) setSplit(newValue);
-          }}
+          stop sticking as soon as the header row itself scrolls out of view.
+          Hidden on a clustering run: FULL is the only split it ever has. */}
+      {!usesFullMetrics && (
+        <Box
           sx={{
-            bgcolor: (theme) => alpha(theme.palette.ui.box, 0.8),
-            backdropFilter: "blur(8px)",
+            gridColumn: "2",
+            gridRow: "1 / -1",
+            justifySelf: "end",
+            alignSelf: "start",
+            position: "sticky",
+            top: 0,
+            zIndex: 2,
           }}
         >
-          {availableSplits.includes("TRAIN") && (
-            <ToggleButton value="TRAIN" sx={{ px: 1.5 }}>
-              {t("models:label.train")}
-            </ToggleButton>
-          )}
-          {availableSplits.includes("VALIDATION") && (
-            <ToggleButton value="VALIDATION" sx={{ px: 1.5 }}>
-              {t("models:label.validation")}
-            </ToggleButton>
-          )}
-          {availableSplits.includes("TEST") && (
-            <ToggleButton value="TEST" sx={{ px: 1.5 }}>
-              {t("models:label.test")}
-            </ToggleButton>
-          )}
-        </PillToggleButtonGroup>
-      </Box>
+          <PillToggleButtonGroup
+            value={split}
+            onChange={(e, newValue) => {
+              if (newValue !== null) setSplit(newValue);
+            }}
+            sx={{
+              bgcolor: (theme) => alpha(theme.palette.ui.box, 0.8),
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            {availableSplits.includes("TRAIN") && (
+              <ToggleButton value="TRAIN" sx={{ px: 1.5 }}>
+                {t("models:label.train")}
+              </ToggleButton>
+            )}
+            {availableSplits.includes("VALIDATION") && (
+              <ToggleButton value="VALIDATION" sx={{ px: 1.5 }}>
+                {t("models:label.validation")}
+              </ToggleButton>
+            )}
+            {availableSplits.includes("TEST") && (
+              <ToggleButton value="TEST" sx={{ px: 1.5 }}>
+                {t("models:label.test")}
+              </ToggleButton>
+            )}
+          </PillToggleButtonGroup>
+        </Box>
+      )}
 
       <Box sx={{ gridColumn: "1 / -1", gridRow: "2", minWidth: 0 }}>
         {summaryMetrics.length > 0 && (
@@ -563,31 +625,33 @@ export function LiveMetricsChart({ run, modelSessionDetail = null }) {
           </Box>
         )}
 
-        <Box display="flex" justifyContent="flex-end" mt={2}>
-          <ButtonGroup size="small" variant="outlined">
-            <Button
-              variant={level === "TRIAL" ? "contained" : "outlined"}
-              onClick={() => handleLevelChange("TRIAL")}
-              disabled={!hasTrialData}
-            >
-              {t("models:label.trial")}
-            </Button>
-            <Button
-              variant={level === "STEP" ? "contained" : "outlined"}
-              onClick={() => handleLevelChange("STEP")}
-              disabled={!hasStepData}
-            >
-              {t("models:label.step")}
-            </Button>
-            <Button
-              variant={level === "EPOCH" ? "contained" : "outlined"}
-              onClick={() => handleLevelChange("EPOCH")}
-              disabled={!hasEpochData}
-            >
-              {t("models:label.epoch")}
-            </Button>
-          </ButtonGroup>
-        </Box>
+        {!usesFullMetrics && (
+          <Box display="flex" justifyContent="flex-end" mt={2}>
+            <ButtonGroup size="small" variant="outlined">
+              <Button
+                variant={level === "TRIAL" ? "contained" : "outlined"}
+                onClick={() => handleLevelChange("TRIAL")}
+                disabled={!hasTrialData}
+              >
+                {t("models:label.trial")}
+              </Button>
+              <Button
+                variant={level === "STEP" ? "contained" : "outlined"}
+                onClick={() => handleLevelChange("STEP")}
+                disabled={!hasStepData}
+              >
+                {t("models:label.step")}
+              </Button>
+              <Button
+                variant={level === "EPOCH" ? "contained" : "outlined"}
+                onClick={() => handleLevelChange("EPOCH")}
+                disabled={!hasEpochData}
+              >
+                {t("models:label.epoch")}
+              </Button>
+            </ButtonGroup>
+          </Box>
+        )}
       </Box>
     </Box>
   );

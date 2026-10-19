@@ -7,6 +7,12 @@ from DashAI.back.converters.category.feature_engineering import (
 from DashAI.back.core.schema_fields import enum_field, schema_field
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    ColumnItem,
+    StateItem,
+    StructureDelta,
+    type_fields,
+)
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
@@ -58,13 +64,11 @@ class NumericExpansion(FeatureEngineeringConverter, BaseConverter):
     ``sqrt``) become ``NaN`` in the corresponding output.
 
     The original columns are left untouched. ``square`` preserves the input
-    column's type (``Integer`` stays ``Integer``, ``Float`` stays ``Float``)
-    when the source column has no missing values, since squaring is exact
-    for both. ``log1p`` and ``sqrt`` always produce a ``Float`` column, since
-    they can yield non-integer or ``NaN`` results even from integer input,
-    and ``square`` also falls back to ``Float`` when the source ``Integer``
-    column has missing values (since a missing value has no exact integer
-    representation).
+    column's type (``Integer`` stays ``Integer``, ``Float`` stays ``Float``),
+    since squaring is exact for both; a missing value stays missing. ``log1p``
+    and ``sqrt`` always produce a ``Float`` column, since they can yield
+    non-integer or ``NaN`` results even from integer input. The output type
+    only depends on the operation and the input type, never on the values.
     """
 
     SCHEMA = NumericExpansionSchema
@@ -158,24 +162,15 @@ class NumericExpansion(FeatureEngineeringConverter, BaseConverter):
         NumericExpansion
             The fitted converter instance (self).
         """
-        import pyarrow as pa
-
         self._target_columns = []
         self._output_types = {}
         for col_name in x.column_names:
             col_type = x.types.get(col_name)
             if isinstance(col_type, (Float, Integer)):
                 self._target_columns.append(col_name)
-                new_col_name = f"{self.operation}_{col_name}"
-                has_missing_values = x.arrow_table[col_name].null_count > 0
-                if (
-                    self.operation == "square"
-                    and isinstance(col_type, Integer)
-                    and not has_missing_values
-                ):
-                    self._output_types[new_col_name] = Integer(arrow_type=pa.int64())
-                else:
-                    self._output_types[new_col_name] = Float(arrow_type=pa.float64())
+                self._output_types[f"{self.operation}_{col_name}"] = (
+                    self._expansion_type(isinstance(col_type, Integer))
+                )
             else:
                 print(
                     f"Warning: Column '{col_name}' in scope is not numeric "
@@ -187,6 +182,54 @@ class NumericExpansion(FeatureEngineeringConverter, BaseConverter):
                 "columns in the provided scope."
             )
         return self
+
+    def _expansion_type(self, input_is_integer: bool) -> DashAIDataType:
+        """Return the type of an expanded column.
+
+        Parameters
+        ----------
+        input_is_integer : bool
+            Whether the source column is ``Integer`` (otherwise ``Float``).
+
+        Returns
+        -------
+        DashAIDataType
+            ``Integer`` for the square of an ``Integer`` column, ``Float``
+            otherwise.
+        """
+        import pyarrow as pa
+
+        if self.operation == "square" and input_is_integer:
+            return Integer(arrow_type=pa.int64())
+        return Float(arrow_type=pa.float64())
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: the scope kept, plus one column per numeric one.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The unchanged inputs, plus an ``<operation>_<column>`` column for
+            every Float or Integer input, as ``fit`` picks them.
+        """
+        if not all(isinstance(item, ColumnItem) for item in inputs):
+            return super().infer_output_columns(inputs)
+        added = []
+        for item in inputs:
+            if item.type not in ("Float", "Integer"):
+                continue
+            type_name, dtype = type_fields(self._expansion_type(item.type == "Integer"))
+            added.append(
+                ColumnItem(
+                    name=f"{self.operation}_{item.name}", type=type_name, dtype=dtype
+                )
+            )
+        return StructureDelta(kept=list(inputs), added=added)
 
     def transform(
         self, x: "DashAIDataset", y: Union["DashAIDataset", None] = None
@@ -210,6 +253,7 @@ class NumericExpansion(FeatureEngineeringConverter, BaseConverter):
         """
         import numpy as np
         import pyarrow as pa
+        import pyarrow.compute as pc
 
         from DashAI.back.dataloaders.classes.dashai_dataset import modify_table
 
@@ -226,9 +270,10 @@ class NumericExpansion(FeatureEngineeringConverter, BaseConverter):
                 output_type = self._output_types[new_col_name]
 
                 if isinstance(output_type, Integer):
-                    values = x_pandas[col].to_numpy(dtype="int64")
-                    result = values**2
-                    arrow_type = pa.int64()
+                    # Arrow arithmetic keeps nulls as nulls, which a numpy
+                    # int64 array cannot represent.
+                    values = x.arrow_table[col].cast(pa.int64())
+                    new_columns[new_col_name] = pc.multiply(values, values)
                 else:
                     values = x_pandas[col].to_numpy(dtype="float64")
                     if self.operation == "log1p":
@@ -237,9 +282,7 @@ class NumericExpansion(FeatureEngineeringConverter, BaseConverter):
                         result = values**2
                     else:  # sqrt
                         result = np.where(values >= 0, np.sqrt(values), np.nan)
-                    arrow_type = pa.float64()
-
-                new_columns[new_col_name] = pa.array(result, type=arrow_type)
+                    new_columns[new_col_name] = pa.array(result, type=pa.float64())
                 new_types[new_col_name] = output_type
 
         return modify_table(x, new_columns, types=new_types)
@@ -247,9 +290,8 @@ class NumericExpansion(FeatureEngineeringConverter, BaseConverter):
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the output type for a given expanded column.
 
-        Determined during ``fit``: ``Integer`` when the operation is
-        ``square`` and the source column is ``Integer``, ``Float``
-        otherwise.
+        ``Integer`` when the operation is ``square`` and the source column is
+        ``Integer``, ``Float`` otherwise.
 
         Parameters
         ----------

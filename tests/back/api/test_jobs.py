@@ -12,13 +12,13 @@ from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.evaluation.holdout import HoldoutEvaluationStrategy
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.metrics.base_metric import BaseMetric
-from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.supervised_model import SupervisedModel
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
 from DashAI.back.splitters.holdout import HoldoutSplitter
-from DashAI.back.tasks.base_task import BaseTask
+from DashAI.back.tasks.supervised_task import SupervisedTask
 
 
-class DummyTask(BaseTask):
+class DummyTask(SupervisedTask):
     name: str = "DummyTask"
     metadata: dict = {
         "inputs_types": [ClassLabel, Value],
@@ -30,11 +30,8 @@ class DummyTask(BaseTask):
     def prepare_for_task(self, dataset, input_columns=None, output_columns=None):
         return dataset
 
-    def num_labels(self, dataset, output_column):
-        return None
 
-
-class DummyModel(BaseModel):
+class DummyModel(SupervisedModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
 
     def save(self, filename):
@@ -53,7 +50,7 @@ class DummyModel(BaseModel):
         return
 
 
-class FailDummyModel(BaseModel):
+class FailDummyModel(SupervisedModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
 
     def save(self, filename):
@@ -235,12 +232,10 @@ def test_enqueue_jobs(client: TestClient, run_id: int):
     assert response.status_code == 200, response.text
     job_status = response.json()
 
-    assert job_status["status"] in [
-        "finished",
-        "error",
-    ], f"Job status should be finished or error, got {job_status['status']}"
-    if job_status["status"] == "error":
-        assert "error" in job_status, "Error jobs should have an error message"
+    # Pinned to finished rather than "finished or error": a run of DummyModel
+    # has nothing that can fail, so an error here means the job broke, and
+    # accepting both would hide exactly that.
+    assert job_status["status"] == "finished", job_status
 
     response = client.post(
         "/api/v1/job/",
@@ -253,7 +248,7 @@ def test_enqueue_jobs(client: TestClient, run_id: int):
     response = client.get(f"/api/v1/job/status/{job_id_2}")
     assert response.status_code == 200, response.text
     job_status_2 = response.json()
-    assert job_status_2["status"] in ["finished", "error"]
+    assert job_status_2["status"] == "finished", job_status_2
 
     response = client.get("/api/v1/job")
     assert response.status_code == 200, response.text

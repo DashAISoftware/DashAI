@@ -39,6 +39,7 @@ class DocumentConverter(BaseConverter):
     """
 
     CHANGES_ROW_COUNT = True
+    COLUMN_OPERATION = "rows"
     LEARNS_FROM_DATA = False
     metadata: Dict[str, Any] = {"data_kinds": [DOCUMENT]}
     keep_source: bool = False

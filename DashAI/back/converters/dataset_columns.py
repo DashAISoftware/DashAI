@@ -3,10 +3,45 @@ dataset, used both by the Notebooks converter job and by session-level
 preprocessing (SessionPreprocessor).
 """
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, Iterable, List
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+
+
+def plan_new_column_names(
+    taken_names: Iterable[str], new_columns: List[str]
+) -> Dict[str, str]:
+    """Name every new column so it never collides with an existing one.
+
+    A new column whose name is already taken gets the first free
+    ``<name>_1``, ``<name>_2``... suffix. Shared by the dataset rebuild below
+    and by the structure estimate of a session's converter chain, so both
+    always agree on the final names.
+
+    Parameters
+    ----------
+    taken_names : Iterable[str]
+        Names already present once the converter's removed columns are gone.
+    new_columns : List[str]
+        The converter's new column names, in output order.
+
+    Returns
+    -------
+    Dict[str, str]
+        Each new column name mapped to its final, unique name.
+    """
+    seen = set(taken_names)
+    mapping = {}
+    for col in new_columns:
+        unique_col = col
+        counter = 1
+        while unique_col in seen:
+            unique_col = f"{col}_{counter}"
+            counter += 1
+        seen.add(unique_col)
+        mapping[col] = unique_col
+    return mapping
 
 
 def rebuild_dataset_with_transformed_columns(
@@ -70,16 +105,8 @@ def rebuild_dataset_with_transformed_columns(
             new_columns_order.append(col)
             seen_cols.add(col)
 
-    col_name_mapping = {}
-    for col in new_cols:
-        unique_col = col
-        counter = 1
-        while unique_col in seen_cols:
-            unique_col = f"{col}_{counter}"
-            counter += 1
-        new_columns_order.append(unique_col)
-        seen_cols.add(unique_col)
-        col_name_mapping[col] = unique_col
+    col_name_mapping = plan_new_column_names(seen_cols, new_cols)
+    new_columns_order.extend(col_name_mapping.values())
 
     updated_arrays = {}
     for col in replacement_cols:

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.category.basic_preprocessing import (
@@ -6,23 +6,12 @@ from DashAI.back.converters.category.basic_preprocessing import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
+from DashAI.back.types.missing_values import (  # noqa: F401 (NULL_VALUES re-export)
+    NULL_VALUES,
+    missing_columns_by_row,
+)
 from DashAI.back.types.value_types import Text
-
-NULL_VALUES = {
-    "none",
-    "null",
-    "nan",
-    "na",
-    "n/a",
-    "",
-    "missing",
-    "undefined",
-    "<na>",
-    "nil",
-    ".",
-}
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -42,6 +31,8 @@ class NanRemover(BasicPreprocessingConverter, BaseConverter):
 
     SCHEMA = NanRemoverSchema
     CHANGES_ROW_COUNT = True
+    COLUMN_OPERATION = "rows"
+    ROWS_APPLY_TO = "splits"
     LEARNS_FROM_DATA = False
     DESCRIPTION = MultilingualString(
         en=(
@@ -116,31 +107,6 @@ class NanRemover(BasicPreprocessingConverter, BaseConverter):
         self.column_types = x.types.copy()
         return self
 
-    def _is_null_value(self, value) -> bool:
-        """Check whether a value should be treated as null.
-
-        Returns ``True`` for Python ``None``, ``float('nan')``, or any string
-        representation found in the ``NULL_VALUES`` sentinel set.
-
-        Parameters
-        ----------
-        value : object
-            The value to test.
-
-        Returns
-        -------
-        bool
-            ``True`` if ``value`` is considered null, ``False`` otherwise.
-        """
-        import numpy as np
-
-        if value is None:
-            return True
-        if isinstance(value, float) and np.isnan(value):
-            return True
-        value_str = str(value).lower().strip()
-        return value_str in NULL_VALUES
-
     def transform(
         self, x: "DashAIDataset", y: "DashAIDataset" = None
     ) -> "DashAIDataset":
@@ -163,44 +129,38 @@ class NanRemover(BasicPreprocessingConverter, BaseConverter):
         ValueError
             If any fitted column is not present in ``x``.
         """
-        import numpy as np
+        return x.select_columns(list(self.columns)).select(self.rows_to_keep(x))
 
-        from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
+    def rows_to_keep(self, x: "DashAIDataset") -> List[int]:
+        """Positions of the rows with no missing value in the fitted columns.
 
-        missing = [col for col in self.columns if col not in x.column_names]
-        if missing:
+        A value is missing following DashAI's shared rule (see
+        ``DashAI.back.types.missing_values``): NA, or a null-like string such
+        as "N/A" in a text or categorical column.
+
+        Parameters
+        ----------
+        x : DashAIDataset
+            The dataset to inspect; it must contain every fitted column.
+
+        Returns
+        -------
+        list of int
+            0-based positions of the complete rows, in order.
+
+        Raises
+        ------
+        ValueError
+            If any fitted column is not present in ``x``.
+        """
+        missing_columns = [col for col in self.columns if col not in x.column_names]
+        if missing_columns:
             raise ValueError(
-                (
-                    "Cannot remove NaN from columns that do not exist "
-                    "in the dataset: {}"
-                ).format(missing)
+                "Cannot remove NaN from columns that do not exist "
+                f"in the dataset: {missing_columns}"
             )
-
-        dataset = x.to_pandas()
-
-        mask = np.ones(len(dataset), dtype=bool)
-
-        for col in self.columns:
-            col_type = self.column_types.get(col)
-            series = dataset[col]
-
-            col_mask = ~series.isna()
-
-            if isinstance(col_type, Categorical) or series.dtype == object:
-                string_null_mask = ~series.apply(self._is_null_value)
-                col_mask = col_mask & string_null_mask
-
-            mask = mask & col_mask
-
-        cleaned_dataset = dataset[mask]
-
-        preserved_types = {
-            col: self.column_types[col]
-            for col in cleaned_dataset.columns
-            if col in self.column_types
-        }
-
-        return to_dashai_dataset(cleaned_dataset, types=preserved_types)
+        incomplete = missing_columns_by_row(x, list(self.columns))
+        return [i for i in range(x.num_rows) if i not in incomplete]
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the preserved type for a column, or a Text placeholder.

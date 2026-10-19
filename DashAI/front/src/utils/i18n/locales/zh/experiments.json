@@ -65,6 +65,7 @@
     "noDatasetsAvailableGoToDataTab": "请前往<1>数据标签页</1>先上传数据集。",
     "noModelsAvailable": "暂无可用模型",
     "noOptimizersNoMetric": "不进行超参数优化",
+    "noSplitConfigNeeded": "此任务类型使用完整数据集进行训练——无需配置训练/验证/测试划分。",
     "numFolds": "折数（k）",
     "numFoldsDescription": "交叉验证的折数。折数越多可以提高评估的稳定性，但会增加处理时间。必须为大于 1 的整数。",
     "numRepeats": "重复次数",

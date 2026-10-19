@@ -69,7 +69,12 @@ function ResultsGraphs({
   );
 
   const availableMetrics = useMemo(() => {
-    const sets = { train: new Set(), validation: new Set(), test: new Set() };
+    const sets = {
+      train: new Set(),
+      validation: new Set(),
+      test: new Set(),
+      full: new Set(),
+    };
     finishedRuns.forEach((run) => {
       if (run.train_metrics)
         Object.keys(run.train_metrics).forEach((m) => sets.train.add(m));
@@ -79,11 +84,14 @@ function ResultsGraphs({
         );
       if (run.test_metrics)
         Object.keys(run.test_metrics).forEach((m) => sets.test.add(m));
+      if (run.full_metrics)
+        Object.keys(run.full_metrics).forEach((m) => sets.full.add(m));
     });
     return {
       train: Array.from(sets.train),
       validation: Array.from(sets.validation),
       test: Array.from(sets.test),
+      full: Array.from(sets.full),
     };
   }, [finishedRuns]);
 
@@ -96,6 +104,9 @@ function ResultsGraphs({
     else if (availableMetrics.validation.length > 0)
       setInternalSplit("validation");
     else if (availableMetrics.test.length > 0) setInternalSplit("test");
+    // A clustering run has no train/validation/test metrics at all, so it
+    // falls through to the split it does have.
+    else if (availableMetrics.full.length > 0) setInternalSplit("full");
   }, [availableMetrics, splitProp]);
 
   useEffect(() => {

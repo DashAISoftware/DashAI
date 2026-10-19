@@ -53,6 +53,7 @@ export default function ResultsTabsHeader({
   optimizables,
   explainerCount,
   predictionCount,
+  supportsPredictions = true,
   reportCount = 0,
   run,
 }) {
@@ -204,38 +205,44 @@ export default function ResultsTabsHeader({
             }
             disabled={!isFinished || !hasDataToExplain}
           />
-          <Tab
-            value={2}
-            label={
-              <Tooltip title={notFinishedTooltip}>
-                <Box sx={{ ...tabLabelRowSx, pointerEvents: "auto" }}>
-                  <span>{t("models:label.predictions")}</span>
-                  {isFinished && (
-                    <Chip
-                      label={predictionCount}
-                      size="small"
-                      color="primary"
-                    />
-                  )}
-                </Box>
-              </Tooltip>
-            }
-            disabled={!isFinished}
-          />
-          <Tab
-            value={REPORTS_TAB}
-            label={
-              <Tooltip title={notFinishedTooltip}>
-                <Box sx={{ ...tabLabelRowSx, pointerEvents: "auto" }}>
-                  <span>{t("models:label.reports")}</span>
-                  {isFinished && (
-                    <Chip label={reportCount} size="small" color="primary" />
-                  )}
-                </Box>
-              </Tooltip>
-            }
-            disabled={!isFinished}
-          />
+          {supportsPredictions && (
+            <Tab
+              value={2}
+              label={
+                <Tooltip title={notFinishedTooltip}>
+                  <Box sx={{ ...tabLabelRowSx, pointerEvents: "auto" }}>
+                    <span>{t("models:label.predictions")}</span>
+                    {isFinished && (
+                      <Chip
+                        label={predictionCount}
+                        size="small"
+                        color="primary"
+                      />
+                    )}
+                  </Box>
+                </Tooltip>
+              }
+              disabled={!isFinished}
+            />
+          )}
+          {/* Reports score held-out splits, which a session without splits
+              (clustering) does not have. */}
+          {supportsPredictions && (
+            <Tab
+              value={REPORTS_TAB}
+              label={
+                <Tooltip title={notFinishedTooltip}>
+                  <Box sx={{ ...tabLabelRowSx, pointerEvents: "auto" }}>
+                    <span>{t("models:label.reports")}</span>
+                    {isFinished && (
+                      <Chip label={reportCount} size="small" color="primary" />
+                    )}
+                  </Box>
+                </Tooltip>
+              }
+              disabled={!isFinished}
+            />
+          )}
         </PillTabs>
       </Box>
     </Box>
@@ -249,5 +256,6 @@ ResultsTabsHeader.propTypes = {
   optimizables: PropTypes.number,
   explainerCount: PropTypes.number,
   predictionCount: PropTypes.number,
+  supportsPredictions: PropTypes.bool,
   reportCount: PropTypes.number,
 };
