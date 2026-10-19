@@ -93,6 +93,7 @@ class VarianceThreshold(
         zh="方差阈值",
     )
     PRESERVES_INPUT_TYPE = True
+    COLUMN_OPERATION = "select"
 
     def fit(
         self, x: "DashAIDataset", y: Union["DashAIDataset", None] = None

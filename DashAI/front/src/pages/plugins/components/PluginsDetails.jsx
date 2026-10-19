@@ -7,6 +7,12 @@ import {
   Paper,
   CardHeader,
   CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Typography,
   Tooltip,
   Grid,
@@ -21,8 +27,32 @@ import { PluginStatus } from "../../../types/plugin";
 import usePluginsUpdate from "../hooks/usePluginsUpdate";
 import usePluginsUpgrade from "../hooks/usePluginsUpgrade";
 import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Trans, useTranslation } from "react-i18next";
+
+function isMarkdownContentType(contentType) {
+  return (contentType ?? "").toLowerCase().startsWith("text/markdown");
+}
+
+const markdownTableComponents = {
+  table: ({ children }) => (
+    <TableContainer component={Paper} variant="outlined" sx={{ my: 2 }}>
+      <Table size="small">{children}</Table>
+    </TableContainer>
+  ),
+  thead: ({ children }) => <TableHead>{children}</TableHead>,
+  tbody: ({ children }) => <TableBody>{children}</TableBody>,
+  tr: ({ children }) => <TableRow>{children}</TableRow>,
+  th: ({ children, style }) => (
+    <TableCell sx={{ fontWeight: 600 }} align={style?.textAlign}>
+      {children}
+    </TableCell>
+  ),
+  td: ({ children, style }) => (
+    <TableCell align={style?.textAlign}>{children}</TableCell>
+  ),
+};
 
 /**
  * component for plugin details
@@ -98,7 +128,18 @@ function PluginsDetails() {
   const tabs = [
     {
       label: t("plugins:label.details"),
-      component: <Markdown>{plugin.description}</Markdown>,
+      component: isMarkdownContentType(plugin.description_content_type) ? (
+        <Markdown
+          remarkPlugins={[remarkGfm]}
+          components={markdownTableComponents}
+        >
+          {plugin.description}
+        </Markdown>
+      ) : (
+        <Typography component="pre" sx={{ whiteSpace: "pre-wrap" }}>
+          {plugin.description}
+        </Typography>
+      ),
     },
   ];
 

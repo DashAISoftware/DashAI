@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FormSchemaButtonGroup from "../../shared/FormSchemaButtonGroup";
@@ -24,8 +24,27 @@ export default function ScopeStepExplorer({
   const nonAllowedDtypes = tool?.metadata?.non_allowed_dtypes || [];
   const tourContext = useTourContext();
   const { t } = useTranslation(["datasets", "common"]);
-  const { columnTypes, itemSelection } = useExplorersAndConverters();
+  const { columnTypes, itemSelection, explorersAndConverters } =
+    useExplorersAndConverters();
   const isDocument = isDocumentNotebook(notebook);
+
+  const allowedColumnNames = useMemo(() => {
+    if (!tool?.metadata?.restricts_to_converter_columns) return null;
+    const requiresClass = tool?.metadata?.requires_converter_class;
+    if (!requiresClass) return null;
+    const latest = [...explorersAndConverters]
+      .filter(
+        (item) =>
+          item.type === "converter" &&
+          item.status === 3 &&
+          item.converter === requiresClass,
+      )
+      .sort((a, b) => (b.id || 0) - (a.id || 0))[0];
+    if (!latest) return null;
+    return new Set(
+      (latest?.parameters?.scope?.columns || []).map((c) => c.columnName),
+    );
+  }, [explorersAndConverters, tool?.metadata]);
 
   const handleSubmit = () => {
     nextStep();
@@ -71,6 +90,7 @@ export default function ScopeStepExplorer({
             allowedTypes={allowedTypes}
             allowedDtypes={allowedDtypes}
             nonAllowedDtypes={nonAllowedDtypes}
+            allowedColumnNames={allowedColumnNames}
             onSelectionChange={(selected) => setScopeColumns(selected)}
             onValidationChange={(isValid) => setIsSelectionValid(isValid)}
           />

@@ -13,6 +13,10 @@ export default function ParameterStepConverter({
   handleSaveConverter,
   setStep,
   hideButtons = false,
+  // The notebook fits a converter on the whole dataset, so one that learns
+  // from the data can leak test information. Session preprocessing fits on
+  // the training split only, so it turns this warning off.
+  warnAboutLeakage = true,
 }) {
   const tourContext = useTourContext();
   const { t } = useTranslation(["common", "datasets"]);
@@ -72,7 +76,8 @@ export default function ParameterStepConverter({
     nColumnsSelected > 0 &&
     currentNComponents > nColumnsSelected;
 
-  const showLeakageWarning = tool?.metadata?.learns_from_data === true;
+  const showLeakageWarning =
+    warnAboutLeakage && tool?.metadata?.learns_from_data === true;
 
   return (
     <Box

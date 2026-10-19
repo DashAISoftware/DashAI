@@ -36,7 +36,9 @@ import homeES from "./locales/es/home.json";
 import pluginsEN from "./locales/en/plugins.json";
 import pluginsES from "./locales/es/plugins.json";
 import generativeTourEN from "./locales/en/generativeTour.json";
+import hubTourEN from "./locales/en/hubTour.json";
 import generativeTourES from "./locales/es/generativeTour.json";
+import hubTourES from "./locales/es/hubTour.json";
 import hubEN from "./locales/en/hub.json";
 import hubES from "./locales/es/hub.json";
 import credentialsEN from "./locales/en/credentials.json";
@@ -44,6 +46,11 @@ import credentialsES from "./locales/es/credentials.json";
 import credentialsPT from "./locales/pt/credentials.json";
 import credentialsDE from "./locales/de/credentials.json";
 import credentialsZH from "./locales/zh/credentials.json";
+import updatesEN from "./locales/en/updates.json";
+import updatesES from "./locales/es/updates.json";
+import updatesPT from "./locales/pt/updates.json";
+import updatesDE from "./locales/de/updates.json";
+import updatesZH from "./locales/zh/updates.json";
 import configurableObjectPT from "./locales/pt/configurableObject.json";
 import commonPT from "./locales/pt/common.json";
 import customPT from "./locales/pt/custom.json";
@@ -62,6 +69,7 @@ import modelsSessionTourPT from "./locales/pt/modelsSessionTour.json";
 import homePT from "./locales/pt/home.json";
 import pluginsPT from "./locales/pt/plugins.json";
 import generativeTourPT from "./locales/pt/generativeTour.json";
+import hubTourPT from "./locales/pt/hubTour.json";
 import configurableObjectDE from "./locales/de/configurableObject.json";
 import commonDE from "./locales/de/common.json";
 import customDE from "./locales/de/custom.json";
@@ -80,6 +88,7 @@ import modelsSessionTourDE from "./locales/de/modelsSessionTour.json";
 import homeDE from "./locales/de/home.json";
 import pluginsDE from "./locales/de/plugins.json";
 import generativeTourDE from "./locales/de/generativeTour.json";
+import hubTourDE from "./locales/de/hubTour.json";
 import configurableObjectZH from "./locales/zh/configurableObject.json";
 import commonZH from "./locales/zh/common.json";
 import customZH from "./locales/zh/custom.json";
@@ -98,6 +107,7 @@ import modelsSessionTourZH from "./locales/zh/modelsSessionTour.json";
 import homeZH from "./locales/zh/home.json";
 import pluginsZH from "./locales/zh/plugins.json";
 import generativeTourZH from "./locales/zh/generativeTour.json";
+import hubTourZH from "./locales/zh/hubTour.json";
 import hubZH from "./locales/zh/hub.json";
 
 // the translations
@@ -123,8 +133,10 @@ const resources = {
     modelsTour: modelsTourEN,
     modelsSessionTour: modelsSessionTourEN,
     generativeTour: generativeTourEN,
+    hubTour: hubTourEN,
     hub: hubEN,
     credentials: credentialsEN,
+    updates: updatesEN,
   },
   es: {
     configurableObject: configurableObjectES,
@@ -145,8 +157,10 @@ const resources = {
     modelsTour: modelsTourES,
     modelsSessionTour: modelsSessionTourES,
     generativeTour: generativeTourES,
+    hubTour: hubTourES,
     hub: hubES,
     credentials: credentialsES,
+    updates: updatesES,
   },
   pt: {
     configurableObject: configurableObjectPT,
@@ -167,7 +181,9 @@ const resources = {
     modelsTour: modelsTourPT,
     modelsSessionTour: modelsSessionTourPT,
     generativeTour: generativeTourPT,
+    hubTour: hubTourPT,
     credentials: credentialsPT,
+    updates: updatesPT,
   },
   de: {
     configurableObject: configurableObjectDE,
@@ -188,7 +204,9 @@ const resources = {
     modelsTour: modelsTourDE,
     modelsSessionTour: modelsSessionTourDE,
     generativeTour: generativeTourDE,
+    hubTour: hubTourDE,
     credentials: credentialsDE,
+    updates: updatesDE,
   },
   zh: {
     configurableObject: configurableObjectZH,
@@ -209,8 +227,10 @@ const resources = {
     modelsTour: modelsTourZH,
     modelsSessionTour: modelsSessionTourZH,
     generativeTour: generativeTourZH,
+    hubTour: hubTourZH,
     hub: hubZH,
     credentials: credentialsZH,
+    updates: updatesZH,
   },
 };
 
@@ -242,8 +262,10 @@ i18n
       "modelsSessionTour",
       "plugins",
       "generativeTour",
+      "hubTour",
       "hub",
       "credentials",
+      "updates",
     ],
     defaultNS: "common",
 

@@ -1,5 +1,5 @@
 import math
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.category.feature_engineering import (
@@ -15,6 +15,12 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    ColumnItem,
+    StateItem,
+    StructureDelta,
+    type_fields,
+)
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
@@ -154,13 +160,13 @@ class ColumnArithmetic(FeatureEngineeringConverter, BaseConverter):
     ``<column_a>_<operation>_<column_b>`` or ``<column_a>_<operation>_<constant>``.
 
     The output column is ``Integer`` when both operands are ``Integer`` (a
-    whole-number ``constant`` counts as ``Integer``), the operation is
+    whole-number ``constant`` counts as ``Integer``) and the operation is
     ``add``, ``subtract``, or ``multiply`` (all of which stay exact on
-    integers), and neither operand column has missing values (since a
-    missing value has no exact integer representation). ``divide`` always
+    integers); a missing operand gives a missing result. ``divide`` always
     produces a ``Float`` column, since integer division is not exact in
-    general, and any operation involving a ``Float`` operand, or an
-    operand column with missing values, also produces a ``Float`` column.
+    general, and any operation involving a ``Float`` operand also produces a
+    ``Float`` column. The type never depends on the values, so it is known
+    before fitting (see ``infer_output_columns``).
     """
 
     SCHEMA = ColumnArithmeticSchema
@@ -307,7 +313,46 @@ class ColumnArithmetic(FeatureEngineeringConverter, BaseConverter):
             selected column is not numeric (Float or Integer), or if a
             single column is selected without a valid ``constant``.
         """
-        columns = list(x.column_names)
+        types = {name: type(x.types.get(name)).__name__ for name in x.column_names}
+        (
+            self.operand_b_mode,
+            self.column_a,
+            self.column_b,
+            self._result_column_name,
+            self._output_is_integer,
+        ) = self._plan(list(x.column_names), types)
+        if self.operand_b_mode == "constant":
+            self.constant = float(self.constant)
+        return self
+
+    def _plan(
+        self, columns: List[str], types: Dict[str, str]
+    ) -> Tuple[str, str, Optional[str], str, bool]:
+        """Work out the operands, result name and result type from the scope.
+
+        Shared by ``fit`` and ``infer_output_columns``, so the estimated
+        column is exactly the one ``transform`` appends.
+
+        Parameters
+        ----------
+        columns : List[str]
+            The scope column names, in dataset order.
+        types : Dict[str, str]
+            Each scope column's DashAI type name (e.g. "Integer").
+
+        Returns
+        -------
+        tuple
+            (operand_b_mode, column_a, column_b, result_column_name,
+            output_is_integer); column_b is None in "constant" mode.
+
+        Raises
+        ------
+        ValueError
+            If the number of selected columns is not one or two, if a
+            selected column is not numeric (Float or Integer), or if a
+            single column is selected without a valid ``constant``.
+        """
         if len(columns) not in (1, 2):
             raise ValueError(
                 "ColumnArithmetic requires selecting one or two columns in "
@@ -315,25 +360,19 @@ class ColumnArithmetic(FeatureEngineeringConverter, BaseConverter):
             )
 
         for col in columns:
-            if not isinstance(x.types.get(col), (Float, Integer)):
+            if types.get(col) not in ("Float", "Integer"):
                 raise ValueError(
                     f"Column '{col}' must be numeric (Float or Integer) to be "
                     "used in ColumnArithmetic."
                 )
 
         if len(columns) == 2:
-            self.operand_b_mode = "column"
-            first, second = columns
+            operand_b_mode = "column"
+            column_a, column_b = columns
             if self.swap_operands:
-                first, second = second, first
-            self.column_a = first
-            self.column_b = second
-            operand_b_label = self.column_b
-            operand_b_is_integer = isinstance(x.types.get(self.column_b), Integer)
-            has_missing_values = (
-                x.arrow_table[self.column_a].null_count > 0
-                or x.arrow_table[self.column_b].null_count > 0
-            )
+                column_a, column_b = column_b, column_a
+            operand_b_label = column_b
+            operand_b_is_integer = types[column_b] == "Integer"
         else:
             if not isinstance(self.constant, (int, float)) or isinstance(
                 self.constant, bool
@@ -347,24 +386,55 @@ class ColumnArithmetic(FeatureEngineeringConverter, BaseConverter):
                     "'constant' must be a finite number (not NaN or "
                     "infinite) when a single column is selected in scope."
                 )
-            self.operand_b_mode = "constant"
-            self.constant = float(self.constant)
-            self.column_a = columns[0]
-            self.column_b = None
-            operand_b_label = self._format_constant(self.constant)
+            operand_b_mode = "constant"
+            column_a, column_b = columns[0], None
+            operand_b_label = self._format_constant(float(self.constant))
             operand_b_is_integer = self.constant == int(self.constant)
-            has_missing_values = x.arrow_table[self.column_a].null_count > 0
 
-        self._result_column_name = self.output_column_name or (
-            f"{self.column_a}_{self.operation}_{operand_b_label}"
+        result_column_name = self.output_column_name or (
+            f"{column_a}_{self.operation}_{operand_b_label}"
         )
-        self._output_is_integer = (
+        output_is_integer = (
             self.operation != "divide"
-            and isinstance(x.types.get(self.column_a), Integer)
+            and types[column_a] == "Integer"
             and operand_b_is_integer
-            and not has_missing_values
         )
-        return self
+        return (
+            operand_b_mode,
+            column_a,
+            column_b,
+            result_column_name,
+            output_is_integer,
+        )
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: the scope kept, plus the result column.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The unchanged inputs, plus the single result column.
+
+        Raises
+        ------
+        ValueError
+            If the scope or ``constant`` is invalid (see ``_plan``).
+        """
+        if not all(isinstance(item, ColumnItem) for item in inputs):
+            return super().infer_output_columns(inputs)
+        _, _, _, name, is_integer = self._plan(
+            [item.name for item in inputs], {item.name: item.type for item in inputs}
+        )
+        type_name, dtype = type_fields(self._result_type(is_integer))
+        return StructureDelta(
+            kept=list(inputs),
+            added=[ColumnItem(name=name, type=type_name, dtype=dtype)],
+        )
 
     def _get_operand_b(self, x_pandas, dtype: str):
         """Return the second operand as an array aligned with ``x_pandas``.
@@ -400,23 +470,26 @@ class ColumnArithmetic(FeatureEngineeringConverter, BaseConverter):
         """
         import numpy as np
         import pyarrow as pa
+        import pyarrow.compute as pc
 
         from DashAI.back.dataloaders.classes.dashai_dataset import modify_table
 
         x_pandas = x.to_pandas()
 
         if self._output_is_integer:
-            a = x_pandas[self.column_a].to_numpy(dtype="int64")
-            b = self._get_operand_b(x_pandas, "int64")
-
-            if self.operation == "add":
-                result = a + b
-            elif self.operation == "subtract":
-                result = a - b
-            else:  # multiply
-                result = a * b
-
-            arrow_type = pa.int64()
+            # Arrow arithmetic keeps a missing operand as a missing result,
+            # which a numpy int64 array cannot represent.
+            a = x.arrow_table[self.column_a].cast(pa.int64())
+            if self.operand_b_mode == "column":
+                b = x.arrow_table[self.column_b].cast(pa.int64())
+            else:
+                b = pa.scalar(int(self.constant), type=pa.int64())
+            operation = {
+                "add": pc.add,
+                "subtract": pc.subtract,
+                "multiply": pc.multiply,
+            }[self.operation]
+            result = operation(a, b)
         else:
             a = x_pandas[self.column_a].to_numpy(dtype="float64")
             b = self._get_operand_b(x_pandas, "float64")
@@ -431,21 +504,18 @@ class ColumnArithmetic(FeatureEngineeringConverter, BaseConverter):
                 else:  # divide
                     result = np.where(b != 0, a / b, np.nan)
 
-            arrow_type = pa.float64()
+            result = pa.array(result, type=pa.float64())
 
         new_types = dict(x.types)
         new_types[self._result_column_name] = self.get_output_type()
 
-        return modify_table(
-            x,
-            {self._result_column_name: pa.array(result, type=arrow_type)},
-            types=new_types,
-        )
+        return modify_table(x, {self._result_column_name: result}, types=new_types)
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the output type for the arithmetic result.
 
-        Determined during ``fit``: ``Integer`` when both operands are
+        Determined during ``fit`` (or ``infer_output_columns``): ``Integer``
+        when both operands are
         ``Integer`` (a whole-number ``constant`` counts as ``Integer``) and
         the operation isn't ``divide``, ``Float`` otherwise.
 
@@ -461,8 +531,13 @@ class ColumnArithmetic(FeatureEngineeringConverter, BaseConverter):
             An ``Integer`` type backed by ``pyarrow.int64()``, or a
             ``Float`` type backed by ``pyarrow.float64()``.
         """
+        return self._result_type(self._output_is_integer)
+
+    @staticmethod
+    def _result_type(is_integer: bool) -> DashAIDataType:
+        """Return ``Integer`` or ``Float`` for the result column."""
         import pyarrow as pa
 
-        if self._output_is_integer:
+        if is_integer:
             return Integer(arrow_type=pa.int64())
         return Float(arrow_type=pa.float64())

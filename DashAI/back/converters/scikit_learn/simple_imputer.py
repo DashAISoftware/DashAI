@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, List, Union
 
 from sklearn.impute import SimpleImputer as SimpleImputerOperation
 
@@ -24,6 +24,12 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    BlockItem,
+    StateItem,
+    StructureDelta,
+    type_fields,
+)
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
@@ -181,12 +187,11 @@ class SimpleImputer(
     ``MissingIndicator`` binary matrix is stacked onto the output.
 
     Output typing preserves the original column type whenever the strategy
-    does not force a fractional result: ``"most_frequent"`` and
-    ``"constant"`` never perform arithmetic, so the source type (Integer,
-    Float, or Categorical) is kept. For ``"mean"``/``"median"`` the computed
-    per-column statistic is inspected, and an originally-Integer column
-    stays ``Integer`` if that statistic happens to be a whole number (e.g. a
-    median over an odd count of integers); otherwise it becomes ``Float64``.
+    does not perform arithmetic: ``"most_frequent"`` and ``"constant"`` only
+    copy existing values, so the source type (Integer, Float, or
+    Categorical) is kept. ``"mean"``/``"median"`` always produce ``Float64``,
+    even when the statistic happens to be a whole number, so the output type
+    follows from the params alone and never from the data.
 
     Wraps ``sklearn.impute.SimpleImputer``.
 
@@ -254,10 +259,10 @@ class SimpleImputer(
     def fit(
         self, x: "DashAIDataset", y: Union["DashAIDataset", None] = None
     ) -> "SimpleImputer":
-        """Fit the imputer, remembering input types and column order.
+        """Fit the imputer, remembering the input column types.
 
-        These are needed by ``get_output_type`` to preserve the original
-        column type instead of always coercing to ``Float64``.
+        ``get_output_type`` needs them to preserve the original column type
+        for the "most_frequent" and "constant" strategies.
 
         Parameters
         ----------
@@ -273,8 +278,41 @@ class SimpleImputer(
         """
         if hasattr(x, "types") and x.types is not None:
             self._input_types = dict(x.types)
-        self._input_columns = {name: idx for idx, name in enumerate(x.column_names)}
         return super().fit(x, y)
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: the scope imputed in place, plus indicators.
+
+        "most_frequent" and "constant" only copy existing values, so every
+        column keeps its type; "mean" and "median" produce Float. With
+        ``add_indicator``, one indicator column is added per column that had
+        missing values during fit, a count only known after fit.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The imputed inputs, plus an indicator block if requested.
+        """
+        import pyarrow as pa
+
+        if self.strategy in ("most_frequent", "constant"):
+            kept = list(inputs)
+        else:
+            type_name, dtype = type_fields(Float(arrow_type=pa.float64()))
+            kept = [
+                item.model_copy(update={"type": type_name, "dtype": dtype})
+                for item in inputs
+            ]
+        added = []
+        if self.add_indicator:
+            type_name, dtype = type_fields(Integer(arrow_type=pa.int64()))
+            added = [BlockItem(label="missingindicator_*", type=type_name, dtype=dtype)]
+        return StructureDelta(kept=kept, added=added)
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the DashAI data type produced by this converter for a column.
@@ -290,10 +328,10 @@ class SimpleImputer(
             ``Integer`` for the binary ``MissingIndicator`` columns appended
             when ``add_indicator=True``. Otherwise, the original column type
             for ``"most_frequent"``/``"constant"`` (no arithmetic is performed
-            on the values), or for ``"mean"``/``"median"``, ``Integer`` if the
-            source column was an Integer and the computed statistic is a
-            whole number — otherwise a Float type backed by
-            ``pyarrow.float64()``.
+            on the values), and a Float type backed by ``pyarrow.float64()``
+            for ``"mean"``/``"median"``. The type never depends on the fitted
+            statistics, so it can be known before fitting (see
+            ``infer_output_columns``).
         """
         import pyarrow as pa
 
@@ -307,17 +345,5 @@ class SimpleImputer(
             if input_type is not None:
                 return input_type
             return Float(arrow_type=pa.float64())
-
-        if isinstance(input_type, Integer):
-            columns = getattr(self, "_input_columns", None)
-            statistics = getattr(self, "statistics_", None)
-            if (
-                columns is not None
-                and statistics is not None
-                and column_name in columns
-            ):
-                value = statistics[columns[column_name]]
-                if float(value).is_integer():
-                    return Integer(arrow_type=pa.int64())
 
         return Float(arrow_type=pa.float64())

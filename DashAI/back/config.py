@@ -28,3 +28,12 @@ class DefaultSettings(BaseSettings):
     DATAFILE_PATH: str = "datafiles"
     CREDENTIALS_KEY_PATH: str = ".credentials_key"
     COMPONENT_PATH: str = "components"
+    UPDATES_PATH: str = "updates"
+
+    # Ask GitHub whether a newer release exists. Turned off with the
+    # UPDATE_CHECK_ENABLED=false environment variable.
+    UPDATE_CHECK_ENABLED: bool = True
+    # GitHub repository ("owner/name") whose releases are checked. Pointing it
+    # at a fork with test releases (UPDATE_CHECK_REPOSITORY=me/DashAI) lets the
+    # updater be tried end to end without touching the official releases.
+    UPDATE_CHECK_REPOSITORY: str = "DashAISoftware/DashAI"

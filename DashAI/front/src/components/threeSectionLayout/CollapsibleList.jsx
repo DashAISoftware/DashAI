@@ -45,6 +45,7 @@ export default function CollapsibleList({
         "Are you sure you want to delete the {{count}} selected items? This action cannot be undone.",
     }),
   bulkDeleteConfirmationWarning,
+  dataTour,
 }) {
   const theme = useTheme();
   const [open, setOpen] = useState(defaultOpen);
@@ -120,6 +121,7 @@ export default function CollapsibleList({
 
   return (
     <Box
+      data-tour={dataTour}
       display="flex"
       flexDirection="column"
       pb={4}

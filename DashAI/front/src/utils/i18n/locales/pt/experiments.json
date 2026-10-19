@@ -65,6 +65,7 @@
     "noDatasetsAvailableGoToDataTab": "Vá para a <1>aba de dados</1> para enviar um primeiro.",
     "noModelsAvailable": "Nenhum Modelo Disponível",
     "noOptimizersNoMetric": "Sem otimização de hiperparâmetros",
+    "noSplitConfigNeeded": "Este tipo de tarefa treina com o conjunto de dados completo — não é necessário configurar uma divisão de treino/validação/teste.",
     "numFolds": "Número de Dobras (k)",
     "numFoldsDescription": "Número de dobras da validação cruzada. Mais dobras podem melhorar a estabilidade da avaliação, mas aumentam o tempo de processamento. Deve ser um número inteiro maior que 1.",
     "numRepeats": "Número de Repetições",

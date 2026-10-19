@@ -105,6 +105,7 @@ class Embedding(AdvancedPreprocessingConverter, HuggingFaceWrapper):
 
     SCHEMA = EmbeddingSchema
     LEARNS_FROM_DATA = False
+    COLUMN_OPERATION = "expand"
     DESCRIPTION = MultilingualString(
         en="Convert text to embeddings using HuggingFace transformer models.",
         es="Convierte texto a embeddings usando modelos de HuggingFace.",

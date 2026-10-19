@@ -4,6 +4,7 @@ from DashAI.back.converters.category.dimensionality_reduction import (
     DimensionalityReductionConverter,
 )
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
+from DashAI.back.converters.structure_mixins import ComponentsOutputMixin
 from DashAI.back.core.schema_fields import (
     bool_field,
     int_field,
@@ -71,7 +72,10 @@ class IncrementalPCASchema(BaseSchema):
 
 
 class IncrementalPCA(
-    DimensionalityReductionConverter, SklearnWrapper, IncrementalPCAOperation
+    ComponentsOutputMixin,
+    DimensionalityReductionConverter,
+    SklearnWrapper,
+    IncrementalPCAOperation,
 ):
     """Reduce dimensionality using PCA computed incrementally over mini-batches.
 

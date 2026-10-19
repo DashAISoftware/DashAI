@@ -5,8 +5,8 @@ epoch+validation, `TrialPruned` is raised. This one wires the real parts
 together and checks the outcome Optuna records, which is what the feature is
 for — a pruner that never prunes passes every unit test in the file next door.
 
-Real, not stubbed: `OptunaOptimizer.optimize`, `HoldoutEvaluationStrategy.
-evaluate` (the strategy that trains with validation data), `BaseModel.
+Real, not stubbed: `OptunaOptimizer.optimize`, the trial objective of
+`FitModelUnit` (the unit that trains with validation data), `BaseModel.
 calculate_metrics` (where the hook lives), `_report_epoch`, and Optuna's own
 MedianPruner and trial bookkeeping.
 
@@ -27,20 +27,34 @@ import pytest
 
 from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
 from DashAI.back.evaluation.holdout import HoldoutEvaluationStrategy
-from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.supervised_model import SupervisedModel
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
+from DashAI.back.units.fit_model_unit import FitModelUnit
 
 
 def _holdout_evaluate(model, input_dataset, output_dataset, metric):
-    """The real holdout evaluation path, on a strategy with no factory.
+    """The real objective of a holdout search: one fit, then score validation.
 
-    `evaluate` reads which partitions its strategy scores, so it needs a real
-    instance rather than None for self. Building one through __init__ would
-    need a `ModelFactory` this test does not have, and does not need: the only
-    thing read off the instance is a class attribute.
+    It used to be ``HoldoutEvaluationStrategy.evaluate``. The strategies now
+    only declare how a run is evaluated, and the unit that fits carries it out,
+    so the objective the optimizer measures comes from there. Which partitions
+    a trial records is still the strategy's declaration -- the job reads
+    SCORED_SPLITS off it and hands it over, minus the test partition, which a
+    trial may never score -- so it is read off the class here too.
     """
-    strategy = HoldoutEvaluationStrategy.__new__(HoldoutEvaluationStrategy)
-    return strategy.evaluate(model, input_dataset, output_dataset, metric)
+    trial_splits = [
+        split.name
+        for split in HoldoutEvaluationStrategy.SCORED_SPLITS
+        if split.name != "TEST"
+    ]
+    unit = FitModelUnit(
+        optimizer={"component": "", "params": {}},
+        goal_metric="",
+        run_id=None,
+        artifact_prefix=None,
+        trial_splits=trial_splits,
+    )
+    return unit._score_one_trial(model, input_dataset, output_dataset, metric)
 
 
 EPOCHS = 12
@@ -59,7 +73,7 @@ class Score:
         return y_pred
 
 
-class SteppedModel(BaseModel):
+class SteppedModel(SupervisedModel):
     """A model that gets worse every trial, revealing it epoch by epoch.
 
     Each trial improves by `1 / (1 + trials already run)` per epoch, so trial 5

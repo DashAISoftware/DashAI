@@ -16,7 +16,7 @@ import math
 import pytest
 
 from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
-from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.supervised_model import SupervisedModel
 
 
 class _Metric:
@@ -30,7 +30,7 @@ class _Metric:
         return self._value
 
 
-class _StubModel(BaseModel):
+class _StubModel(SupervisedModel):
     """A model that predicts nothing, so only the scoring loop is under test."""
 
     def train(self, *args, **kwargs):
@@ -102,18 +102,26 @@ def test_both_methods_agree_on_what_was_scored(model):
     assert persisted == returned
 
 
-def test_no_metrics_declared_returns_an_empty_mapping(model):
-    """A split with no metrics is not an error, and must not look like a score."""
-    assert model.compute_metrics(split=SplitEnum.VALIDATION, x_data=[], y_data=[]) == {}
+def test_no_metrics_declared_returns_none(model):
+    """A split with no metrics is not an error, and must not look like a score.
+
+    ``None`` rather than ``{}``: ``EvaluateModelToArtifactUnit`` records an
+    empty mapping as "evaluated, nothing finite" and skips ``None`` as "nothing
+    to evaluate", so the two answers have to stay distinct on this method too.
+    """
+    # None, not {}: the units tell "nothing to score" from "nothing scored finite".
+    assert (
+        model.compute_metrics(split=SplitEnum.VALIDATION, x_data=[], y_data=[]) is None
+    )
 
 
 def test_every_metric_non_finite_is_not_the_same_as_no_metrics(model):
-    """Both answer ``{}`` to the caller, but only one gets logged about.
+    """Two different answers, and only one of them gets logged about.
 
-    ``_score_split`` distinguishes them -- ``None`` for a question that could
-    not be asked, an empty dict for one whose answers were all unusable -- and
-    ``calculate_metrics`` relies on that to persist an empty result rather than
-    skip the split silently.
+    ``_score_split`` distinguishes them, ``None`` for a question that could
+    not be asked and an empty dict for one whose answers were all unusable,
+    and ``calculate_metrics`` relies on that to persist an empty result rather
+    than skip the split silently.
     """
     model.validation_metrics = [_Metric("bad", float("nan"))]
 

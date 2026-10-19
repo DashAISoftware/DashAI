@@ -24,6 +24,7 @@ class ImbalancedLearnWrapper(BaseConverter, metaclass=ABCMeta):
 
     SUPERVISED = True
     CHANGES_ROW_COUNT = True
+    PRESERVES_INPUT_TYPE = True
 
     def __init__(self, **kwargs):
         """Initialise the imbalanced-learn wrapper and reset internal state.
@@ -40,26 +41,22 @@ class ImbalancedLearnWrapper(BaseConverter, metaclass=ABCMeta):
         self.original_target_column_name_: str = ""
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
-        """Not implemented; type preservation is handled in ``transform``.
+        """Return a resampled column's type: its input type, recorded in ``fit``.
 
-        Imbalanced-learn samplers do not change column types. Types from the
-        input dataset are copied directly in ``transform``.
+        Resampling only adds or removes rows, so every column keeps its type.
 
         Parameters
         ----------
         column_name : str or None, optional
-            Name of the column whose output type is queried. Ignored because
-            this method always raises. Default ``None``.
+            The column to look up. Defaults to None.
 
-        Raises
-        ------
-        NotImplementedError
-            Always, because type determination is delegated to ``transform``.
+        Returns
+        -------
+        DashAIDataType or None
+            The column's input type, or None before ``fit`` or for an
+            unknown column.
         """
-        raise NotImplementedError(
-            "ImbalancedLearn samplers preserve input types. "
-            "Types are handled in the transform method."
-        )
+        return getattr(self, "_input_types", {}).get(column_name)
 
     def fit(self, x: "DashAIDataset", y: "DashAIDataset") -> Type[BaseConverter]:
         """Resample the dataset by calling ``fit_resample`` and store the result.
@@ -97,6 +94,7 @@ class ImbalancedLearnWrapper(BaseConverter, metaclass=ABCMeta):
                 "Imbalanced-learn samplers require a non-empty target dataset (y)."
             )
 
+        self._input_types = dict(x.types)
         X_df = x.to_pandas()
         y_series = y.to_pandas().iloc[:, 0]
 

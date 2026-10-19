@@ -45,7 +45,7 @@ def create_model_session_1(client: TestClient, dataset_id: int):
             "train_metrics": [],
             "validation_metrics": [],
             "test_metrics": [],
-            "evaluation_strategy": "holdout",
+            "evaluation_strategy": "HoldoutEvaluationStrategy",
             "splits": splits,
         },
     )
@@ -65,7 +65,7 @@ def create_model_session_2(client: TestClient, dataset_id: int):
             "train_metrics": [],
             "validation_metrics": [],
             "test_metrics": [],
-            "evaluation_strategy": "holdout",
+            "evaluation_strategy": "HoldoutEvaluationStrategy",
             "splits": splits,
         },
     )
@@ -88,7 +88,7 @@ def test_create_and_get_model_session(
     assert data["input_columns"] == input_columns_1
     assert data["output_columns"] == output_columns
     assert data["splits"] == splits
-    assert data["evaluation_strategy"] == "holdout"
+    assert data["evaluation_strategy"] == "HoldoutEvaluationStrategy"
 
     # test get model session by id 2.
     response = client.get("/api/v1/model-session/2")
@@ -100,7 +100,7 @@ def test_create_and_get_model_session(
     assert data["input_columns"] == input_columns_2
     assert data["output_columns"] == output_columns
     assert data["splits"] == splits
-    assert data["evaluation_strategy"] == "holdout"
+    assert data["evaluation_strategy"] == "HoldoutEvaluationStrategy"
 
 
 def test_get_all_model_sessions(client: TestClient, dataset_id: int):
@@ -126,8 +126,10 @@ def test_not_found_model_session(client: TestClient):
 def test_update_model_session(client: TestClient, dataset_id: int):
     """Test that a model session can be updated through a patch call."""
 
+    # RegressionTask also offers the session's holdout strategy, so the API
+    # accepts the change of task.
     response = client.patch(
-        "/api/v1/model-session/2?task_name=UnknownTask&name=ModelSession123",
+        "/api/v1/model-session/2?task_name=RegressionTask&name=ModelSession123",
     )
     assert response.status_code == 200
 
@@ -137,7 +139,7 @@ def test_update_model_session(client: TestClient, dataset_id: int):
 
     data = response.json()
     assert data["dataset_id"] == dataset_id
-    assert data["task_name"] == "UnknownTask"
+    assert data["task_name"] == "RegressionTask"
     assert data["name"] == "ModelSession123"
     assert data["created"] != data["last_modified"]
 

@@ -107,7 +107,9 @@ export const CustomTooltip = ({
           top: 8,
           right: 8,
           color: theme.palette.text.secondary,
-          zIndex: 2,
+          // Above the step counter and content (zIndex 2), which come later
+          // in the DOM and would otherwise swallow clicks on the button.
+          zIndex: 3,
           "&:hover": { color: theme.palette.text.primary },
         }}
       >
@@ -123,6 +125,7 @@ export const CustomTooltip = ({
           lineHeight: 1,
           display: "block",
           mb: 1,
+          pr: 4,
           zIndex: 2,
           position: "relative",
         }}

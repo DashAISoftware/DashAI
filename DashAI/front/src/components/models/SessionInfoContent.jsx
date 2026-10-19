@@ -7,8 +7,7 @@ import { getComponents } from "../../api/component";
 import ParamInfoList, { ParamInfoBox } from "./ParamInfoBox";
 import {
   buildStepDisplayNames,
-  buildColumnKeysAndTypes,
-  refToKey,
+  labelForRef,
 } from "./modelSession/sessionColumnRefs";
 
 const SPLIT_TYPE_LABEL_KEYS = {
@@ -56,14 +55,6 @@ export default function SessionInfoContent({
     preprocessingSteps,
     convertersMeta,
   );
-  // datasetTypes isn't needed here: a raw scope ref is shown as its own
-  // column name regardless, and a group scope ref's label only depends on
-  // the earlier step it points to (see buildColumnKeysAndTypes).
-  const { optionLabels: scopeOptionLabels } = buildColumnKeysAndTypes({
-    datasetTypes: {},
-    preprocessing: preprocessingSteps,
-    convertersMeta,
-  });
 
   const getDatasetName = () => {
     if (!session.dataset_id || !datasets.length) return t("common:unknown");
@@ -199,10 +190,7 @@ export default function SessionInfoContent({
                 key={`${step.converter}-${index}`}
                 label={stepDisplayNames[index]}
                 value={(step.scope || [])
-                  .map((ref) => {
-                    const key = refToKey(ref);
-                    return scopeOptionLabels[key] || key;
-                  })
+                  .map((ref) => labelForRef(ref, stepDisplayNames, t))
                   .join(", ")}
               />
             ))}

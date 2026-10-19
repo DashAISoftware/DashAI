@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, List, Union
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.category.basic_preprocessing import (
@@ -7,6 +7,11 @@ from DashAI.back.converters.category.basic_preprocessing import (
 from DashAI.back.core.schema_fields import enum_field, schema_field
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    StateItem,
+    StructureDelta,
+    StructureMessage,
+)
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer, Text
@@ -178,6 +183,32 @@ class TypeCast(BasicPreprocessingConverter, BaseConverter):
         # ConverterJob only re-fetches a fresh scope when a row scope is set).
         self._fit_x = None
         self._converted_cache: dict = {}
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: the scope cast in place to ``new_type``.
+
+        With ``on_error="skip"`` a column whose values cannot be cast keeps
+        its original type, which is only known once the data is seen, so the
+        estimate carries a ``cast_may_skip`` warning.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The inputs retyped to ``new_type``.
+        """
+        delta = super().infer_output_columns(inputs)
+        if self.on_error == "skip":
+            delta.warnings.append(
+                StructureMessage(
+                    code="cast_may_skip", params={"new_type": self.new_type}
+                )
+            )
+        return delta
 
     def fit(
         self, x: "DashAIDataset", y: Union["DashAIDataset", None] = None

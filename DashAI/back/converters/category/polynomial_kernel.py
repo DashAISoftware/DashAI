@@ -26,3 +26,4 @@ class PolynomialKernelConverter(BaseConverter):
     )
     ICON: Final[str] = Icon.Functions.value
     COLOR: Final[str] = "rgb(153, 102, 255)"
+    COLUMN_OPERATION = "expand"

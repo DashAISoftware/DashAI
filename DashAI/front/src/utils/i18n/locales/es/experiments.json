@@ -60,6 +60,7 @@
     "noDatasetsAvailableGoToDataTab": "Vaya a <1>pestaña de datos</1> para subir uno primero.",
     "noModelsAvailable": "No hay Modelos Disponibles",
     "noOptimizersNoMetric": "Sin optimización de hiperparámetros",
+    "noSplitConfigNeeded": "Este tipo de tarea entrena con el dataset completo — no requiere configurar una partición de entrenamiento, validación y prueba.",
     "optimizer": "Optimizador",
     "optimizerMetric": "Métrica de Optimización",
     "parameterModification": "Modificación de Parámetros",

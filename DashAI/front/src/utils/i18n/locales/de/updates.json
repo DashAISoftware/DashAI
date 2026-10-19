@@ -1,0 +1,41 @@
+{
+  "title": "Updates",
+  "subtitle": "dashAI-Version und neue Versionen",
+  "installedVersion": "Installierte Version",
+  "latestVersion": "Neueste Version",
+  "unknownVersion": "Unbekannt",
+  "upToDate": "Sie haben die neueste Version.",
+  "updateAvailable": "Eine neue Version ist verfügbar: {{version}}",
+  "updateAvailableTooltip": "Neue Version verfügbar: {{version}}",
+  "checkFailed": "Es konnte nicht nach Updates gesucht werden. Prüfen Sie Ihre Internetverbindung.",
+  "disabled": "Die Suche nach Updates ist in dieser Installation deaktiviert.",
+  "releaseNotes": "Neuigkeiten",
+  "download": "Herunterladen",
+  "viewOnGitHub": "Auf GitHub ansehen",
+  "hint": {
+    "windows": "Laden Sie das Update herunter und installieren Sie es von hier aus. Windows fragt nach einer Berechtigung. Ihre Daten und Experimente bleiben erhalten.",
+    "macos": "Laden Sie das Update herunter und öffnen Sie es von hier aus. dashAI wird geschlossen, damit Sie die neue Version in den Ordner Programme ziehen können. Ihre Daten und Experimente bleiben erhalten.",
+    "appimage": "Laden Sie das Update herunter und installieren Sie es von hier aus. dashAI startet mit der neuen Version neu. Ihre Daten und Experimente bleiben erhalten.",
+    "pip": "Aktualisieren Sie mit diesem Befehl und starten Sie dashAI dann neu:",
+    "source": "Aktualisieren Sie das Repository mit diesen Befehlen und starten Sie dashAI dann neu:",
+    "docker": "Erstellen Sie das Docker-Image mit der neuen Version neu.",
+    "unknown": "Laden Sie die neue Version von GitHub herunter."
+  },
+  "downloadUpdate": "Update herunterladen ({{size}})",
+  "downloading": "Update wird heruntergeladen... {{percent}}%",
+  "downloadingShort": "Wird heruntergeladen...",
+  "downloadFailed": "Das Update konnte nicht heruntergeladen werden.",
+  "installRestart": "Installieren und neu starten",
+  "openInstaller": "Installationsprogramm öffnen",
+  "installing": "Wird installiert...",
+  "installFailed": "Das Update konnte nicht installiert werden. {{error}}",
+  "jobsRunningWarning": "Es laufen Aufträge. Die Installation schließt dashAI und bricht sie ab.",
+  "installAnyway": "Trotzdem installieren",
+  "cancel": "Abbrechen",
+  "manualDownload": "Manuell herunterladen",
+  "installed": {
+    "windows": "Bestätigen Sie die Windows-Abfrage, um fortzufahren. dashAI wird geschlossen und nach der Installation wieder geöffnet.",
+    "appimage": "dashAI wird mit der neuen Version neu gestartet.",
+    "macos": "Das Installationsprogramm ist geöffnet. Ziehen Sie dashAI in den Ordner Programme, ersetzen Sie die alte Version und öffnen Sie es erneut."
+  }
+}
