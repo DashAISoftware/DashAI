@@ -18,11 +18,12 @@ In the left panel, open the menu (**...**) of a session and choose
 - **Choose the runs** to include. All of them are selected; runs still
   training cannot be exported until they finish.
 - **Include trained models**, checked by default. Uncheck it to export only
-  the recipe: the dataset and the configuration of the session and its runs.
-  The file is smaller, and whoever imports it trains the models again.
+  the configuration, without trained models: the dataset and the settings of
+  the session and its runs. The file is smaller, and whoever imports it trains
+  the models again.
 
 Finished runs travel with their model and metrics. Runs that failed or were
-never trained travel as a recipe and arrive untrained.
+never trained travel without a model and arrive untrained.
 
 ## Import
 
@@ -37,7 +38,8 @@ the same name exists, the new one gets a number, such as `iris (2)`.
 ## What the file contains
 
 - The dataset, including its train, validation and test split.
-- The session recipe: task, columns, preprocessing and evaluation settings.
+- The session configuration: task, columns, preprocessing and evaluation
+  settings.
 - Each chosen run's configuration and, when included, its trained model,
   metrics and the fitted preprocessing.
 
@@ -51,7 +53,7 @@ again after importing.
   message says which one to install.
 - If your library versions differ from the ones used to export, the session
   is imported with a warning. If a model then fails, use **Retrain**: the
-  recipe is always in the file.
+  configuration is always in the file.
 
 :::warning
 A session file contains Python objects, and using its models runs code.

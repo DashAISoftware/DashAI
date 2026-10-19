@@ -18,11 +18,12 @@ En el panel izquierdo, abre el menú (**...**) de una sesión y elige
 - **Elegir los runs** que se incluyen. Vienen todos marcados; los runs que
   siguen entrenando no se pueden exportar hasta que terminen.
 - **Incluir modelos entrenados**, marcado por defecto. Desmárcalo para
-  exportar solo la receta: el dataset y la configuración de la sesión y sus
-  runs. El archivo pesa menos y quien lo importe entrena los modelos de nuevo.
+  exportar solo la configuración, sin modelos entrenados: el dataset y los
+  ajustes de la sesión y sus runs. El archivo pesa menos y quien lo importe
+  entrena los modelos de nuevo.
 
 Los runs terminados van con su modelo y sus métricas. Los runs que fallaron o
-nunca se entrenaron van como receta y llegan sin entrenar.
+nunca se entrenaron van sin modelo y llegan sin entrenar.
 
 ## Importar
 
@@ -37,7 +38,8 @@ el mismo nombre, el nuevo lleva un número, por ejemplo `iris (2)`.
 ## Qué contiene el archivo
 
 - El dataset, con su división en entrenamiento, validación y prueba.
-- La receta de la sesión: tarea, columnas, preprocesamiento y evaluación.
+- La configuración de la sesión: tarea, columnas, preprocesamiento y
+  evaluación.
 - La configuración de cada run elegido y, si se incluyen, su modelo
   entrenado, sus métricas y el preprocesamiento ajustado.
 
@@ -51,7 +53,7 @@ de nuevo después de importar.
   mensaje indica cuál instalar.
 - Si tus versiones de librerías son distintas a las usadas al exportar, la
   sesión se importa con una advertencia. Si luego un modelo falla, usa
-  **Re-entrenar**: la receta siempre va en el archivo.
+  **Re-entrenar**: la configuración siempre va en el archivo.
 
 :::warning
 Un archivo de sesión contiene objetos de Python y usar sus modelos ejecuta
