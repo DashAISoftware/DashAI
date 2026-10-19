@@ -30,6 +30,23 @@ def test_every_registered_retriever_has_its_category():
         assert component.get_metadata()["category"].en == EXPECTED[name], name
 
 
+def test_children_endpoint_sends_localized_categories(client):
+    response = client.get(
+        "/api/v1/component/SparseRetriever/children/",
+        params={"recursive": True},
+        headers={"Accept-Language": "es"},
+    )
+
+    assert response.status_code == 200
+    children = {child["name"]: child for child in response.json()}
+    assert {"BM25Retriever", "TFIDFRetriever"} <= set(children)
+    for name in ("BM25Retriever", "TFIDFRetriever"):
+        assert (
+            children[name]["metadata"]["category"] == "Recuperadores por palabras clave"
+        )
+        assert isinstance(children[name]["display_name"], str)
+
+
 def test_categories_are_translated():
     for component in _retrievers().values():
         category = component.get_metadata()["category"]

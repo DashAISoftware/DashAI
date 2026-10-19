@@ -476,6 +476,7 @@ async def update_component() -> None:
 async def get_child_components(
     component_name: str,
     recursive: bool = False,
+    accept_language: str | None = Header(default=None),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):
     """Get child components of a specific component.
@@ -483,6 +484,8 @@ async def get_child_components(
     Args:
         component_name (str): The name of the component to get children for.
         recursive (bool): Whether to get child components recursively.
+        accept_language (str | None): The 'Accept-Language' header used to
+            localize display names, descriptions and metadata.
 
     Returns:
         List[Dict[str, Any]]: A list of child component dictionaries.
@@ -490,7 +493,7 @@ async def get_child_components(
     children_list = component_registry.get_child_components(
         component_name, recursive=recursive
     )
-    return [_delete_class(child) for child in children_list]
+    return [localize(_delete_class(child), accept_language) for child in children_list]
 
 
 @router.get("/image/{component_name}/", status_code=status.HTTP_200_OK)
