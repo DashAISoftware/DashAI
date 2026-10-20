@@ -157,19 +157,22 @@ blocks Save.
 Each answered RAG turn with references or a trace renders `SourcesDisplay`
 under the answer (`GenerativeChat.jsx` checks
 `message.referenceOutput || message.traceOutput`). It reports the number of
-distinct documents, and a **View chunks** button opens `TraceChunksModal` with
-that turn's `userMessage`, `trace` (`message.traceOutput`) and `references`
-(`message.referenceOutput`).
+distinct documents and offers two toggles, **Chunks** and **Pipeline**, that
+expand an inline `TraceChunksPanel` below the header with that turn's
+`userMessage`, `trace` (`message.traceOutput`) and `references`
+(`message.referenceOutput`). The **Pipeline** toggle is disabled when the trace
+has no renderable entry. The panel can be minimized with its X, by clicking the
+active toggle again, or with Escape.
 
-When the trace has at least one renderable entry, the dialog shows two tabs,
-both kept mounted so chunk expansion and query selection survive a tab switch:
+When the trace has at least one renderable entry, the panel holds two views,
+both kept mounted so chunk expansion and query selection survive a view switch:
 
 - **Chunks** — the final reference chunks grouped by document, with a heading
   that counts chunks and documents and a per-document count. Each card carries
   its provenance ("Found by <retriever> (query N)"), derived from
   `computeProvenance`, plus copy and open-document actions. Bodies longer than
   480 characters collapse behind Show more / Show less, clamped to eight lines.
-- **Retriever** — a one-line summary of whether the query was transformed and
+- **Pipeline** — a one-line summary of whether the query was transformed and
   how many candidates survived (kept vs. total, from `collectTraceStats`), a
   selected-chunk panel (or a hint), a per-query selector ("All" plus one chip
   per query when there are several), one `RetrieverTraceTree` per query, and
@@ -184,14 +187,14 @@ with cross-encoder scores inline and children rendered recursively.
 `traceUtils.js` holds the pure derivations (`isQueryTransformed`,
 `filterRenderableEntries`, `groupReferencesByDocument`, `collectTraceStats`,
 `computeDiscardedRefs`, `computeProvenance`, `getDocumentTitle`,
-`resolveChunkLabel`), so the modal only handles layout and interaction.
+`resolveChunkLabel`), so the panel only handles layout and interaction.
 
 Legacy answers degrade rather than break. With no trace — `null`, a non-array,
-or entries whose `retriever` is not an object — the dialog drops the tabs and
-renders a single column of the user message and final chunks. An empty or
+or entries whose `retriever` is not an object — the panel drops the two views
+and renders a single column of the user message and final chunks. An empty or
 absent reference map shows the chunks empty state and leaves the tree rows
-non-interactive. The tab and query selection reset only on a close-to-open
-transition, not when polling rebuilds the props, and a selection that falls
+non-interactive. The view and query selection reset only when the panel closes
+and reopens, not when polling rebuilds the props, and a selection that falls
 outside a shrunken trace falls back to the All view.
 
 ## Creating a session
@@ -250,15 +253,9 @@ real theme, needed because `PillTabs` reads `theme.palette.ui.box` and a bare
 - `QueryTransformationAdvancedModal.test.jsx` — every schema parameter is
   rendered, and only the LLM keys the user actually set are persisted, so a
   fresh ref does not overwrite backend defaults.
-- `TraceChunksModal.test.jsx` — the Chunks/Retriever tabs, grouping and
-  provenance, the kept-vs-total story strip, query selection, discarded chips,
-  chunk expansion, inline scores, and graceful handling of legacy or
-  non-array traces, empty references and a trace that shrinks while open.
-- `traceUtils.test.js` — the pure helpers: object guards, renderable-entry
-  filtering, grouping, candidate stats, discarded refs and provenance.
-- `SourcesDisplay.test.jsx` — the document count, and that the View chunks
-  button opens `TraceChunksModal` with the turn's trace, references and user
-  message.
+- `SourcesDisplay.test.jsx` — the document count, the Chunks/Pipeline toggles,
+  the inline panel props, switching views, closing, and the disabled Pipeline
+  state.
 - `RAGChatProgress.test.jsx` — the transforming, retrieving (queries joined by
   `"; "`) and generating messages, and that a null payload renders nothing.
 - `GenerativeChat.test.jsx` — an in-flight RAG message shows the live stage

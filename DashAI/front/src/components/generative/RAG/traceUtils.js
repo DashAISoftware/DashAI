@@ -1,6 +1,6 @@
 /**
- * Pure helpers for the RAG trace/chunks modal. No React imports: these are the
- * data-shaping primitives the modal and its tests rely on.
+ * Pure helpers for the RAG trace/chunks panel. No React imports: these are the
+ * data-shaping primitives the panel and its tests rely on.
  */
 
 /**

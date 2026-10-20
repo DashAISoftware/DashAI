@@ -7,13 +7,9 @@ import {
   Box,
   Button,
   Chip,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   IconButton,
   Paper,
   Stack,
-  Tab,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -24,7 +20,6 @@ import {
   OpenInNew as OpenInNewIcon,
 } from "@mui/icons-material";
 import RetrieverTraceTree from "./RetrieverTraceTree";
-import PillTabs from "../../shared/PillTabs";
 import {
   getRetrievalParadigm,
   getSessionConfiguration,
@@ -40,21 +35,28 @@ import {
   computeDiscardedRefs,
   computeProvenance,
 } from "./traceUtils";
+import { TRACE_VIEW_CHUNKS, TRACE_VIEW_PIPELINE } from "../../../constants/rag";
 
 // Cached retriever component map, keyed by class name. Used as a fallback for
 // traces recorded before the trace payload carried description/representation.
 let retrieverComponentsPromise = null;
+// Resolved map retained across panel mounts so a reopen never flashes the view
+// without descriptions or representations.
+let retrieverComponentsCache = null;
 
 /**
  * Load (once) the registered retriever components keyed by class name.
  *
  * Legacy traces only carry the retriever class name. The component registry is
  * the only remaining source for their description, so the trace view resolves
- * it once and shares the result across modal opens.
+ * it once and shares the result across panel mounts.
  *
  * @returns {Promise<Record<string, object>>} Map of class name to component.
  */
 function loadRetrieverComponents() {
+  if (retrieverComponentsCache) {
+    return Promise.resolve(retrieverComponentsCache);
+  }
   if (!retrieverComponentsPromise) {
     retrieverComponentsPromise = getRetrievalParadigm()
       .then((components) => {
@@ -62,10 +64,11 @@ function loadRetrieverComponents() {
         for (const component of components || []) {
           if (component?.name) map[component.name] = component;
         }
+        retrieverComponentsCache = map;
         return map;
       })
       .catch((error) => {
-        // Allow a later modal open to retry after a transient failure.
+        // Allow a later panel mount to retry after a transient failure.
         retrieverComponentsPromise = null;
         console.warn("Failed to load retriever components:", error);
         return {};
@@ -96,16 +99,6 @@ const TEXT_CLAMP_LENGTH = 480;
 // Number of rendered lines before a clamped chunk body is cut off.
 const TEXT_CLAMP_LINES = 8;
 
-// Tab values for the two-panel dialog body. Kept as constants so the state,
-// the Tab values and the panel visibility checks can never drift apart.
-const TAB_CHUNKS = "chunks";
-const TAB_RETRIEVER = "retriever";
-
-// Stable a11y ids for a tab button and its panel, derived from the tab value so
-// the Tabs and the tabpanels can never point at mismatched ids.
-const tabA11yId = (value) => `trace-tab-${value}`;
-const panelA11yId = (value) => `${value}-tab-panel`;
-
 /**
  * Builds the localised provenance line for one chunk ("Found by A (query 1)").
  * @param {Array<{queryIndex: number, names: string[]}>} [entries] - Provenance.
@@ -124,7 +117,7 @@ function buildProvenanceText(entries, t) {
 }
 
 /**
- * Derives every piece of data the modal body renders from its raw props.
+ * Derives every piece of data the panel body renders from its raw props.
  *
  * Pure: no React and no hooks, so the component can stay focused on wiring
  * interactions and layout. The derivations themselves are unchanged.
@@ -134,7 +127,7 @@ function buildProvenanceText(entries, t) {
  * @param {string} [userMessage] - The original user message.
  * @param {number|null} selectedQuery - Active query index, or null for "All".
  * @param {string|null} highlightedRef - The currently highlighted ref.
- * @returns {object} The derived model consumed by the modal.
+ * @returns {object} The derived model consumed by the panel.
  */
 function buildTraceChunksModel(
   trace,
@@ -167,7 +160,7 @@ function buildTraceChunksModel(
   }
   const selectedEntry =
     effectiveSelectedQuery === null ? null : entries[effectiveSelectedQuery];
-  // The Retriever tab shows the selected chunk only when the highlight resolves
+  // The Pipeline view shows the selected chunk only when the highlight resolves
   // against a plain-object reference map.
   const selectedChunkInfo =
     isPlainObject(references) && highlightedRef != null
@@ -223,7 +216,7 @@ QuestionQuote.propTypes = {
 };
 
 /**
- * The muted caption introducing the quoted user message on the Chunks tab.
+ * The muted caption introducing the quoted user message on the Chunks view.
  * @returns {JSX.Element} The caption label.
  */
 function YourMessageLabel() {
@@ -242,7 +235,7 @@ function YourMessageLabel() {
 
 /**
  * The user message: an optional muted caption above the quiet quote. The label
- * only exists in the tabbed body, so the legacy single column keeps the bare
+ * only exists in the two-view body, so the legacy single column keeps the bare
  * quote exactly as before.
  * @param {object} props
  * @param {string} props.userMessage - The original user message.
@@ -510,7 +503,7 @@ function ChunkCard({
       sx={{
         p: 2,
         cursor: "pointer",
-        // Keeps a card scrolled to the top edge clear of the sticky tab strip.
+        // Keeps a card clear of the chat viewport edge.
         scrollMarginTop: "56px",
         border: isHighlighted ? 2 : 1,
         borderColor: isHighlighted ? "primary.main" : "divider",
@@ -713,7 +706,7 @@ ChunksSection.propTypes = {
 
 /**
  * The final answer chunks grouped by document, or the empty state when the
- * answer cited none. Shared by the Chunks tab and the legacy single column.
+ * answer cited none. Shared by the Chunks view and the legacy single column.
  * @param {object} props
  * @param {Array<object>} props.groups - Reference chunks grouped by document.
  * @param {number} props.totalChunks - Total number of reference chunks.
@@ -1060,10 +1053,10 @@ SelectedQueryText.propTypes = {
 };
 
 /**
- * The retriever tab's selected chunk rendered like a highlighted final card.
+ * The pipeline view's selected chunk rendered like a highlighted final card.
  *
  * Deliberately not a ChunkCard: that component's `chunk-card-${ref}` testid
- * would collide with the (hidden but mounted) Chunks-tab card for the same ref.
+ * would collide with the (hidden but mounted) Chunks-view card for the same ref.
  *
  * @param {object} props
  * @param {string} props.chunkRef - The resolved reference key.
@@ -1090,7 +1083,7 @@ function SelectedChunkPanel({
       elevation={0}
       sx={{
         p: 2,
-        // Keeps the panel scrolled to the top edge clear of the sticky tab strip.
+        // Keeps the panel clear of the chat viewport edge.
         scrollMarginTop: "56px",
         border: 2,
         borderColor: "primary.main",
@@ -1118,7 +1111,7 @@ SelectedChunkPanel.propTypes = {
 };
 
 /**
- * The retriever tab body, without its former accordion wrapper: the per-query
+ * The pipeline view body, without its former accordion wrapper: the per-query
  * summary, the selector, the selected-query quote, the retriever trees and the
  * discarded candidates, in that order.
  * @param {object} props
@@ -1133,9 +1126,9 @@ SelectedChunkPanel.propTypes = {
  * @param {object|null} props.retrieverConfig - Session retriever config tree.
  * @param {Function} props.onSelectQuery - Selects a query index (or null).
  * @param {Function} props.onChunkClick - Called with a clicked chunk's ref.
- * @returns {JSX.Element} The retriever tab contents.
+ * @returns {JSX.Element} The pipeline view contents.
  */
-function RetrieverTabContent({
+function PipelineViewContent({
   entries,
   perQuery,
   discardedRefs,
@@ -1184,7 +1177,7 @@ function RetrieverTabContent({
   );
 }
 
-RetrieverTabContent.propTypes = {
+PipelineViewContent.propTypes = {
   entries: PropTypes.array.isRequired,
   perQuery: PropTypes.array.isRequired,
   discardedRefs: PropTypes.array.isRequired,
@@ -1199,27 +1192,30 @@ RetrieverTabContent.propTypes = {
 };
 
 /**
- * Combined trace + final-chunks modal for a RAG response.
+ * Combined trace + final-chunks inline panel for a RAG response.
  *
- * When a renderable trace is present the body is split into two mounted tabs:
- * a Chunks tab (the user message and the final chunks grouped by document) and
- * a Retriever tab (the story strip, the selected chunk or its hint, the
- * per-query selector and retriever trees, and the discarded candidates). Legacy
- * answers with no trace keep a single column of quote plus chunks. Clicking a
- * tree chunk or a chunk card resolves it against the references map: survivors
- * highlight their card and fill the selected-chunk panel, discarded chunks warn.
+ * When a renderable trace is present the body holds two mounted views: a Chunks
+ * view (the user message and the final chunks grouped by document) and a
+ * Pipeline view (the story strip, the selected chunk or its hint, the per-query
+ * selector and retriever trees, and the discarded candidates). Legacy answers
+ * with no trace keep a single column of quote plus chunks. Clicking a tree chunk
+ * or a chunk card resolves it against the references map: survivors highlight
+ * their card and fill the selected-chunk panel, discarded chunks warn.
  *
  * @param {object} props
- * @param {boolean} props.open - Whether the dialog is visible.
- * @param {Function} props.onClose - Closes the dialog.
+ * @param {string} props.activeView - The active view (chunks or pipeline).
+ * @param {Function} props.onClose - Closes/minimizes the panel.
+ * @param {string} [props.id] - Element id targeted by the toggles' aria-controls.
  * @param {string} [props.userMessage] - The original user message.
  * @param {Array|null} [props.trace] - Per-query retriever trace, if any.
  * @param {object|null} [props.references] - Final chunk reference map.
- * @returns {JSX.Element} The dialog.
+ * @param {number|string} [props.sessionId] - The session that produced the trace.
+ * @returns {JSX.Element} The inline panel.
  */
-const TraceChunksModal = ({
-  open,
+const TraceChunksPanel = ({
+  activeView,
   onClose,
+  id,
   userMessage,
   trace,
   references,
@@ -1228,31 +1224,21 @@ const TraceChunksModal = ({
   const { t } = useTranslation(["generative", "common"]);
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(TAB_CHUNKS);
-  const [selectedQuery, setSelectedQuery] = useState(0);
+  const [selectedQuery, setSelectedQuery] = useState(() =>
+    filterRenderableEntries(trace).length > 1 ? null : 0,
+  );
   const [highlightedRef, setHighlightedRef] = useState(null);
-  const [retrieverComponents, setRetrieverComponents] = useState({});
+  const [retrieverComponents, setRetrieverComponents] = useState(
+    () => retrieverComponentsCache ?? {},
+  );
   const [retrieverConfig, setRetrieverConfig] = useState(null);
   const highlightedCardRef = useRef(null);
   const selectedChunkRef = useRef(null);
-  // Tracks the previous `open` value so the state reset fires only on the
-  // close→open transition: while a chat process is polling, the parent rebuilds
-  // trace/references objects on every poll, and re-resetting on identity change
-  // would visibly wipe the user's query selection and highlight mid-read.
-  const prevOpenRef = useRef(false);
+  const panelRef = useRef(null);
+  const bodyRef = useRef(null);
+  const previousViewRef = useRef({ view: null, query: null });
 
   useEffect(() => {
-    if (open && !prevOpenRef.current) {
-      const renderable = filterRenderableEntries(trace);
-      setActiveTab(TAB_CHUNKS);
-      setSelectedQuery(renderable.length > 1 ? null : 0);
-      setHighlightedRef(null);
-    }
-    prevOpenRef.current = open;
-  }, [open, trace, references]);
-
-  useEffect(() => {
-    if (!open) return;
     let cancelled = false;
     loadRetrieverComponents().then((components) => {
       if (!cancelled) setRetrieverComponents(components);
@@ -1260,10 +1246,10 @@ const TraceChunksModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, []);
 
   useEffect(() => {
-    if (!open || !sessionId) {
+    if (!sessionId) {
       setRetrieverConfig(null);
       return;
     }
@@ -1280,25 +1266,21 @@ const TraceChunksModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open, sessionId]);
+  }, [sessionId]);
 
   useEffect(() => {
-    // Scroll whichever panel currently owns the highlight: the final card on
-    // the Chunks tab, the selected-chunk panel on the Retriever tab.
-    const el =
-      activeTab === TAB_RETRIEVER
-        ? selectedChunkRef.current
-        : highlightedCardRef.current;
-    if (el && typeof el.scrollIntoView === "function") {
-      const reduceMotion =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      el.scrollIntoView({
-        behavior: reduceMotion ? "auto" : "smooth",
-        block: "nearest",
-      });
-    }
-  }, [highlightedRef, activeTab]);
+    // Bring the sources card into view without yanking the chat away.
+    const panel = panelRef.current;
+    if (!panel || typeof panel.scrollIntoView !== "function") return;
+    const target = panel.parentElement ?? panel;
+    const reduceMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }, []);
 
   const {
     entries,
@@ -1321,8 +1303,55 @@ const TraceChunksModal = ({
     selectedQuery,
     highlightedRef,
   );
+  // The Pipeline view is only meaningful when there is a renderable trace.
+  const effectiveView =
+    activeView === TRACE_VIEW_PIPELINE && entries.length > 0
+      ? TRACE_VIEW_PIPELINE
+      : TRACE_VIEW_CHUNKS;
   // Legacy answers with no renderable trace keep the single-column body.
-  const hasTabs = entries.length > 0;
+  const hasTraceViews = entries.length > 0;
+  let panelTitle;
+  if (effectiveView === TRACE_VIEW_PIPELINE) {
+    panelTitle = t("generative:traceChunks.pipelineTab");
+  } else {
+    panelTitle = t("generative:traceChunks.chunksTab");
+  }
+
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    const previous = previousViewRef.current;
+    if (
+      previous.view === effectiveView &&
+      previous.query === effectiveSelectedQuery
+    ) {
+      return;
+    }
+    previousViewRef.current = {
+      view: effectiveView,
+      query: effectiveSelectedQuery,
+    };
+    body.scrollTop = 0;
+  }, [effectiveView, effectiveSelectedQuery]);
+
+  useEffect(() => {
+    // Scroll whichever panel currently owns the highlight: the final card in
+    // the Chunks view, the selected-chunk panel in the Pipeline view.
+    const el =
+      effectiveView === TRACE_VIEW_PIPELINE
+        ? selectedChunkRef.current
+        : highlightedCardRef.current;
+    if (el && typeof el.scrollIntoView === "function") {
+      const reduceMotion =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "nearest",
+      });
+    }
+  }, [highlightedRef, effectiveView]);
+
   // The hint invites selecting a tree chunk, so it must only appear when the
   // tree rows are interactive — the very same test RetrieverTraceTree applies.
   const hasUsableReferences =
@@ -1365,7 +1394,7 @@ const TraceChunksModal = ({
   );
 
   /**
-   * Navigates to a document page and closes the dialog.
+   * Navigates to a document page and closes the panel.
    * @param {number|string} docId - The document identifier.
    */
   const handleOpenDocument = useCallback(
@@ -1378,30 +1407,43 @@ const TraceChunksModal = ({
   );
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      aria-labelledby="trace-chunks-title"
-      // MUI v7: PaperProps is deprecated in favour of slotProps.paper.
-      slotProps={{ paper: { sx: { maxHeight: "85vh" } } }}
+    <Box
+      id={id}
+      ref={panelRef}
+      data-testid="trace-chunks-panel"
+      role="group"
+      aria-label={t("generative:traceChunks.title")}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        maxHeight: "60vh",
+        minHeight: 0,
+        borderTop: 1,
+        borderColor: "divider",
+        bgcolor: "background.paper",
+      }}
     >
-      <DialogTitle
+      <Box
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 1,
+          px: 2,
+          py: 1,
+          flexShrink: 0,
+          borderBottom: 1,
+          borderColor: "divider",
+          bgcolor: "action.hover",
         }}
       >
         <Typography
-          variant="h6"
+          variant="subtitle1"
           component="div"
-          id="trace-chunks-title"
-          data-testid="trace-chunks-title"
+          data-testid="trace-panel-title"
+          sx={{ fontWeight: 600 }}
         >
-          {t("generative:traceChunks.title")}
+          {panelTitle}
         </Typography>
         <Tooltip title={t("common:close")}>
           <IconButton
@@ -1412,53 +1454,32 @@ const TraceChunksModal = ({
             <CloseIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-      </DialogTitle>
+      </Box>
 
-      <DialogContent dividers sx={{ bgcolor: "background.paper" }}>
-        {hasTabs ? (
+      <Box
+        ref={bodyRef}
+        role="group"
+        aria-label={panelTitle}
+        tabIndex={0}
+        sx={{
+          p: 2,
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+          minHeight: 0,
+          "&:focus-visible": {
+            outline: "2px solid",
+            outlineColor: "primary.main",
+            outlineOffset: -2,
+          },
+        }}
+      >
+        {hasTraceViews ? (
           <Stack spacing={2}>
-            {/* Sticky so the two tabs never scroll out of reach on long chunk
-                or tree lists; the paper backdrop masks the content beneath. */}
             <Box
-              sx={{
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-                bgcolor: "background.paper",
-                pb: 1,
-              }}
-            >
-              <PillTabs
-                data-testid="trace-tabs"
-                value={activeTab}
-                onChange={(_event, value) => setActiveTab(value)}
-                aria-label={t("generative:traceChunks.sectionsLabel")}
-              >
-                <Tab
-                  id={tabA11yId(TAB_CHUNKS)}
-                  value={TAB_CHUNKS}
-                  label={t("generative:traceChunks.chunksTab")}
-                  aria-controls={panelA11yId(TAB_CHUNKS)}
-                />
-                <Tab
-                  id={tabA11yId(TAB_RETRIEVER)}
-                  value={TAB_RETRIEVER}
-                  label={t("generative:traceChunks.retrieverTab")}
-                  aria-controls={panelA11yId(TAB_RETRIEVER)}
-                />
-              </PillTabs>
-            </Box>
-
-            {/* Both panels stay mounted and are hidden with `hidden`, so the
-                chunk "Show more" expansion and the retriever query selection
-                survive tab switches. */}
-            <Box
-              role="tabpanel"
-              id={panelA11yId(TAB_CHUNKS)}
-              aria-labelledby={tabA11yId(TAB_CHUNKS)}
-              hidden={activeTab !== TAB_CHUNKS}
-              data-testid="chunks-tab-panel"
-              tabIndex={0}
+              role="group"
+              aria-label={t("generative:traceChunks.chunksTab")}
+              hidden={effectiveView !== TRACE_VIEW_CHUNKS}
+              data-testid="chunks-view"
             >
               <Stack spacing={2}>
                 {typeof userMessage === "string" && userMessage.length > 0 && (
@@ -1479,12 +1500,10 @@ const TraceChunksModal = ({
             </Box>
 
             <Box
-              role="tabpanel"
-              id={panelA11yId(TAB_RETRIEVER)}
-              aria-labelledby={tabA11yId(TAB_RETRIEVER)}
-              hidden={activeTab !== TAB_RETRIEVER}
-              data-testid="retriever-tab-panel"
-              tabIndex={0}
+              role="group"
+              aria-label={t("generative:traceChunks.pipelineTab")}
+              hidden={effectiveView !== TRACE_VIEW_PIPELINE}
+              data-testid="pipeline-view"
             >
               <Stack spacing={2}>
                 {hasSelectedChunk ? (
@@ -1514,7 +1533,7 @@ const TraceChunksModal = ({
                   />
                 )}
 
-                <RetrieverTabContent
+                <PipelineViewContent
                   entries={entries}
                   perQuery={perQuery}
                   discardedRefs={discardedRefs}
@@ -1548,18 +1567,20 @@ const TraceChunksModal = ({
             />
           </Stack>
         )}
-      </DialogContent>
-    </Dialog>
+      </Box>
+    </Box>
   );
 };
 
-TraceChunksModal.propTypes = {
-  open: PropTypes.bool.isRequired,
+TraceChunksPanel.propTypes = {
+  activeView: PropTypes.oneOf([TRACE_VIEW_CHUNKS, TRACE_VIEW_PIPELINE])
+    .isRequired,
   onClose: PropTypes.func.isRequired,
+  id: PropTypes.string,
   userMessage: PropTypes.string,
-  trace: PropTypes.any,
+  trace: PropTypes.array,
   references: PropTypes.object,
   sessionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
-export default TraceChunksModal;
+export default TraceChunksPanel;

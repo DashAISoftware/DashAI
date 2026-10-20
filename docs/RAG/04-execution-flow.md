@@ -135,13 +135,13 @@ the current stage from `process.progress`: `transforming` (query rewriting),
 `generating`. A null or unrecognized payload falls back to the generic waiting
 bubble. When the job is delivered, the chat renders the answer plus its
 `referenceOutput` (the chunk map) and `traceOutput` (the retrieval trace), and
-`SourcesDisplay` shows the referenced-document count with a "View chunks"
-button. That button opens `TraceChunksModal`, whose Chunks tab lists the user
-message and the final chunks grouped by document with their per-query
-provenance, and whose Retriever tab shows the per-query selector, the retriever
-trace trees, the selected chunk and the candidates discarded before the answer.
-Clicking a trace chunk highlights it when it reached the answer, or warns when
-it did not.
+`SourcesDisplay` shows the referenced-document count with **Chunks** and
+**Pipeline** toggles. They expand an inline `TraceChunksPanel`: the Chunks view
+lists the user message and the final chunks grouped by document with their
+per-query provenance, and the Pipeline view shows the per-query selector, the
+retriever trace trees, the selected chunk and the candidates discarded before
+the answer. Clicking a trace chunk highlights it when it reached the answer, or
+warns when it did not.
 
 `GET /api/v1/rag/sessions/{id}/index-status` reports whether the documents are
 indexed for the *current* configuration, distinguishing `no_documents`,

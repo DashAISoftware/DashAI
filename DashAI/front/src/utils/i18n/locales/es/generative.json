@@ -265,7 +265,9 @@
     }
   },
   "sourcesDisplay": {
-    "viewChunks": "Ver fragmentos",
+    "chunks": "Fragmentos",
+    "noPipelineTrace": "No hay traza del pipeline para esta respuesta.",
+    "pipeline": "Pipeline",
     "viewSources": "Ver fuentes del mensaje"
   },
   "traceChunks": {
@@ -292,7 +294,7 @@
     "receivedCount_one": "{{chunks}} fragmento de {{documents}} documento",
     "receivedCount_other": "{{chunks}} fragmentos de {{documents}} documentos",
     "receivedTitle": "Fragmentos usados para esta respuesta",
-    "retrieverTab": "Recuperador",
+    "pipelineTab": "Pipeline",
     "sectionsLabel": "Secciones de las fuentes del mensaje",
     "selectedChunkHint": "Selecciona un fragmento del árbol para ver su contenido aquí.",
     "showLess": "Mostrar menos",

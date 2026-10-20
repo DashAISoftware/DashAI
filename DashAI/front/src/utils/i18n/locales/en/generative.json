@@ -261,7 +261,9 @@
     }
   },
   "sourcesDisplay": {
-    "viewChunks": "View chunks",
+    "chunks": "Chunks",
+    "noPipelineTrace": "No pipeline trace is available for this answer.",
+    "pipeline": "Pipeline",
     "viewSources": "View message sources"
   },
   "traceChunks": {
@@ -285,7 +287,7 @@
     "receivedCount_one": "{{chunks}} chunk from {{documents}} document",
     "receivedCount_other": "{{chunks}} chunks from {{documents}} documents",
     "receivedTitle": "Chunks used for this answer",
-    "retrieverTab": "Retriever",
+    "pipelineTab": "Pipeline",
     "sectionsLabel": "Message source sections",
     "selectedChunkHint": "Select a chunk from the tree to see its content here.",
     "showLess": "Show less",

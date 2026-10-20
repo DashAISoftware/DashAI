@@ -259,7 +259,9 @@
     }
   },
   "sourcesDisplay": {
-    "viewChunks": "查看块",
+    "chunks": "内容块",
+    "noPipelineTrace": "此回答没有可用的流水线追踪。",
+    "pipeline": "流水线",
     "viewSources": "查看消息来源"
   },
   "traceChunks": {
@@ -283,7 +285,7 @@
     "receivedCount_one": "来自 {{documents}} 个文档的 {{chunks}} 个内容块",
     "receivedCount_other": "来自 {{documents}} 个文档的 {{chunks}} 个内容块",
     "receivedTitle": "用于此回答的内容块",
-    "retrieverTab": "检索器",
+    "pipelineTab": "流水线",
     "sectionsLabel": "消息来源分区",
     "selectedChunkHint": "从树中选择一个内容块以在此处查看其内容。",
     "showLess": "收起",

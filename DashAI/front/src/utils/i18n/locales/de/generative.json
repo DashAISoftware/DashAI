@@ -261,7 +261,9 @@
     }
   },
   "sourcesDisplay": {
-    "viewChunks": "Chunks anzeigen",
+    "chunks": "Chunks",
+    "noPipelineTrace": "Für diese Antwort ist keine Pipeline-Spur verfügbar.",
+    "pipeline": "Pipeline",
     "viewSources": "Nachrichtenquellen anzeigen"
   },
   "traceChunks": {
@@ -285,7 +287,7 @@
     "receivedCount_one": "{{chunks}} Chunk aus {{documents}} Dokument",
     "receivedCount_other": "{{chunks}} Chunks aus {{documents}} Dokumenten",
     "receivedTitle": "Für diese Antwort verwendete Chunks",
-    "retrieverTab": "Retriever",
+    "pipelineTab": "Pipeline",
     "sectionsLabel": "Abschnitte der Nachrichtenquellen",
     "selectedChunkHint": "Wähle einen Chunk aus dem Baum, um seinen Inhalt hier zu sehen.",
     "showLess": "Weniger anzeigen",
