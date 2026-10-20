@@ -6,6 +6,11 @@ it is not — retrieve again according to the model's verdict. The language mode
 is a parameter *of the retriever itself* (not of the RAG pipeline). Any parse or
 validation failure of the verdict raises; there are no silent fallbacks.
 
+The evaluation has two routes. When the configured model supports function
+calling, the verdict is obtained through ``generate_function_call`` with the
+subclass's JSON schema, so the arguments shape is constrained by the backend.
+Otherwise the prompt is answered as text and parsed by the tolerant text parser.
+
 Subclasses differ only in how they choose the *next* retrieval: the depth
 retriever asks for a larger retrieval size from its single child, while the
 ensemble retriever asks the model to pick which of its children to consult.
@@ -15,7 +20,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC
-from typing import Any, Dict, List, Tuple
+from typing import Any, ClassVar, Dict, List, Tuple
 
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.exceptions import (
@@ -29,12 +34,12 @@ from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
 from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
-    CHILDREN_KEY,
-    SUFFICIENT_KEY,
-    TOP_K_KEY,
+    RetrievalVerdict,
+    parse_evaluation_arguments,
     parse_evaluation_output,
 )
 from DashAI.back.models.RAG.retrievers.trace_utils import retriever_trace
+from DashAI.back.models.text_to_text_generation_model import FunctionCallResult
 
 log = logging.getLogger(__name__)
 
@@ -65,11 +70,19 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
             the pool. Required — no artificial default is assumed.
         llm_model: The :class:`TextToTextGenerationTaskModel` used to judge the
             pool. Required — no artificial default is assumed.
+        EXPECTED_FUNCTION: The function name a function-calling model must call.
+        FUNCTION_DESCRIPTION: Human-readable description of that function.
+        FUNCTION_PARAMETERS: JSON schema of the function's arguments.
     """
 
     #: Nested ``{component, params}`` reference parameters the factories must
     #: resolve into live component instances before construction.
     COMPONENT_PARAMS: tuple[str, ...] = (_PARAM_LLM_MODEL, _PARAM_PROMPT)
+
+    #: Function-calling contract declared by each concrete retriever.
+    EXPECTED_FUNCTION: ClassVar[str] = ""
+    FUNCTION_DESCRIPTION: ClassVar[str] = ""
+    FUNCTION_PARAMETERS: ClassVar[Dict[str, Any]] = {}
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the retriever with its common parameters.
@@ -302,8 +315,12 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
 
     def _evaluate(
         self, query: str, pool: List[Chunk], include_children_catalog: bool
-    ) -> Dict[str, Any]:
-        """Render the prompt, call the LLM and parse its sufficiency verdict.
+    ) -> RetrievalVerdict:
+        """Render the prompt and obtain the model's sufficiency verdict.
+
+        When the configured model supports function calling, the verdict is
+        requested through the subclass's function schema; otherwise the prompt
+        is answered as text and parsed by the tolerant text parser.
 
         Parameters
         ----------
@@ -318,13 +335,14 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
 
         Returns
         -------
-        Dict[str, Any]
+        RetrievalVerdict
             The parsed verdict (see :func:`parse_evaluation_output`).
 
         Raises
         ------
         RAGRetrieverEvaluationError
-            If the model output is empty, not a string, or malformed.
+            If the model output is empty, not a string, malformed, or the
+            function-calling route fails validation.
         """
         catalog = self._render_children_catalog() if include_children_catalog else None
         prompt_text = self.prompt.format(
@@ -333,9 +351,100 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
             children_catalog=catalog,
             pool_size=len(pool),
         )
+        if self.llm_model.supports_function_calling():
+            return self._call_function_calling(prompt_text)
         output = self.llm_model.generate([{"role": "user", "content": prompt_text}])
         raw = self._extract_raw_output(output)
         return parse_evaluation_output(raw)
+
+    def _call_function_calling(self, prompt_text: str) -> RetrievalVerdict:
+        """Call the model through its function-calling interface.
+
+        Parameters
+        ----------
+        prompt_text : str
+            The rendered evaluation prompt sent as the user message.
+
+        Returns
+        -------
+        RetrievalVerdict
+            The validated verdict carried by the function call's arguments.
+
+        Raises
+        ------
+        RAGRetrieverEvaluationError
+            If the subclass declares no function spec, the model reports
+            function-calling support without implementing it, the backend
+            raises ``ValueError``/``RuntimeError``, or the returned call
+            violates the contract.
+        """
+        if (
+            not self.EXPECTED_FUNCTION
+            or not self.FUNCTION_DESCRIPTION
+            or not self.FUNCTION_PARAMETERS
+        ):
+            raise RAGRetrieverEvaluationError(
+                f"{type(self).__name__} does not declare a function spec to use "
+                "function calling; declare EXPECTED_FUNCTION, "
+                "FUNCTION_DESCRIPTION and FUNCTION_PARAMETERS or use a "
+                "model without function calling."
+            )
+        spec = {
+            "name": self.EXPECTED_FUNCTION,
+            "description": self.FUNCTION_DESCRIPTION,
+            "parameters": self.FUNCTION_PARAMETERS,
+        }
+        try:
+            result = self.llm_model.generate_function_call(
+                messages=[{"role": "user", "content": prompt_text}],
+                functions=[spec],
+            )
+        except NotImplementedError as err:
+            raise RAGRetrieverEvaluationError(
+                f"{type(self.llm_model).__name__} reports function calling "
+                "support but does not implement generate_function_call."
+            ) from err
+        except (ValueError, RuntimeError) as err:
+            raise RAGRetrieverEvaluationError(
+                f"Function calling failed: {err}"
+            ) from err
+        return self._validate_function_call_result(result)
+
+    def _validate_function_call_result(self, result: Any) -> RetrievalVerdict:
+        """Validate a function-call response and resolve its arguments.
+
+        Parameters
+        ----------
+        result : Any
+            The raw return value of ``generate_function_call``.
+
+        Returns
+        -------
+        RetrievalVerdict
+            The validated verdict, with JSON-encoded arguments resolved.
+
+        Raises
+        ------
+        RAGRetrieverEvaluationError
+            If the result is not a :class:`FunctionCallResult`, it has no name,
+            it names a function other than :attr:`EXPECTED_FUNCTION`, or its
+            arguments do not satisfy the verdict contract.
+        """
+        if not isinstance(result, FunctionCallResult):
+            raise RAGRetrieverEvaluationError(
+                "The function-calling model returned an unexpected output shape: "
+                f"{type(result).__name__}."
+            )
+        if not result.name:
+            raise RAGRetrieverEvaluationError(
+                "The function-calling model did not report a function name."
+            )
+        if result.name != self.EXPECTED_FUNCTION:
+            raise RAGRetrieverEvaluationError(
+                f"The model called '{result.name}' instead of the expected "
+                f"'{self.EXPECTED_FUNCTION}'."
+            )
+        return parse_evaluation_arguments(result.arguments)
 
     @staticmethod
     def _extract_raw_output(output: Any) -> str:
@@ -390,8 +499,3 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
             The trace node for this retriever.
         """
         return retriever_trace(self, pool, children=child_nodes, rounds=rounds)
-
-    # Contract field names are consumed by the concrete subclasses.
-    _SUFFICIENT = SUFFICIENT_KEY
-    _TOP_K = TOP_K_KEY
-    _CHILDREN = CHILDREN_KEY

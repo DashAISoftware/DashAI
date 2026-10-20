@@ -14,7 +14,7 @@ fully modifiable values.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, ClassVar, Dict, List, Tuple
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -34,6 +34,8 @@ from DashAI.back.models.RAG.RAG_defaults import (
     default_semantic_retriever,
 )
 from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
+    CHILDREN_KEY,
+    SUFFICIENT_KEY,
     require_for_ensemble,
 )
 from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_retriever import (
@@ -183,6 +185,36 @@ class LLMEvaluatedEnsembleRetriever(LLMEvaluatedRetriever):
         ),
     )
 
+    EXPECTED_FUNCTION: ClassVar[str] = "evaluate_retrieval_sufficiency"
+    FUNCTION_DESCRIPTION: ClassVar[str] = (
+        "Decide whether the retrieved chunks are sufficient to answer the user "
+        "message and, when they are not, which child retrievers to consult next."
+    )
+    # ``children`` stays optional in the JSON schema; the runtime validator
+    # requires it whenever ``sufficient`` is false.
+    FUNCTION_PARAMETERS: ClassVar[Dict[str, Any]] = {
+        "type": "object",
+        "properties": {
+            SUFFICIENT_KEY: {
+                "type": "boolean",
+                "description": (
+                    "Whether the retrieved chunks suffice. When false, children "
+                    "is required."
+                ),
+            },
+            CHILDREN_KEY: {
+                "type": "array",
+                "items": {"type": "integer", "minimum": 0},
+                "minItems": 1,
+                "description": (
+                    "When insufficient, the indices of the child retrievers to "
+                    "consult in the next round."
+                ),
+            },
+        },
+        "required": [SUFFICIENT_KEY],
+    }
+
     def retrieve(self, query: str, **kwargs: Any) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve by consulting LLM-chosen children across rounds.
 
@@ -233,7 +265,7 @@ class LLMEvaluatedEnsembleRetriever(LLMEvaluatedRetriever):
                 break
 
             verdict = self._evaluate(query, pool, include_children_catalog=True)
-            if verdict[self._SUFFICIENT]:
+            if verdict.sufficient:
                 entry["verdict"] = True
                 break
             entry["verdict"] = False

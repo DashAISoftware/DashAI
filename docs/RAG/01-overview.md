@@ -123,7 +123,8 @@ Browser / PyWebView
   `BaseChunkingModel`)
 - **Retrievers** — `BaseRetriever` base; Sparse (TF-IDF, BM25), Dense (via
   `DenseEmbedding` subclasses), Cross-Encoder (SentenceTransformer re-rankers),
-  Composite (Sequential, Parallel, MMR Reranker)
+  Composite (Sequential, Parallel, MMR Reranker, LLM-evaluated depth and
+  ensemble)
 - **Query transformations** — `BaseQueryTransformation` base; LLM-backed
   transformers (`LLMQueryRewriter`, `LLMQueryExpander`, `LLMQueryDecomposer`)
   that turn the user message into one or more search queries before retrieval
@@ -170,10 +171,26 @@ Browser / PyWebView
 | `MMRRerankerRetriever`                     | — (MMR reranker over nested retrievers)                          | `DashAI/back/models/RAG/retrievers/composite/mmr_reranker_retriever.py`                 |
 | `SequentialRetriever`                      | — (executes retrievers sequentially)                             | `DashAI/back/models/RAG/retrievers/composite/sequential_retriever.py`                   |
 | `ParallelRetriever`                        | — (executes retrievers in parallel and merges)                   | `DashAI/back/models/RAG/retrievers/composite/parallel_retriever.py`                     |
+| `LLMEvaluatedDepthRetriever`               | — (LLM-judged adaptive depth over one child)                     | `DashAI/back/models/RAG/retrievers/composite/llm_evaluated_depth_retriever.py`          |
+| `LLMEvaluatedEnsembleRetriever`            | — (LLM-chosen children across rounds)                            | `DashAI/back/models/RAG/retrievers/composite/llm_evaluated_ensemble_retriever.py`       |
 | `SentenceTransformerCrossEncoderRetriever` | 17 cross-encoder models from `cross-encoder/*` (see table below) | `DashAI/back/models/RAG/retrievers/cross_encoder/sentence_transformer_cross_encoder.py` |
 
 Both sparse retrievers take a nested vectorizer component
 (`BM25VectorizerModel` / `TFIDFVectorizerModel`) selected in their params.
+
+The two `LLMEvaluated*` retrievers ask their configured model for a structured
+sufficiency verdict: the depth retriever evaluates after every round except the
+final one, while the ensemble retriever also makes a planning call before the
+first round. When the model supports function calling, the verdict is obtained
+through `generate_function_call` using the retriever's function schema
+(constrained by the backend); otherwise the prompt is answered as text and
+parsed by the tolerant text parser. Both routes validate the same strict
+contract, so an unparseable verdict always raises. The next-step field (`top_k`
+for depth, `children` for ensemble) stays optional in the function schema; the
+runtime validator requires it whenever `sufficient` is false. llama.cpp's GBNF
+converter enforces `type`, `required` and `minItems` but not numeric `minimum`,
+so the runtime validator remains the authoritative guard for `top_k >= 1` and
+child indices `>= 0`.
 
 ### Model Type Classification
 
@@ -288,6 +305,8 @@ they have no `retrieval_factor`.
 | `MMRRerankerRetriever`                                        | Re-ranker (composite)          | https://en.wikipedia.org/wiki/Maximal_marginal_relevance                             |
 | `SequentialRetriever`                                         | Pipeline (composite)           | —                                                                                    |
 | `ParallelRetriever`                                           | Ensemble (composite)           | —                                                                                    |
+| `LLMEvaluatedDepthRetriever`                                  | Adaptive depth (composite)     | Uses any `TextToTextGenerationTaskModel` from above                                  |
+| `LLMEvaluatedEnsembleRetriever`                               | Adaptive ensemble (composite)  | Uses any `TextToTextGenerationTaskModel` from above                                  |
 | **Dense Retriever**                                           |                                |                                                                                      |
 | `DenseEmbeddingRetriever`                                     | Bi-encoder + search index      | Uses any `DenseEmbedding` from above                                                 |
 

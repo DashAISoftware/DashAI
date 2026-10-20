@@ -23,7 +23,9 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, List
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any, List, Optional
 
 from DashAI.back.models.RAG.exceptions.retriever import (
     RAGRetrieverEvaluationError,
@@ -39,6 +41,27 @@ _FENCE_RE = re.compile(r"```[a-zA-Z0-9_-]*")
 SUFFICIENT_KEY = "sufficient"
 TOP_K_KEY = "top_k"
 CHILDREN_KEY = "children"
+
+
+@dataclass(frozen=True)
+class RetrievalVerdict:
+    """A validated retrieval-sufficiency verdict.
+
+    Attributes
+    ----------
+    sufficient : bool
+        Whether the accumulated pool answers the query.
+    top_k : Optional[int]
+        For an insufficient depth verdict, the retrieval size the next round
+        should request. Must be at least ``1`` when present.
+    children : Optional[List[int]]
+        For an insufficient ensemble verdict, the child retriever indices to
+        consult next. Indices must be at least ``0`` when present.
+    """
+
+    sufficient: bool
+    top_k: Optional[int] = None
+    children: Optional[List[int]] = None
 
 
 def _preview(raw: Any) -> str:
@@ -89,15 +112,16 @@ def _extract_json_object(text: str) -> str:
     return text[start : end + 1]
 
 
-def _validate_top_k(value: Any, raw: str) -> int:
+def _validate_top_k(value: Any, raw: Any) -> int:
     """Validate the optional ``top_k`` field.
 
     Parameters
     ----------
     value : Any
         Raw ``top_k`` value from the parsed object.
-    raw : str
-        Original model output, echoed in the error message.
+    raw : Any
+        Original payload (a string or a decoded mapping), echoed in the error
+        message.
 
     Returns
     -------
@@ -117,15 +141,16 @@ def _validate_top_k(value: Any, raw: str) -> int:
     return value
 
 
-def _validate_children(value: Any, raw: str) -> List[int]:
+def _validate_children(value: Any, raw: Any) -> List[int]:
     """Validate the optional ``children`` field.
 
     Parameters
     ----------
     value : Any
         Raw ``children`` value from the parsed object.
-    raw : str
-        Original model output, echoed in the error message.
+    raw : Any
+        Original payload (a string or a decoded mapping), echoed in the error
+        message.
 
     Returns
     -------
@@ -151,40 +176,29 @@ def _validate_children(value: Any, raw: str) -> List[int]:
     return list(value)
 
 
-def parse_evaluation_output(raw: str) -> Dict[str, Any]:
-    """Parse the retrieval-sufficiency verdict out of raw model output.
-
-    Markdown fences are stripped, the substring from the first ``{`` to the last
-    ``}`` is taken, and the result must be a JSON object carrying a boolean
-    ``sufficient`` field. The optional ``top_k`` and ``children`` fields are
-    validated when present; unknown keys are ignored.
+def _validate_verdict(parsed: Any, raw: Any) -> RetrievalVerdict:
+    """Validate a parsed verdict against the retrieval-sufficiency contract.
 
     Parameters
     ----------
-    raw : str
-        Raw model output.
+    parsed : Any
+        The decoded verdict payload, expected to be a mapping.
+    raw : Any
+        Original payload (a string or a decoded mapping), echoed in error
+        messages.
 
     Returns
     -------
-    Dict[str, Any]
-        ``{"sufficient": bool, "top_k": int | None, "children": list[int] | None}``.
+    RetrievalVerdict
+        The validated verdict.
 
     Raises
     ------
     RAGRetrieverEvaluationError
-        If the output contains no JSON object, the JSON is invalid, the parsed
-        value is not a mapping, ``sufficient`` is missing or not a boolean, or
-        an optional field is present with the wrong type/shape.
+        If the payload is not a mapping, ``sufficient`` is missing or not a
+        boolean, or an optional field is present with the wrong type/shape.
     """
-    text = _FENCE_RE.sub("", str(raw)).strip()
-    candidate = _extract_json_object(text)
-    try:
-        parsed = json.loads(candidate)
-    except json.JSONDecodeError as err:
-        raise RAGRetrieverEvaluationError(
-            f"Failed to parse the evaluation output as JSON. Preview: {_preview(raw)}"
-        ) from err
-    if not isinstance(parsed, dict):
+    if not isinstance(parsed, Mapping):
         raise RAGRetrieverEvaluationError(
             f"The evaluation output is not a JSON object. Preview: {_preview(raw)}"
         )
@@ -203,19 +217,89 @@ def parse_evaluation_output(raw: str) -> Dict[str, Any]:
     if CHILDREN_KEY in parsed:
         children = _validate_children(parsed[CHILDREN_KEY], raw)
 
-    return {
-        SUFFICIENT_KEY: sufficient,
-        TOP_K_KEY: top_k,
-        CHILDREN_KEY: children,
-    }
+    return RetrievalVerdict(
+        sufficient=sufficient,
+        top_k=top_k,
+        children=children,
+    )
 
 
-def require_for_depth(verdict: Dict[str, Any]) -> int:
+def parse_evaluation_output(raw: str) -> RetrievalVerdict:
+    """Parse the retrieval-sufficiency verdict out of raw model output.
+
+    Markdown fences are stripped, the substring from the first ``{`` to the last
+    ``}`` is taken, and the result must be a JSON object carrying a boolean
+    ``sufficient`` field. The optional ``top_k`` and ``children`` fields are
+    validated when present; unknown keys are ignored.
+
+    Parameters
+    ----------
+    raw : str
+        Raw model output.
+
+    Returns
+    -------
+    RetrievalVerdict
+        The validated verdict.
+
+    Raises
+    ------
+    RAGRetrieverEvaluationError
+        If the output contains no JSON object, the JSON is invalid, the parsed
+        value is not a mapping, ``sufficient`` is missing or not a boolean, or
+        an optional field is present with the wrong type/shape.
+    """
+    text = _FENCE_RE.sub("", str(raw)).strip()
+    candidate = _extract_json_object(text)
+    try:
+        parsed = json.loads(candidate)
+    except json.JSONDecodeError as err:
+        raise RAGRetrieverEvaluationError(
+            f"Failed to parse the evaluation output as JSON. Preview: {_preview(raw)}"
+        ) from err
+    return _validate_verdict(parsed, raw)
+
+
+def parse_evaluation_arguments(arguments: Any) -> RetrievalVerdict:
+    """Validate the arguments payload of a function call as a verdict.
+
+    Function-calling backends return arguments either already decoded as a
+    mapping or as a JSON-encoded string emitted under constrained sampling. Both
+    are accepted here; the payload is validated against the same strict contract
+    as :func:`parse_evaluation_output`, so the two routes cannot diverge.
+
+    Parameters
+    ----------
+    arguments : Any
+        The raw ``FunctionCallResult.arguments`` payload.
+
+    Returns
+    -------
+    RetrievalVerdict
+        The validated verdict.
+
+    Raises
+    ------
+    RAGRetrieverEvaluationError
+        If the payload is a string that fails text parsing, is a mapping that
+        violates the contract, or is neither a mapping nor a string.
+    """
+    if isinstance(arguments, Mapping):
+        return _validate_verdict(arguments, arguments)
+    if isinstance(arguments, str):
+        return parse_evaluation_output(arguments)
+    raise RAGRetrieverEvaluationError(
+        "The function-calling arguments must be a mapping or a JSON-encoded "
+        f"string, got {type(arguments).__name__}. Preview: {_preview(arguments)}"
+    )
+
+
+def require_for_depth(verdict: RetrievalVerdict) -> int:
     """Return the retrieval size an insufficient depth verdict requires.
 
     Parameters
     ----------
-    verdict : Dict[str, Any]
+    verdict : RetrievalVerdict
         A verdict produced by :func:`parse_evaluation_output`.
 
     Returns
@@ -229,21 +313,20 @@ def require_for_depth(verdict: Dict[str, Any]) -> int:
         If the verdict is marked sufficient (the caller should have returned) or
         an insufficient verdict omits ``top_k``.
     """
-    if verdict.get(SUFFICIENT_KEY):
+    if verdict.sufficient:
         raise RAGRetrieverEvaluationError(
             "Expected an insufficient verdict with a retrieval size, but the "
             "verdict is marked sufficient."
         )
-    top_k = verdict.get(TOP_K_KEY)
-    if top_k is None:
+    if verdict.top_k is None:
         raise RAGRetrieverEvaluationError(
             "An insufficient depth evaluation must provide a positive 'top_k' "
             "retrieval size."
         )
-    return top_k
+    return verdict.top_k
 
 
-def require_for_ensemble(verdict: Dict[str, Any], child_count: int) -> List[int]:
+def require_for_ensemble(verdict: RetrievalVerdict, child_count: int) -> List[int]:
     """Return the child indices an insufficient ensemble verdict selects.
 
     Duplicate indices are collapsed preserving their first-seen order. Every
@@ -251,7 +334,7 @@ def require_for_ensemble(verdict: Dict[str, Any], child_count: int) -> List[int]
 
     Parameters
     ----------
-    verdict : Dict[str, Any]
+    verdict : RetrievalVerdict
         A verdict produced by :func:`parse_evaluation_output`.
     child_count : int
         Number of child retrievers available to the ensemble.
@@ -267,12 +350,12 @@ def require_for_ensemble(verdict: Dict[str, Any], child_count: int) -> List[int]
         If the verdict is marked sufficient, ``children`` is missing or empty,
         or any index is out of range for ``child_count``.
     """
-    if verdict.get(SUFFICIENT_KEY):
+    if verdict.sufficient:
         raise RAGRetrieverEvaluationError(
             "An ensemble evaluation over an empty pool must select children, "
             "but the verdict is marked sufficient."
         )
-    children = verdict.get(CHILDREN_KEY)
+    children = verdict.children
     if not children:
         raise RAGRetrieverEvaluationError(
             "An insufficient ensemble evaluation must select a non-empty "

@@ -14,7 +14,7 @@ default RAG function-calling LLM. Both are ordinary, fully modifiable values.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, ClassVar, Dict, List, Tuple
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -33,6 +33,9 @@ from DashAI.back.models.RAG.RAG_defaults import (
     default_retrieval_sufficiency_prompt,
 )
 from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
+    SUFFICIENT_KEY,
+    TOP_K_KEY,
+    RetrievalVerdict,
     require_for_depth,
 )
 from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_retriever import (
@@ -183,6 +186,36 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
         ),
     )
 
+    EXPECTED_FUNCTION: ClassVar[str] = "evaluate_retrieval_sufficiency"
+    FUNCTION_DESCRIPTION: ClassVar[str] = (
+        "Decide whether the retrieved chunks are sufficient to answer the user "
+        "message and, when they are not, how many chunks the next retrieval "
+        "round should request."
+    )
+    # ``top_k`` stays optional in the JSON schema; the runtime validator
+    # requires it whenever ``sufficient`` is false.
+    FUNCTION_PARAMETERS: ClassVar[Dict[str, Any]] = {
+        "type": "object",
+        "properties": {
+            SUFFICIENT_KEY: {
+                "type": "boolean",
+                "description": (
+                    "Whether the retrieved chunks suffice. When false, top_k is "
+                    "required."
+                ),
+            },
+            TOP_K_KEY: {
+                "type": "integer",
+                "minimum": 1,
+                "description": (
+                    "When insufficient, the number of chunks the next retrieval "
+                    "round should request."
+                ),
+            },
+        },
+        "required": [SUFFICIENT_KEY],
+    }
+
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the depth retriever and enforce a single child.
 
@@ -250,7 +283,7 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
                 break
 
             verdict = self._evaluate(query, pool, include_children_catalog=False)
-            if verdict[self._SUFFICIENT]:
+            if verdict.sufficient:
                 entry["verdict"] = True
                 break
             entry["verdict"] = False
@@ -258,7 +291,7 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
 
         return pool, self._build_trace(pool, child_nodes, rounds)
 
-    def _next_top_k(self, verdict: Dict[str, Any], pool_size: int) -> int:
+    def _next_top_k(self, verdict: RetrievalVerdict, pool_size: int) -> int:
         """Return the next delegation's retrieval-size hint.
 
         The model's requested size is capped by ``max_chunks`` (a per-call
@@ -272,7 +305,7 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
 
         Parameters
         ----------
-        verdict : Dict[str, Any]
+        verdict : RetrievalVerdict
             An insufficient verdict carrying ``top_k``.
         pool_size : int
             Current number of pooled chunks.
