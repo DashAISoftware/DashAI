@@ -146,9 +146,14 @@ export default function ManualPredictionPanel({
       setPreviewResults(result);
     } catch (error) {
       console.error("Error previewing prediction:", error);
-      enqueueSnackbar(t("prediction:error.previewFailed"), {
-        variant: "error",
-      });
+      // A 400 carries the backend's reason (e.g. which rows have missing
+      // values the model cannot handle), which says more than a generic text.
+      const detail = error?.response?.data?.detail;
+      const reason =
+        error?.response?.status === 400 && typeof detail === "string"
+          ? detail
+          : t("prediction:error.previewFailed");
+      enqueueSnackbar(reason, { variant: "error" });
     } finally {
       setIsPreviewing(false);
     }

@@ -1,6 +1,6 @@
 import { useModels } from "./ModelsContext";
 import { useTranslation } from "react-i18next";
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import CreateSessionSteps from "./CreateSessionSteps";
 import DatasetVisualization from "../DatasetVisualization";
 import SelectOptionMenu from "../threeSectionLayout/SelectOptionMenu";
@@ -145,6 +145,10 @@ export default function ModelsCenterContent() {
             description:
               task.description || task.metadata?.short_description || "",
             Icon: TASK_ICONS[task.name] || DefaultTaskIcon,
+            badge:
+              task.metadata?.requires_target === false
+                ? t("models:label.unsupervisedBadge")
+                : t("models:label.supervisedBadge"),
           }))}
           searchBar={false}
           goToPrevStep={selectedDatasetId ? handleBackToDataset : null}

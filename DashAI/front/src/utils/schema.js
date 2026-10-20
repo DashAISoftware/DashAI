@@ -279,7 +279,9 @@ const generateField = (subSchema) => {
   } else if (subSchema.type === "object") {
     field = Yup.object();
 
-    if (!subSchema.parent) {
+    if (subSchema.conditionalSchemas) {
+      field = Yup.object();
+    } else if (!subSchema.parent) {
       const properties = {};
       Object.keys(subSchema.properties).forEach((key) => {
         properties[key] = generateField(subSchema.properties[key]);

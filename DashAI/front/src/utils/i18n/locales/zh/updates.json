@@ -1,0 +1,41 @@
+{
+  "title": "更新",
+  "subtitle": "dashAI 版本与新版本",
+  "installedVersion": "已安装版本",
+  "latestVersion": "最新版本",
+  "unknownVersion": "未知",
+  "upToDate": "您使用的是最新版本。",
+  "updateAvailable": "有新版本可用：{{version}}",
+  "updateAvailableTooltip": "有新版本可用：{{version}}",
+  "checkFailed": "无法检查更新。请检查您的网络连接。",
+  "disabled": "此安装已关闭更新检查。",
+  "releaseNotes": "新功能",
+  "download": "下载",
+  "viewOnGitHub": "在 GitHub 上查看",
+  "hint": {
+    "windows": "下载更新并在此处安装。Windows 会请求权限。您的数据和实验将会保留。",
+    "macos": "下载更新并在此处打开。dashAI 将关闭，以便您将新版本拖到“应用程序”文件夹。您的数据和实验将会保留。",
+    "appimage": "下载更新并在此处安装。dashAI 将以新版本重新启动。您的数据和实验将会保留。",
+    "pip": "使用此命令更新，然后重新启动 dashAI：",
+    "source": "使用这些命令更新代码仓库，然后重新启动 dashAI：",
+    "docker": "使用新版本重新构建 Docker 镜像。",
+    "unknown": "从 GitHub 下载新版本。"
+  },
+  "downloadUpdate": "下载更新（{{size}}）",
+  "downloading": "正在下载更新... {{percent}}%",
+  "downloadingShort": "正在下载...",
+  "downloadFailed": "无法下载更新。",
+  "installRestart": "安装并重新启动",
+  "openInstaller": "打开安装程序",
+  "installing": "正在安装...",
+  "installFailed": "无法安装更新。{{error}}",
+  "jobsRunningWarning": "有任务正在运行。安装会关闭 dashAI 并停止这些任务。",
+  "installAnyway": "仍然安装",
+  "cancel": "取消",
+  "manualDownload": "手动下载",
+  "installed": {
+    "windows": "请接受 Windows 提示以继续。dashAI 将关闭，并在安装完成后重新打开。",
+    "appimage": "dashAI 正在以新版本重新启动。",
+    "macos": "安装程序已打开。请将 dashAI 拖到“应用程序”文件夹，替换旧版本后重新打开。"
+  }
+}

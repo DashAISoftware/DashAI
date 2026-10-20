@@ -10,8 +10,8 @@ from DashAI.back.core.schema_fields import (
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.image_explainable_model import GradCamCompatibleModel
+from DashAI.back.models.supervised_model import SupervisedModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 
@@ -403,7 +403,7 @@ def _build_cnn_model(
     )
 
 
-class CNNImageClassifier(BaseModel, GradCamCompatibleModel):
+class CNNImageClassifier(SupervisedModel, GradCamCompatibleModel):
     """CNN-based image classifier.
 
     A convolutional neural network with configurable depth and width that

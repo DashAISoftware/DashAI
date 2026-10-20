@@ -13,6 +13,7 @@ from DashAI.back.models.hugging_face.modernbert_transformer import ModernBertTra
 from DashAI.back.types.categorical import Categorical
 from DashAI.back.types.utils import save_types_in_arrow_metadata
 from DashAI.back.types.value_types import Text
+from tests.back.scratch import scratch_dir
 
 
 @pytest.fixture(scope="module", name="splited_dataset")
@@ -22,7 +23,7 @@ def splited_dataset_fixture():
 
     datasetdict = dataloader_test.load_data(
         filepath_or_buffer=test_dataset_path,
-        temp_path="tests/back/models",
+        temp_path=scratch_dir("models"),
         params={
             "data_key": "data",
             "schema": {

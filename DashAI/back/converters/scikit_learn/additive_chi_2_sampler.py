@@ -1,3 +1,5 @@
+from typing import List
+
 from sklearn.kernel_approximation import (
     AdditiveChi2Sampler as AdditiveChi2SamplerOperation,
 )
@@ -12,6 +14,11 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    StateItem,
+    StructureDelta,
+    known_width,
+)
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
@@ -87,6 +94,26 @@ class AdditiveChi2Sampler(
     IMAGE_PREVIEW = "additive_chi2_sampler.png"
 
     metadata = {"allowed_types": [Float, Integer], "allowed_dtypes": []}
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: 2 * sample_steps - 1 Float columns per input.
+
+        Each input column is expanded into one square-root term plus a cosine
+        and a sine term per extra sample step.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The inputs are consumed; one block replaces them.
+        """
+        width = known_width(inputs)
+        count = None if width is None else width * (2 * self.sample_steps - 1)
+        return StructureDelta(added=self._default_blocks(count=count))
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return the DashAI data type produced by this converter for a column.

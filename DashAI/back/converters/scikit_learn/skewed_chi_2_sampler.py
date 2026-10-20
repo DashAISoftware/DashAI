@@ -3,6 +3,7 @@ from sklearn.kernel_approximation import SkewedChi2Sampler as SkewedChi2SamplerO
 from DashAI.back.api.utils import create_random_state
 from DashAI.back.converters.category.polynomial_kernel import PolynomialKernelConverter
 from DashAI.back.converters.sklearn_wrapper import SklearnWrapper
+from DashAI.back.converters.structure_mixins import ComponentsOutputMixin
 from DashAI.back.core.schema_fields import (
     enum_field,
     float_field,
@@ -94,7 +95,10 @@ class SkewedChi2SamplerSchema(BaseSchema):
 
 
 class SkewedChi2Sampler(
-    PolynomialKernelConverter, SklearnWrapper, SkewedChi2SamplerOperation
+    ComponentsOutputMixin,
+    PolynomialKernelConverter,
+    SklearnWrapper,
+    SkewedChi2SamplerOperation,
 ):
     """Approximate the skewed chi-squared kernel feature map
     via random Fourier features.

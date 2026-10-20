@@ -11,12 +11,18 @@ from DashAI.back.api.api_v1.schemas.model_sessions_params import (
     ColumnsValidationParams,
     ModelSessionBulkDeleteParams,
     ModelSessionParams,
+    PreprocessingStructureParams,
 )
 from DashAI.back.api.utils import remove_path
 from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
 from DashAI.back.job.preprocessing_job import PreprocessingJob
 from DashAI.back.preprocessing.column_ref import ConverterSequence, RawColumnRef
+from DashAI.back.preprocessing.structure import (
+    StructureError,
+    infer_structure,
+    resolve_state_refs,
+)
 from DashAI.back.splitters.splits_payload import (
     META_KEYS,
     normalize_splits_payload,
@@ -121,14 +127,26 @@ async def get_model_session(
         return model_session
 
 
-@router.post("/validation")
-@inject
-async def validate_columns(
-    params: ColumnsValidationParams,
-    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
-    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
-):
-    """Validate if dataset columns are compatible with a task."""
+def _load_sample_dataset(db, dataset_id: int):
+    """Load the first rows of a dataset, enough for its columns and types.
+
+    Parameters
+    ----------
+    db : Session
+        An open database session.
+    dataset_id : int
+        The dataset to load.
+
+    Returns
+    -------
+    DashAIDataset
+        At most 5 rows of the dataset, with every column and its type.
+
+    Raises
+    ------
+    HTTPException
+        404 if the dataset is not registered.
+    """
     import os
 
     import pyarrow as pa
@@ -136,25 +154,92 @@ async def validate_columns(
 
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
+    dataset = db.get(Dataset, dataset_id)
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found",
+        )
+    data_filepath = os.path.join(f"{dataset.file_path}/dataset", "data.arrow")
+    with pa.OSFile(data_filepath, "rb") as source:
+        reader = ipc.open_file(source)
+        batch = reader.get_batch(0)
+        sample_batch = batch.slice(0, min(5, batch.num_rows))
+    return DashAIDataset(pa.Table.from_batches([sample_batch]))
+
+
+def _type_allowed(type_name, allowed_types) -> bool:
+    """Whether a column type is one of a task's allowed input types.
+
+    A task declaring the DashAIValue wildcard accepts every concrete value
+    type; an unknown type (None) is let through, since only a fit can tell.
+    """
+    if not allowed_types or type_name is None:
+        return True
+    return type_name in allowed_types or (
+        "DashAIValue" in allowed_types and type_name in _DASHAI_VALUE_TYPE_NAMES
+    )
+
+
+@router.post("/preprocessing/structure")
+@inject
+async def get_preprocessing_structure(
+    params: PreprocessingStructureParams,
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Estimate the dataset structure after every step of a converter chain.
+
+    Read only: nothing is fit and nothing is stored. The session wizard calls
+    it on every change to the chain, to offer only columns that exist at each
+    step and to flag steps that cannot work.
+
+    Parameters
+    ----------
+    params : PreprocessingStructureParams
+        The dataset, the candidate and target columns, and the chain.
+
+    Returns
+    -------
+    StructureResult
+        The state after every step, their errors and warnings, and the final
+        state.
+    """
     with session_factory() as db:
         try:
-            dataset = db.get(Dataset, params.dataset_id)
-            if not dataset:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Dataset not found",
-                )
+            sample = _load_sample_dataset(db, params.dataset_id)
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+    return infer_structure(
+        dataset_types=sample.types,
+        candidates=params.candidates,
+        target=params.output_columns,
+        steps=params.steps,
+        component_registry=component_registry,
+    )
 
-            dataset_path = f"{dataset.file_path}/dataset"
-            data_filepath = os.path.join(dataset_path, "data.arrow")
-            with pa.OSFile(data_filepath, "rb") as source:
-                reader = ipc.open_file(source)
-                batch = reader.get_batch(0)
-                sample_size = min(5, batch.num_rows)
-                sample_batch = batch.slice(0, sample_size)
 
-            table = pa.Table.from_batches([sample_batch])
-            minimal_dataset = DashAIDataset(table)
+@router.post("/validation")
+@inject
+async def validate_columns(
+    params: ColumnsValidationParams,
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """Validate if dataset columns are compatible with a task.
+
+    With `preprocessing`, every input ref is resolved against the chain's
+    estimated final structure and its type checked against the task's input
+    types; the original columns among them also go through the task's own
+    validation, as without preprocessing.
+    """
+    with session_factory() as db:
+        try:
+            minimal_dataset = _load_sample_dataset(db, params.dataset_id)
 
             column_names = minimal_dataset.column_names
 
@@ -192,31 +277,42 @@ async def validate_columns(
 
     task: "BaseTask" = component_registry[params.task_name]["class"]()
 
-    if group_refs:
-        declared_types = params.converter_output_types or {}
-        task_metadata = task.get_metadata()
-        allowed_input_types = set(task_metadata.get("inputs_types", []))
-        for ref in group_refs:
-            # A step with a heterogeneous scope (see SessionPreprocessor.
-            # _classify_by_type) can declare more than one type, one per
-            # slot — "{step}:{slot}" disambiguates which one a slotted ref
-            # means; an unslotted ref (the whole step) keeps the plain
-            # "{step}" key, unchanged from before slots existed.
-            key = str(ref.step) if ref.slot is None else f"{ref.step}:{ref.slot}"
-            declared_type = declared_types.get(key)
-            type_ok = declared_type in allowed_input_types or (
-                "DashAIValue" in allowed_input_types
-                and declared_type in _DASHAI_VALUE_TYPE_NAMES
+    if params.preprocessing:
+        allowed_input_types = set(task.get_metadata().get("inputs_types", []))
+        structure = infer_structure(
+            dataset_types=minimal_dataset.types,
+            candidates=list(column_names),
+            target=outputs_names,
+            steps=params.preprocessing,
+            component_registry=component_registry,
+        )
+        if not structure.valid:
+            return {
+                "dataset_status": "invalid",
+                "error": "The preprocessing chain has an invalid step.",
+            }
+        try:
+            items = resolve_state_refs(
+                params.input_refs or [], structure.final, set(outputs_names)
             )
-            if allowed_input_types and not type_ok:
+        except StructureError as e:
+            return {"dataset_status": "invalid", "error": e.message.code}
+        for item in items:
+            if not _type_allowed(item.type, allowed_input_types):
                 return {
                     "dataset_status": "invalid",
                     "error": (
-                        f"Converter step {ref.step} declares output type "
-                        f"'{declared_type}', which is not one of the task's "
+                        f"Input of type '{item.type}' is not one of the task's "
                         f"allowed input types {sorted(allowed_input_types)}."
                     ),
                 }
+    elif group_refs:
+        # A ref to a converter's output only has a type through the chain's
+        # estimated structure, which needs the preprocessing steps.
+        return {
+            "dataset_status": "invalid",
+            "error": "References to converter outputs need the preprocessing steps.",
+        }
 
     validation_response = {}
 
@@ -231,6 +327,60 @@ async def validate_columns(
         validation_response["dataset_status"] = "invalid"
         validation_response["error"] = str(e)
     return validation_response
+
+
+def _validate_evaluation_strategy(
+    task_name: str, evaluation_strategy: str, component_registry: "ComponentRegistry"
+) -> type:
+    """Check that a session's evaluation strategy is one its task offers.
+
+    The wizard lists only the strategies the registry relates to the task, and
+    this asks the same registry the same question, so a session the front
+    builds always passes. What it stops is a session put together by hand with
+    a strategy its task never offered: one that carves nothing on a task with
+    a target, which would train without ever reading the target, or a holdout
+    on a task without one. A run relies on this pairing to know from the
+    strategy alone which units to chain.
+
+    Parameters
+    ----------
+    task_name : str
+        The session's task.
+    evaluation_strategy : str
+        The session's evaluation strategy.
+    component_registry : ComponentRegistry
+        Registry that relates tasks to the strategies they offer.
+
+    Returns
+    -------
+    type
+        The strategy class, so the caller can read what it declares.
+
+    Raises
+    ------
+    HTTPException
+        If the task is not registered, or the strategy is not one it offers.
+    """
+    if task_name not in component_registry:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Task {task_name} does not exist in the registry.",
+        )
+
+    offered = sorted(
+        component["name"]
+        for component in component_registry.get_related_components(task_name)
+        if component.get("type") == "EvaluationStrategy"
+    )
+    if evaluation_strategy not in offered:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Evaluation strategy {evaluation_strategy!r} is not available "
+                f"for task {task_name}. Available strategies: {offered}."
+            ),
+        )
+    return component_registry[evaluation_strategy]["class"]
 
 
 def _validate_splits(splits: str, component_registry: "ComponentRegistry") -> None:
@@ -286,6 +436,136 @@ def _validate_splits(splits: str, component_registry: "ComponentRegistry") -> No
         ) from e
 
 
+def _validate_empty_splits(splits: str, evaluation_strategy: str) -> None:
+    """Check that a session whose strategy carves nothing sends no splits.
+
+    Such a strategy takes no splitter, so any payload would be stored and never
+    used, while the front still reads it back to decide which partitions the
+    session has. Only an empty JSON object is accepted.
+
+    Parameters
+    ----------
+    splits : str
+        The splits payload, serialized as JSON.
+    evaluation_strategy : str
+        The session's evaluation strategy, named in the error.
+
+    Raises
+    ------
+    HTTPException
+        If the payload is not valid JSON or is not an empty object.
+    """
+    import json
+
+    try:
+        splits_data = json.loads(splits)
+    except (TypeError, ValueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"splits is not a valid JSON object: {e}",
+        ) from e
+
+    if splits_data != {}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Evaluation strategy {evaluation_strategy} takes no splitter, "
+                f"so splits must be an empty object, got {splits}."
+            ),
+        )
+
+
+# A training-only resampler runs twice (PreprocessingJob and ModelJob replay
+# the chain), so both runs must draw the same rows.
+DEFAULT_RESAMPLING_SEED = 42
+
+
+def _with_resampling_seeds(steps, component_registry):
+    """Give every training-only resampling step without a seed a fixed one.
+
+    Stored in the step's params, so it is visible in the session info. A
+    seed the user chose is kept.
+
+    Parameters
+    ----------
+    steps : list of ConverterStep
+        The session's preprocessing steps, as submitted.
+    component_registry : ComponentRegistry
+        Resolves each step's converter class.
+
+    Returns
+    -------
+    list of ConverterStep
+        The steps, with `random_state` filled in where it was missing.
+    """
+    seeded = []
+    for step in steps:
+        converter_class = (
+            component_registry[step.converter]["class"]
+            if step.converter in component_registry
+            else None
+        )
+        needs_seed = (
+            converter_class is not None
+            and getattr(converter_class, "ROWS_APPLY_TO", None) == "train"
+            and step.params.get("random_state") is None
+        )
+        if needs_seed:
+            step = step.model_copy(
+                update={
+                    "params": {**step.params, "random_state": DEFAULT_RESAMPLING_SEED}
+                }
+            )
+        seeded.append(step)
+    return seeded
+
+
+def _check_preprocessing_structure(
+    db, params, sequence, input_column_refs, component_registry
+) -> None:
+    """Reject a session whose chain or inputs cannot work, before creating it.
+
+    Without this, the session would be created and its PreprocessingJob
+    would only fail afterwards, with an error like a bare missing column
+    name.
+
+    Raises
+    ------
+    HTTPException
+        422 with the estimated structure when a step is invalid, or with the
+        error when an input ref points at something the chain does not
+        produce (or consumed).
+    """
+    sample = _load_sample_dataset(db, params.dataset_id)
+    structure = infer_structure(
+        dataset_types=sample.types,
+        candidates=list(sample.column_names),
+        target=params.output_columns,
+        steps=sequence.steps,
+        component_registry=component_registry,
+    )
+    if not structure.valid:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": "The preprocessing chain has an invalid step.",
+                "structure": structure.model_dump(mode="json"),
+            },
+        )
+    try:
+        resolve_state_refs(
+            input_column_refs, structure.final, set(params.output_columns)
+        )
+    except StructureError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "message": "An input column does not exist after preprocessing.",
+                "error": e.message.model_dump(mode="json"),
+            },
+        ) from e
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def create_model_session(
@@ -323,9 +603,29 @@ async def create_model_session(
     import pyarrow as pa
     import pyarrow.ipc as ipc
 
-    _validate_splits(params.splits, component_registry)
+    strategy_class = _validate_evaluation_strategy(
+        params.task_name, params.evaluation_strategy, component_registry
+    )
+    if getattr(strategy_class, "KIND", "holdout") == "full":
+        # A strategy that carves nothing takes no splitter, so its splits
+        # payload must be empty, and no session preprocessing, which is fitted
+        # once per partition.
+        _validate_empty_splits(params.splits, params.evaluation_strategy)
+        if params.preprocessing:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Evaluation strategy {params.evaluation_strategy} does not "
+                    "take session preprocessing: it is fitted per partition, "
+                    "and this strategy makes none."
+                ),
+            )
+    else:
+        _validate_splits(params.splits, component_registry)
 
-    sequence = ConverterSequence(steps=params.preprocessing)
+    sequence = ConverterSequence(
+        steps=_with_resampling_seeds(params.preprocessing, component_registry)
+    )
     try:
         sequence.validate_scopes()
     except ValueError as e:
@@ -361,6 +661,11 @@ async def create_model_session(
                 reader = ipc.open_file(source)
                 schema = reader.schema
                 column_names = schema.names
+
+            if has_preprocessing:
+                _check_preprocessing_structure(
+                    db, params, sequence, input_column_refs, component_registry
+                )
 
             # When preprocessing is configured, input_columns is only a
             # placeholder until PreprocessingJob resolves the real ones, so
@@ -532,6 +837,7 @@ async def update_model_session(
     task_name: Union[str, None] = None,
     name: Union[str, None] = None,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):
     """Update the model session associated with the provided ID.
 
@@ -542,6 +848,9 @@ async def update_model_session(
     session_factory : Callable[..., ContextManager[Session]]
         A factory that creates a context manager that handles a SQLAlchemy session.
         The generated session can be used to access and query the database.
+    component_registry : ComponentRegistry
+        Registry used to check that a new task still offers the session's
+        evaluation strategy.
 
     Returns
     -------
@@ -586,6 +895,11 @@ async def update_model_session(
             if dataset_id:
                 setattr(model_session, "dataset_id", dataset_id)
             if task_name:
+                # The stored strategy must still be one the new task offers.
+                if task_name != model_session.task_name:
+                    _validate_evaluation_strategy(
+                        task_name, model_session.evaluation_strategy, component_registry
+                    )
                 setattr(model_session, "task_name", task_name)
 
             if dataset_id or task_name or name:

@@ -17,17 +17,17 @@ from DashAI.back.job.dataset_job import DatasetJob
 from DashAI.back.job.model_job import ModelJob
 from DashAI.back.job.predict_job import PredictJob
 from DashAI.back.metrics.base_metric import BaseMetric
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.scikit_learn.k_neighbors_classifier import (
     KNeighborsClassifier,
 )
+from DashAI.back.models.supervised_model import SupervisedModel
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
 from DashAI.back.splitters.holdout import HoldoutSplitter
-from DashAI.back.tasks.base_task import BaseTask
+from DashAI.back.tasks.supervised_task import SupervisedTask
 from DashAI.back.tasks.tabular_classification_task import TabularClassificationTask
 
 
-class DummyTask(BaseTask):
+class DummyTask(SupervisedTask):
     name: str = "DummyTask"
     metadata: dict = {
         "inputs_types": [ClassLabel, Value],
@@ -36,11 +36,11 @@ class DummyTask(BaseTask):
         "outputs_cardinality": 1,
     }
 
-    def prepare_for_task(self, dataset, output_columns):
+    def prepare_for_task(self, dataset, input_columns=None, output_columns=None):
         return dataset
 
 
-class DummyModel(BaseModel):
+class DummyModel(SupervisedModel):
     COMPATIBLE_COMPONENTS = ["DummyTask"]
 
     def save(self, filename):
@@ -450,10 +450,13 @@ def test_a_failing_prediction_reports_why(
     assert response.status_code == 200, response.text
     prediction_id = response.json()["id"]
 
-    def explode(**kwargs):
+    # Injected at the unit that predicts, which is where the three inline
+    # prediction steps this test used to patch now live. What is under test is
+    # not where the failure comes from but that its message survives the trip.
+    def explode(self, ctx):
         raise ValueError("ARIMA forecasts forward only")
 
-    monkeypatch.setattr("DashAI.back.job.predict_job._run_prediction_pipeline", explode)
+    monkeypatch.setattr("DashAI.back.units.predict_unit.PredictUnit.execute", explode)
 
     job = PredictJob(job_type="PredictJob", kwargs={"prediction_id": prediction_id})
     with pytest.raises(JobError) as raised:

@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING
 
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.categorical_encoder_mixin import CategoricalEncoderMixin
+from DashAI.back.models.supervised_model import SupervisedModel
 
 if TYPE_CHECKING:
     from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 
-class SklearnLikeModel(CategoricalEncoderMixin, BaseModel):
+class SklearnLikeModel(CategoricalEncoderMixin, SupervisedModel):
     """Abstract base class for scikit-learn-compatible DashAI models.
 
     Provides ``save`` / ``load`` via joblib and inherits the categorical
@@ -15,6 +15,11 @@ class SklearnLikeModel(CategoricalEncoderMixin, BaseModel):
     ``CategoricalEncoderMixin``. Concrete subclasses (classifiers and
     regressors) supply ``train`` and ``predict`` implementations backed by
     scikit-learn estimators.
+
+    Inherits directly from ``SupervisedModel`` rather than ``BaseModel``.
+    Its ``train`` signature requires labeled data (``y_train``), which is
+    the defining property of supervised learning, so every model built on
+    this class is supervised by construction.
     """
 
     def __init__(self, *args, **kwargs):

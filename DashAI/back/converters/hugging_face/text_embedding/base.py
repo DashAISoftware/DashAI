@@ -168,6 +168,7 @@ class TextEmbeddingConverter(AdvancedPreprocessingConverter, PretrainedTool):
 
     SCHEMA = TextEmbeddingSchema
     LEARNS_FROM_DATA = False
+    COLUMN_OPERATION = "expand"
     CHANGES_ROW_COUNT = False
     metadata = {"allowed_types": [Text], "allowed_dtypes": []}
     HF_IGNORE_PATTERNS = [*HFDownloadableMixin.HF_IGNORE_PATTERNS, "pytorch_model.bin"]

@@ -1,3 +1,6 @@
+import math
+from typing import List
+
 from sklearn.preprocessing import PolynomialFeatures as PolynomialFeaturesOperation
 
 from DashAI.back.converters.category.polynomial_kernel import PolynomialKernelConverter
@@ -10,6 +13,11 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.preprocessing.structure_types import (
+    StateItem,
+    StructureDelta,
+    known_width,
+)
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.value_types import Float, Integer
 
@@ -175,6 +183,40 @@ class PolynomialFeatures(
     IMAGE_PREVIEW = "polynomial_features.png"
 
     metadata = {"allowed_types": [Float, Integer], "allowed_dtypes": []}
+
+    def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
+        """Estimate the output: inputs kept as Float, plus the other terms.
+
+        The degree-1 terms keep their input column's name, so the inputs
+        survive (as Float); the bias column and higher-degree terms are new.
+        With n inputs there are C(n + degree, degree) monomials of degree at
+        most `degree`, or sum(C(n, k) for k <= degree) products of distinct
+        features when `interaction_only`, one less without the bias.
+
+        Parameters
+        ----------
+        inputs : list of ColumnItem | BlockItem
+            The dataset state items in this converter's scope.
+
+        Returns
+        -------
+        StructureDelta
+            The retyped inputs, plus one block for the new terms.
+        """
+        width = known_width(inputs)
+        count = None
+        if width is not None and isinstance(self.degree, int):
+            if self.interaction_only:
+                total = sum(math.comb(width, k) for k in range(self.degree + 1))
+            else:
+                total = math.comb(width + self.degree, self.degree)
+            if not self.include_bias:
+                total -= 1
+            count = total - width
+        return StructureDelta(
+            kept=[self._retype(item) for item in inputs],
+            added=self._default_blocks(count=count),
+        )
 
     def get_output_type(self, column_name: str = None) -> DashAIDataType:
         """Return ``Float64`` as the output type for all polynomial feature columns.

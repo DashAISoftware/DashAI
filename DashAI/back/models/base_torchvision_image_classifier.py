@@ -13,8 +13,8 @@ from DashAI.back.core.schema_fields import (
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.models.base_model import BaseModel
 from DashAI.back.models.image_explainable_model import GradCamCompatibleModel
+from DashAI.back.models.supervised_model import SupervisedModel
 from DashAI.back.models.utils import DEVICE_ENUM, DEVICE_PLACEHOLDER, DEVICE_TO_IDX
 
 
@@ -338,7 +338,7 @@ def _make_image_dataset(x_dataset, y_dataset=None, image_size=224):
     return _ImageDataset(x_dataset, y_dataset, image_size)
 
 
-class TorchvisionImageClassifier(BaseModel, GradCamCompatibleModel, abc.ABC):
+class TorchvisionImageClassifier(SupervisedModel, GradCamCompatibleModel, abc.ABC):
     """Abstract base for torchvision image classifiers.
 
     Subclasses must implement:
