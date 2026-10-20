@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -15,6 +15,12 @@ import { useSnackbar } from "notistack";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { createDataset } from "../../api/datasets";
+import {
+  createDocument,
+  deleteDocument,
+  enqueueHubDocumentJob,
+} from "../../api/documents";
+import { forceRefreshNow } from "../../utils/jobPoller";
 import {
   importHubDataset,
   listDatafileFiles,
@@ -34,6 +40,14 @@ import { isTourAtTarget, useTourStageSync } from "../tour/tourUtils";
 const TOUR_FILE = "Iris.csv";
 const TOUR_DATALOADER = "CSVDataLoader";
 const isTourFile = (f) => f.split(/[\\/]/).pop() === TOUR_FILE;
+const fileBaseName = (f) => f.split(/[\\/]/).pop();
+
+function documentLoaderSupportsFile(loader, file) {
+  const extensions = loader?.metadata?.supported_extensions || [];
+  if (extensions.length === 0) return true;
+  const lower = file.toLowerCase();
+  return extensions.some((extension) => lower.endsWith(extension));
+}
 
 /**
  * Full-page import panel for Hub datasets.
@@ -50,20 +64,23 @@ export default function HubImportPanel({
   selectedLoader,
   onSelectedLoaderChange,
   formValues = {},
+  formSubmitRef = null,
   formHasErrors = false,
   onCancel,
   onImported,
+  onDocumentImported,
   computeMetadata = true,
 }) {
   const { t } = useTranslation(["hub", "common", "datasets"]);
   const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
-  const { datasets } = useDatasetsAndNotebooks();
+  const { datasets, documents } = useDatasetsAndNotebooks();
   const [localStep, setLocalStep] = useState(0);
   const [localSelectedLoader, setLocalSelectedLoader] = useState(null);
   const stepValue = step ?? localStep;
   const setStepValue = onStepChange ?? setLocalStep;
   const selectedValue = selectedLoader ?? localSelectedLoader;
+  const isDocument = loadsDataKind(selectedValue, "document");
 
   // Whether datafile flow adds an extra file-select step at position 0
   const hasFileStep = datafile != null;
@@ -97,10 +114,7 @@ export default function HubImportPanel({
     setLoadingDataloaders(true);
     getComponents({ selectTypes: ["DataLoader"] })
       .then((infos) => {
-        if (!isMounted) return;
-        setDataloaders(
-          infos.filter((component) => loadsDataKind(component, "dataset")),
-        );
+        if (isMounted) setDataloaders(infos);
       })
       .catch(() => {
         if (isMounted) setDataloaders([]);
@@ -148,9 +162,22 @@ export default function HubImportPanel({
     };
   }, [hasFileStep, stepValue, datafile?.id]);
 
+  const availableLoaders = useMemo(
+    () =>
+      dataloaders.filter((component) =>
+        loadsDataKind(component, "document")
+          ? !!datafile &&
+            !!selectedFile &&
+            documentLoaderSupportsFile(component, selectedFile)
+          : loadsDataKind(component, "dataset"),
+      ),
+    [dataloaders, datafile, selectedFile],
+  );
+
   // Preview
   useEffect(() => {
-    if (stepValue !== previewStep || !dataset || !sourceName) return;
+    if (stepValue !== previewStep || !dataset || !sourceName || isDocument)
+      return;
 
     let isMounted = true;
     if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
@@ -196,6 +223,7 @@ export default function HubImportPanel({
   }, [
     stepValue,
     previewStep,
+    isDocument,
     dataset?.id,
     sourceName,
     selectedValue?.name,
@@ -216,7 +244,59 @@ export default function HubImportPanel({
     setColumnRenames((prev) => ({ ...prev, [oldName]: newName }));
   }, []);
 
+  const createDocumentWithFreeName = async (payload) => {
+    try {
+      return await createDocument(payload);
+    } catch (error) {
+      if (error?.response?.status !== 409) throw error;
+      const nextName = getNextAvailableName(payload.name, documents);
+      setName(nextName);
+      return createDocument({ ...payload, name: nextName });
+    }
+  };
+
+  const handleDocumentImport = async () => {
+    if (!name.trim() || !datafile || !selectedFile || !selectedValue) return;
+    if (formHasErrors) return;
+    setImporting(true);
+    try {
+      const created = await createDocumentWithFreeName({
+        name: name.trim(),
+        file_name: fileBaseName(selectedFile),
+        dataloader: selectedValue.name,
+        dataloader_params: formSubmitRef?.current?.values || {},
+      });
+      let job;
+      try {
+        job = await enqueueHubDocumentJob(
+          created.id,
+          created.name,
+          datafile.id,
+          selectedFile,
+        );
+      } catch (enqueueError) {
+        await deleteDocument(created.id).catch(() => {});
+        throw enqueueError;
+      }
+      forceRefreshNow();
+      enqueueSnackbar(t("hub:importSuccess"), { variant: "success" });
+      onDocumentImported?.(created, job);
+    } catch (error) {
+      const detail = error?.response?.data?.detail;
+      enqueueSnackbar(
+        typeof detail === "string" ? detail : t("hub:importError"),
+        { variant: "error" },
+      );
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const handleImport = async () => {
+    if (isDocument) {
+      await handleDocumentImport();
+      return;
+    }
     if (!name.trim() || !dataset || !selectedValue || formHasErrors) return;
     setImporting(true);
     try {
@@ -273,11 +353,11 @@ export default function HubImportPanel({
   const canImport =
     !!selectedValue?.name &&
     !!name.trim() &&
-    !previewLoading &&
-    !previewError &&
-    !!previewData &&
     !formHasErrors &&
-    !importing;
+    !importing &&
+    (isDocument
+      ? !!datafile && !!selectedFile
+      : !previewLoading && !previewError && !!previewData);
 
   const handleBack = () => setStepValue((s) => s - 1);
   const handleNext = () => setStepValue((s) => s + 1);
@@ -411,14 +491,14 @@ export default function HubImportPanel({
               <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                 <CircularProgress />
               </Box>
-            ) : dataloaders.length === 0 ? (
+            ) : availableLoaders.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
                 {t("hub:noCompatibleDataloaders")}
               </Typography>
             ) : (
               <Box sx={{ flex: 1, minHeight: 0 }}>
                 <ComponentSelector
-                  components={dataloaders}
+                  components={availableLoaders}
                   selected={selectedValue}
                   onSelect={(item) => {
                     setLocalSelectedLoader(item);
@@ -446,8 +526,37 @@ export default function HubImportPanel({
           </Box>
         )}
 
+        {stepValue === previewStep && isDocument && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Box>
+              <Typography variant="h5" component="h1">
+                {t("hub:stepDocumentTitle")}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t("hub:stepDocumentSubtitle")}
+              </Typography>
+            </Box>
+            <TextField
+              label={t("hub:documentName")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              fullWidth
+            />
+            {selectedFile && (
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <InsertDriveFileIcon
+                  sx={{ mr: 1, fontSize: 18, color: "text.secondary" }}
+                />
+                <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
+                  {selectedFile}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+
         {/* Preview step */}
-        {stepValue === previewStep && (
+        {stepValue === previewStep && !isDocument && (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Box>
               <Typography variant="h5" component="h1">
@@ -526,7 +635,11 @@ export default function HubImportPanel({
               disabled={!canImport}
               data-tour="hub-import-button"
             >
-              {importing ? t("hub:importing") : t("hub:importDataset")}
+              {importing
+                ? t("hub:importing")
+                : isDocument
+                  ? t("hub:importDocument")
+                  : t("hub:importDataset")}
             </Button>
           )}
         </Box>
