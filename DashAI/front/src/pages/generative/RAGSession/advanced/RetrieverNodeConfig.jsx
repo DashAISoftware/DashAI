@@ -17,7 +17,7 @@ import PropTypes from "prop-types";
 import { useTranslation } from "react-i18next";
 import FormSchema from "../../../../components/shared/FormSchema";
 import FormSchemaContainer from "../../../../components/shared/FormSchemaContainer";
-import { resolveDefaults } from "../../../../utils/schema";
+import { resolveRetrieverDefaults } from "./resolveRetrieverDefaults";
 import {
   loadRetrieverKinds,
   isComposite as isCompositeKind,
@@ -113,7 +113,7 @@ export default function RetrieverNodeConfig({
   const handleModelChange = async (_e, newVal) => {
     setSelectedModel(newVal);
     if (newVal) {
-      const defaults = await resolveDefaults(newVal.name);
+      const defaults = await resolveRetrieverDefaults(newVal.name);
       setParams(defaults);
       setInitialParams(defaults);
     } else {

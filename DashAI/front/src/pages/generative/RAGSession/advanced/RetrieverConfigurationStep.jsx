@@ -22,6 +22,7 @@ import FormSchema from "../../../../components/shared/FormSchema";
 import CompositeRetrieverBuilder from "./CompositeRetrieverBuilder";
 import { FormSchemaProvider } from "../../../../contexts/schema";
 import { resolveDefaults } from "../../../../utils/schema";
+import { resolveRetrieverDefaults } from "./resolveRetrieverDefaults";
 
 /** Parent class name for all dense embedding components in the backend ComponentRegistry. */
 const DENSE_EMBEDDING_PARENT = "BaseDenseEmbedding";
@@ -72,7 +73,7 @@ function AutoSaveFormSchema({
     if (!selectedRetriever) return;
     let cancelled = false;
     (async () => {
-      const d = await resolveDefaults(selectedRetriever.name);
+      const d = await resolveRetrieverDefaults(selectedRetriever.name);
       if (!cancelled) setFetchedDefaults(d);
     })();
     return () => {
@@ -259,7 +260,7 @@ const RetrieverConfigurationStep = forwardRef(
 
         if (newValue._type === "embedding") {
           const embeddingDefaults = await resolveDefaults(newValue.name);
-          const denseRetrieverDefaults = await resolveDefaults(
+          const denseRetrieverDefaults = await resolveRetrieverDefaults(
             "DenseEmbeddingRetriever",
           );
           const model = {
@@ -288,7 +289,7 @@ const RetrieverConfigurationStep = forwardRef(
           setOpenConfig(Boolean(found?.schema?.properties));
           setNextEnabled(true);
         } else {
-          const defaults = await resolveDefaults(newValue.name);
+          const defaults = await resolveRetrieverDefaults(newValue.name);
           setSelectedRetriever(newValue);
           setRetrieverModel({ component: newValue.name, params: defaults });
           setOpenConfig(Boolean(newValue?.schema?.properties));
