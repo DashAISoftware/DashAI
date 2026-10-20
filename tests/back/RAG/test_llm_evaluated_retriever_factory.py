@@ -221,6 +221,30 @@ def test_pure_factory_builds_ensemble_retriever_with_resolved_refs():
     assert len(model.get_children()) == 2
 
 
+def test_pure_factory_stores_raw_trace_params():
+    """The factory snapshots the raw construction params on every model."""
+    registry = _pure_registry()
+    factory = RetrieverFactory(registry, "C:/tmp/rag", {})
+    params = {
+        "children": [_leaf_ref(pure=True)],
+        "max_iters": 2,
+        "max_chunks": 5,
+        "llm_model": _llm_ref(),
+        "prompt": _prompt_ref(),
+    }
+
+    model = factory.create("LLMEvaluatedDepthRetriever", copy.deepcopy(params)).model
+
+    assert model._trace_params["max_iters"] == 2
+    assert (
+        model._trace_params["prompt"]["component"]
+        == "DefaultRetrievalSufficiencyPrompt"
+    )
+    child = model.get_children()[0]
+    assert isinstance(child, _LeafRetriever)
+    assert child._trace_params["children"] == []
+
+
 def test_pure_factory_parallel_retriever_unchanged():
     """A component-free composite still builds exactly as before."""
     from DashAI.back.models.RAG.retrievers.composite.parallel_retriever import (

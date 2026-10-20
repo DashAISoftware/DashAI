@@ -7,11 +7,13 @@ composite children.
 
 from __future__ import annotations
 
+import json
 from typing import Dict, List, Tuple
 from unittest.mock import MagicMock
 
 import pytest
 
+from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
 from DashAI.back.models.RAG.retrievers.composite.parallel_retriever import (
@@ -55,6 +57,19 @@ class _StubRetriever(BaseRetriever):
     def retrieval_top_k(self) -> int:
         """Return the configured top-k."""
         return self._top_k
+
+
+class _DescribedRetriever(_StubRetriever):
+    """Stub declaring its own description and representation template."""
+
+    DESCRIPTION = MultilingualString(
+        en="Described retriever.",
+        es="Recuperador descrito.",
+    )
+    REPRESENTATION = MultilingualString(
+        en="top-k {top_k} · {child.model_name}",
+        es="top-k {top_k} · {child.model_name}",
+    )
 
 
 def _make_minimal_pipeline():
@@ -103,6 +118,50 @@ def test_retriever_trace_canonical_keys_cannot_be_overridden():
     stub = _StubRetriever([], top_k=1)
     with pytest.raises(ValueError, match="canonical"):
         retriever_trace(stub, [], name="_StubRetriever")
+
+
+def test_retriever_trace_includes_description_and_representation():
+    """A described/represented retriever emits localized dicts and stays JSON."""
+    retriever = _DescribedRetriever([_chunk(1, 0)], top_k=1)
+    retriever.set_trace_params(
+        {
+            "top_k": 3,
+            "child": {"component": "ChildRetriever", "params": {"model_name": "demo"}},
+        }
+    )
+
+    node = retriever_trace(retriever, [_chunk(1, 0)])
+
+    assert node["description"] == {
+        "en": "Described retriever.",
+        "es": "Recuperador descrito.",
+    }
+    assert node["representation"] == {
+        "en": "top-k 3 · demo",
+        "es": "top-k 3 · demo",
+    }
+    assert node["chunks"] == ["1_0"]
+    assert json.dumps(node)
+
+
+def test_retriever_trace_omits_unresolved_representation():
+    """No trace params means every placeholder misses, so no representation."""
+    retriever = _DescribedRetriever([], top_k=1)
+
+    node = retriever_trace(retriever, [])
+
+    assert "representation" not in node
+    assert node["description"] == {
+        "en": "Described retriever.",
+        "es": "Recuperador descrito.",
+    }
+
+
+def test_retriever_trace_canonical_description_cannot_be_overridden():
+    """Extras may not shadow the rendered ``description``."""
+    stub = _DescribedRetriever([], top_k=1)
+    with pytest.raises(ValueError, match="canonical"):
+        retriever_trace(stub, [], description={"en": "nope"})
 
 
 def test_trace_refs_are_the_pipeline_dict_keys():

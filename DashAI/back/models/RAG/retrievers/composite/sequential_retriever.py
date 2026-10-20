@@ -69,14 +69,6 @@ class SequentialRetriever(CompositeRetriever):
         zh="按顺序查询多个检索器，并在每一步重新排序。",
     )
 
-    @classmethod
-    def get_metadata(cls) -> Dict[str, Any]:
-        """Return UI metadata including the declarative operation summary."""
-        return {
-            **super().get_metadata(),
-            "operation_summary": {"kind": "fusion", "fields": []},
-        }
-
     def __init__(self, **kwargs):
         """Initialize and validate the sequential cascade.
 

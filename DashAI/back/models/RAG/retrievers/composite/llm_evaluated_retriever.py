@@ -22,6 +22,7 @@ import logging
 from abc import ABC
 from typing import Any, ClassVar, Dict, List, Tuple
 
+from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.exceptions import (
     RAGRetrieverCompositeValidationError,
@@ -107,19 +108,13 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
         self.prompt = self._pop_required(_PARAM_PROMPT)
         self.llm_model = self._pop_required(_PARAM_LLM_MODEL)
 
-    @classmethod
-    def get_metadata(cls) -> Dict[str, Any]:
-        """Return UI metadata including the declarative operation summary."""
-        return {
-            **super().get_metadata(),
-            "operation_summary": {
-                "kind": "adaptive",
-                "fields": [
-                    {"param": _PARAM_MAX_ITERS, "label": ""},
-                    {"param": _PARAM_MAX_CHUNKS, "label": ""},
-                ],
-            },
-        }
+    REPRESENTATION = MultilingualString(
+        en="max_iters {max_iters} · max_chunks {max_chunks} · {prompt}",
+        es="máx. iteraciones {max_iters} · máx. fragmentos {max_chunks} · {prompt}",
+        pt="máx. iterações {max_iters} · máx. trechos {max_chunks} · {prompt}",
+        de="max. Iterationen {max_iters} · max. Chunks {max_chunks} · {prompt}",
+        zh="最大迭代 {max_iters} · 最大片段 {max_chunks} · {prompt}",
+    )
 
     @property
     def retrieval_top_k(self) -> int:

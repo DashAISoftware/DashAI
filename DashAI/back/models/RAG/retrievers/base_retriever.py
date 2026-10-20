@@ -1,6 +1,7 @@
+import copy
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Final, List, Tuple
+from typing import Any, ClassVar, Dict, Final, List, Tuple
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.utils import MultilingualString
@@ -33,9 +34,36 @@ class BaseRetriever(ConfigObject, ABC):
     COLOR: str = "#9C27B0"
     ICON: str = "Search"
 
+    #: Per-retriever representation template rendered by the frontend.
+    #: ``None`` means the frontend falls back to the component description.
+    #: Placeholders follow this contract:
+    #:
+    #: * ``{param}`` resolves to a direct retriever parameter. When the
+    #:   parameter is a component reference, the nested component class name
+    #:   is rendered instead.
+    #: * ``{nested.param}`` resolves to parameter ``param`` of the nested
+    #:   component stored under ``nested``.
+    #:
+    #: The frontend tolerates missing values; the backend only supplies the
+    #: template and never renders it.
+    REPRESENTATION: ClassVar[MultilingualString | None] = None
+
     env_RAG_path: str | os.PathLike | None  # noqa: N815
     chunks: Dict[int, Dict[int, Chunk]]
     params: Dict[str, Any]
+
+    @classmethod
+    def get_representation(cls) -> MultilingualString | None:
+        """Return the retriever's representation template, if any.
+
+        Returns
+        -------
+        MultilingualString | None
+            The template with ``{param}`` / ``{nested.param}`` placeholders,
+            or ``None`` when the frontend should fall back to the component
+            description.
+        """
+        return cls.REPRESENTATION
 
     @classmethod
     def get_metadata(cls) -> Dict[str, Any]:
@@ -44,9 +72,14 @@ class BaseRetriever(ConfigObject, ABC):
         Returns
         -------
         Dict[str, Any]
-            Dictionary with the icon shown for the retriever in the frontend.
+            Dictionary with the icon shown for the retriever in the frontend
+            and, when declared, its representation template.
         """
-        return {"icon": cls.ICON}
+        metadata: Dict[str, Any] = {"icon": cls.ICON}
+        representation = cls.get_representation()
+        if representation is not None:
+            metadata["representation"] = representation
+        return metadata
 
     def __init__(self, **kwargs):
         """Initialize the retriever model.
@@ -58,7 +91,21 @@ class BaseRetriever(ConfigObject, ABC):
             **kwargs: Configuration parameters for the retriever.
         """
         self._db_id: int | None = None
+        self._trace_params: Dict[str, Any] = {}
         self.params = kwargs
+
+    def set_trace_params(self, params: Dict[str, Any]) -> None:
+        """Store a JSON-serializable snapshot of this retriever's configuration.
+
+        Parameters
+        ----------
+        params : Dict[str, Any]
+            Raw construction parameters captured by the factory before any
+            nested component reference is consumed. A deep copy is stored so
+            later mutations of the original mapping cannot affect trace
+            rendering.
+        """
+        self._trace_params = copy.deepcopy(params)
 
     def get_id(self) -> int | None:
         """Return the database ID of this retriever, or ``None``.

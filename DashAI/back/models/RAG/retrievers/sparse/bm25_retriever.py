@@ -298,6 +298,14 @@ class BM25Retriever(SparseRetriever):
         zh="使用 BM25（Okapi）排序进行文档检索的稀疏检索器。",
     )
 
+    REPRESENTATION = MultilingualString(
+        en="k1 {k1} · b {b} · top-k {top_k}",
+        es="k1 {k1} · b {b} · top-k {top_k}",
+        pt="k1 {k1} · b {b} · top-k {top_k}",
+        de="k1 {k1} · b {b} · top-k {top_k}",
+        zh="k1 {k1} · b {b} · top-k {top_k}",
+    )
+
     SCHEMA = BM25RetrieverSchema
 
     def __init__(self, **kwargs):

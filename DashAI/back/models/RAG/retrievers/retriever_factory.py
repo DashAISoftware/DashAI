@@ -4,6 +4,7 @@ Builds retriever models from the component registry.
 Phase 1 only -- no I/O (embeddings, similarity matrices).
 """
 
+import copy
 from dataclasses import dataclass
 from typing import Any
 
@@ -207,6 +208,9 @@ class RetrieverFactory:
         persistence: DensePersistence | SparsePersistence | None = None,
     ) -> RetrieverFactoryResult:
         params = normalize_payload(params)
+        # Composite creation pops ``children`` from the mapping, so snapshot the
+        # raw configuration first for trace representation rendering.
+        trace_params = copy.deepcopy(params)
         try:
             model_class = self._registry[component_name]["class"]
         except KeyError as err:
@@ -215,9 +219,12 @@ class RetrieverFactory:
             ) from err
 
         if issubclass(model_class, CompositeRetriever):
-            return self._create_composite(model_class, params)
+            result = self._create_composite(model_class, params)
+        else:
+            result = self._create_unit(model_class, params, persistence)
 
-        return self._create_unit(model_class, params, persistence)
+        result.model.set_trace_params(trace_params)
+        return result
 
     def _create_composite(self, model_class, params) -> RetrieverFactoryResult:
         """Build a composite retriever by recursively creating children.

@@ -79,16 +79,13 @@ class ParallelRetriever(CompositeRetriever):
         zh="并行查询多个检索器并合并其结果。",
     )
 
-    @classmethod
-    def get_metadata(cls) -> Dict[str, Any]:
-        """Return UI metadata including the declarative operation summary."""
-        return {
-            **super().get_metadata(),
-            "operation_summary": {
-                "kind": "fusion",
-                "fields": [{"param": "merge_strategy", "label": ""}],
-            },
-        }
+    REPRESENTATION = MultilingualString(
+        en="merge {merge_strategy}",
+        es="fusión {merge_strategy}",
+        pt="mesclagem {merge_strategy}",
+        de="Zusammenführung {merge_strategy}",
+        zh="合并 {merge_strategy}",
+    )
 
     def __init__(self, **kwargs):
         """Initialize the parallel retriever with a merge strategy.

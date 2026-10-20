@@ -26,6 +26,10 @@ import {
 import RetrieverTraceTree from "./RetrieverTraceTree";
 import PillTabs from "../../shared/PillTabs";
 import {
+  getRetrievalParadigm,
+  getSessionConfiguration,
+} from "../../../api/rag";
+import {
   isPlainObject,
   isQueryTransformed,
   filterRenderableEntries,
@@ -36,6 +40,56 @@ import {
   computeDiscardedRefs,
   computeProvenance,
 } from "./traceUtils";
+
+// Cached retriever component map, keyed by class name. Used as a fallback for
+// traces recorded before the trace payload carried description/representation.
+let retrieverComponentsPromise = null;
+
+/**
+ * Load (once) the registered retriever components keyed by class name.
+ *
+ * Legacy traces only carry the retriever class name. The component registry is
+ * the only remaining source for their description, so the trace view resolves
+ * it once and shares the result across modal opens.
+ *
+ * @returns {Promise<Record<string, object>>} Map of class name to component.
+ */
+function loadRetrieverComponents() {
+  if (!retrieverComponentsPromise) {
+    retrieverComponentsPromise = getRetrievalParadigm()
+      .then((components) => {
+        const map = {};
+        for (const component of components || []) {
+          if (component?.name) map[component.name] = component;
+        }
+        return map;
+      })
+      .catch((error) => {
+        // Allow a later modal open to retry after a transient failure.
+        retrieverComponentsPromise = null;
+        console.warn("Failed to load retriever components:", error);
+        return {};
+      });
+  }
+  return retrieverComponentsPromise;
+}
+
+/**
+ * Convert the resolved `retriever_model` section into a `{component, params}`
+ * tree. The API describes parameters as `{name, value}` pairs; the
+ * representation resolver expects the raw parameter mapping.
+ *
+ * @param {object|null|undefined} section - The resolved retriever section.
+ * @returns {{component: string, params: object}|null} The raw config tree.
+ */
+function toRetrieverConfig(section) {
+  if (!section?.component) return null;
+  const params = {};
+  for (const param of section.params || []) {
+    if (param?.name) params[param.name] = param.value;
+  }
+  return { component: section.component, params };
+}
 
 // Chunk bodies longer than this many characters collapse behind a toggle.
 const TEXT_CLAMP_LENGTH = 480;
@@ -824,6 +878,8 @@ QuerySelectorChips.propTypes = {
  * @param {number|null} props.selectedQuery - Active index, or null for "All".
  * @param {object|null} props.selectedEntry - The selected entry, if a specific query is active.
  * @param {object|null} props.references - Chunk reference map by ref key.
+ * @param {object} props.retrieverComponents - Retriever components by class name.
+ * @param {object|null} props.retrieverConfig - Session retriever config tree.
  * @param {Function} props.onChunkClick - Called with a clicked chunk's ref.
  * @returns {JSX.Element} The trace-tree box.
  */
@@ -832,6 +888,8 @@ function TraceTrees({
   selectedQuery,
   selectedEntry,
   references,
+  retrieverComponents,
+  retrieverConfig,
   onChunkClick,
 }) {
   const { t } = useTranslation("generative");
@@ -851,6 +909,8 @@ function TraceTrees({
       <RetrieverTraceTree
         node={entry.retriever}
         references={references}
+        retrieverComponents={retrieverComponents}
+        configNode={retrieverConfig}
         onChunkClick={onChunkClick}
       />
     </Box>
@@ -881,6 +941,8 @@ TraceTrees.propTypes = {
   selectedQuery: PropTypes.number,
   selectedEntry: PropTypes.object,
   references: PropTypes.object,
+  retrieverComponents: PropTypes.object,
+  retrieverConfig: PropTypes.object,
   onChunkClick: PropTypes.func.isRequired,
 };
 
@@ -1067,6 +1129,8 @@ SelectedChunkPanel.propTypes = {
  * @param {number|null} props.selectedQuery - Active index, or null for "All".
  * @param {object|null} props.selectedEntry - The selected entry, if any.
  * @param {object|null} props.references - Chunk reference map by ref key.
+ * @param {object} props.retrieverComponents - Retriever components by class name.
+ * @param {object|null} props.retrieverConfig - Session retriever config tree.
  * @param {Function} props.onSelectQuery - Selects a query index (or null).
  * @param {Function} props.onChunkClick - Called with a clicked chunk's ref.
  * @returns {JSX.Element} The retriever tab contents.
@@ -1079,6 +1143,8 @@ function RetrieverTabContent({
   selectedQuery,
   selectedEntry,
   references,
+  retrieverComponents,
+  retrieverConfig,
   onSelectQuery,
   onChunkClick,
 }) {
@@ -1109,6 +1175,8 @@ function RetrieverTabContent({
         selectedQuery={selectedQuery}
         selectedEntry={selectedEntry}
         references={references}
+        retrieverComponents={retrieverComponents}
+        retrieverConfig={retrieverConfig}
         onChunkClick={onChunkClick}
       />
       <DiscardedBlock refs={discardedRefs} onDiscardedClick={onChunkClick} />
@@ -1124,6 +1192,8 @@ RetrieverTabContent.propTypes = {
   selectedQuery: PropTypes.number,
   selectedEntry: PropTypes.object,
   references: PropTypes.object,
+  retrieverComponents: PropTypes.object,
+  retrieverConfig: PropTypes.object,
   onSelectQuery: PropTypes.func.isRequired,
   onChunkClick: PropTypes.func.isRequired,
 };
@@ -1153,6 +1223,7 @@ const TraceChunksModal = ({
   userMessage,
   trace,
   references,
+  sessionId,
 }) => {
   const { t } = useTranslation(["generative", "common"]);
   const { enqueueSnackbar } = useSnackbar();
@@ -1160,6 +1231,8 @@ const TraceChunksModal = ({
   const [activeTab, setActiveTab] = useState(TAB_CHUNKS);
   const [selectedQuery, setSelectedQuery] = useState(0);
   const [highlightedRef, setHighlightedRef] = useState(null);
+  const [retrieverComponents, setRetrieverComponents] = useState({});
+  const [retrieverConfig, setRetrieverConfig] = useState(null);
   const highlightedCardRef = useRef(null);
   const selectedChunkRef = useRef(null);
   // Tracks the previous `open` value so the state reset fires only on the
@@ -1177,6 +1250,37 @@ const TraceChunksModal = ({
     }
     prevOpenRef.current = open;
   }, [open, trace, references]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    loadRetrieverComponents().then((components) => {
+      if (!cancelled) setRetrieverComponents(components);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !sessionId) {
+      setRetrieverConfig(null);
+      return;
+    }
+    let cancelled = false;
+    getSessionConfiguration(sessionId)
+      .then((configuration) => {
+        if (!cancelled) {
+          setRetrieverConfig(toRetrieverConfig(configuration?.retriever_model));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRetrieverConfig(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, sessionId]);
 
   useEffect(() => {
     // Scroll whichever panel currently owns the highlight: the final card on
@@ -1418,6 +1522,8 @@ const TraceChunksModal = ({
                   selectedQuery={effectiveSelectedQuery}
                   selectedEntry={selectedEntry}
                   references={references}
+                  retrieverComponents={retrieverComponents}
+                  retrieverConfig={retrieverConfig}
                   onSelectQuery={setSelectedQuery}
                   onChunkClick={handleChunkClick}
                 />
@@ -1453,6 +1559,7 @@ TraceChunksModal.propTypes = {
   userMessage: PropTypes.string,
   trace: PropTypes.any,
   references: PropTypes.object,
+  sessionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 export default TraceChunksModal;

@@ -333,6 +333,14 @@ class TFIDFRetriever(SparseRetriever):
         zh="使用 TF-IDF 向量化进行文档检索的稀疏检索器。",
     )
 
+    REPRESENTATION = MultilingualString(
+        en="similarity {similarity_function} · top-k {top_k}",
+        es="similitud {similarity_function} · top-k {top_k}",
+        pt="similaridade {similarity_function} · top-k {top_k}",
+        de="Ähnlichkeit {similarity_function} · top-k {top_k}",
+        zh="相似度 {similarity_function} · top-k {top_k}",
+    )
+
     SCHEMA = TFIDFRetrieverSchema
 
     def __init__(self, **kwargs):

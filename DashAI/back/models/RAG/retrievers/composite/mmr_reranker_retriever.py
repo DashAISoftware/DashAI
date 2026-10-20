@@ -103,19 +103,13 @@ class MMRRerankerRetriever(CompositeRetriever):
         zh="使用最大边际相关性（MMR）对检索结果重新排序以提升多样性。",
     )
 
-    @classmethod
-    def get_metadata(cls) -> Dict[str, Any]:
-        """Return UI metadata including the declarative operation summary."""
-        return {
-            **super().get_metadata(),
-            "operation_summary": {
-                "kind": "rerank",
-                "fields": [
-                    {"param": "mmr_lambda", "label": "Lambda"},
-                    {"param": "top_k", "label": "Top K"},
-                ],
-            },
-        }
+    REPRESENTATION = MultilingualString(
+        en="MMR λ {mmr_lambda} · top-k {top_k}",
+        es="MMR λ {mmr_lambda} · top-k {top_k}",
+        pt="MMR λ {mmr_lambda} · top-k {top_k}",
+        de="MMR λ {mmr_lambda} · top-k {top_k}",
+        zh="MMR λ {mmr_lambda} · top-k {top_k}",
+    )
 
     def __init__(self, **kwargs):
         """Initialize the MMR reranker.

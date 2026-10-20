@@ -4,6 +4,8 @@ import { Box, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import SchemaIcon from "@mui/icons-material/Schema";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import { resolveLocalizedText } from "../../../utils/localize";
+import { resolveRetrieverRepresentation } from "./retrieverRepresentation";
 import { asArray, isPlainObject, resolveChunkLabel } from "./traceUtils";
 
 // Base horizontal unit (px) for the tree indentation, mirroring the geometry
@@ -45,6 +47,34 @@ function hasEntries(references) {
 function resolveChunkInfo(references, chunkRef) {
   if (!isPlainObject(references)) return undefined;
   return references[chunkRef];
+}
+
+/**
+ * Pick the configured child that corresponds to a trace child node.
+ *
+ * Trace children may repeat a retriever (LLM-evaluated rounds) or contain
+ * siblings of the same class (parallel retrievers). Match by class name and
+ * occurrence order, reusing the last configured entry when the trace repeats a
+ * child more often than the configuration declares it.
+ *
+ * @param {*} configuredChildren - The configured child refs of the parent.
+ * @param {Array<object>} traceChildren - The rendered trace children.
+ * @param {object} child - The trace child being rendered.
+ * @returns {object|null} The matching `{component, params}` ref, or null.
+ */
+function resolveChildConfig(configuredChildren, traceChildren, child) {
+  if (!Array.isArray(configuredChildren)) return null;
+
+  const sameName = configuredChildren.filter(
+    (entry) => entry?.component === child?.name,
+  );
+  if (sameName.length === 0) return null;
+
+  const occurrence = traceChildren
+    .filter((entry) => entry?.name === child?.name)
+    .indexOf(child);
+  const index = occurrence < 0 ? 0 : Math.min(occurrence, sameName.length - 1);
+  return sameName[index] || null;
 }
 
 /**
@@ -148,6 +178,8 @@ function TreeChunkRow({ chunkRef, info, score, interactive, onClick }) {
  * @param {object} props
  * @param {object} props.node - The trace retriever node to render.
  * @param {object|null} [props.references] - Chunk reference map by ref key.
+ * @param {object} [props.retrieverComponents] - Retriever components by class name.
+ * @param {object|null} [props.configNode] - Matching session retriever config.
  * @param {Function} [props.onChunkClick] - Called with (chunkRef, info|undefined).
  * @param {number} [props.depth=0] - Current indentation depth.
  * @param {boolean} [props.isRoot=true] - Whether this is the root node.
@@ -156,11 +188,13 @@ function TreeChunkRow({ chunkRef, info, score, interactive, onClick }) {
 function RetrieverTraceTree({
   node,
   references,
+  retrieverComponents = {},
+  configNode = null,
   onChunkClick,
   depth = 0,
   isRoot = true,
 }) {
-  const { t } = useTranslation("generative");
+  const { t, i18n } = useTranslation("generative");
 
   if (!isPlainObject(node)) return null;
 
@@ -175,6 +209,20 @@ function RetrieverTraceTree({
   const cardX = depth * INDENT;
   const interactive =
     hasEntries(references) && typeof onChunkClick === "function";
+  const component = retrieverComponents?.[node.name];
+  const effectiveConfig =
+    configNode?.component === node.name ? configNode : null;
+  const traceRepresentation = resolveLocalizedText(node.representation, i18n);
+  const configRepresentation = resolveRetrieverRepresentation(
+    component,
+    effectiveConfig?.params,
+    i18n,
+  );
+  const representation = traceRepresentation || configRepresentation;
+  const description =
+    resolveLocalizedText(node.description, i18n) ||
+    resolveLocalizedText(component?.description, i18n);
+  const caption = representation || description || null;
 
   return (
     <Box>
@@ -221,7 +269,28 @@ function RetrieverTraceTree({
           ) : (
             <SchemaIcon sx={{ fontSize: 18, color: "accent.amber" }} />
           )}
-          <Typography variant="body2">{node.name}</Typography>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              minWidth: "fit-content",
+              maxWidth: 480,
+            }}
+          >
+            <Typography variant="body2">{node.name}</Typography>
+            {caption && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  maxWidth: 420,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {caption}
+              </Typography>
+            )}
+          </Box>
           <Typography variant="caption" color="text.secondary">
             {t("traceChunks.chunksLabel", { count: chunks.length })}
           </Typography>
@@ -273,6 +342,12 @@ function RetrieverTraceTree({
               <RetrieverTraceTree
                 node={child}
                 references={references}
+                retrieverComponents={retrieverComponents}
+                configNode={resolveChildConfig(
+                  effectiveConfig?.params?.children,
+                  children,
+                  child,
+                )}
                 onChunkClick={onChunkClick}
                 depth={depth + 1}
                 isRoot={false}
@@ -288,6 +363,8 @@ function RetrieverTraceTree({
 RetrieverTraceTree.propTypes = {
   node: PropTypes.object,
   references: PropTypes.object,
+  retrieverComponents: PropTypes.object,
+  configNode: PropTypes.object,
   onChunkClick: PropTypes.func,
   depth: PropTypes.number,
   isRoot: PropTypes.bool,

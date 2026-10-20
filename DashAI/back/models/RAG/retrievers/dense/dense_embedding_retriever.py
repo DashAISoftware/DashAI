@@ -84,6 +84,18 @@ class DenseEmbeddingRetriever(DenseRetriever):
         zh="使用任何已注册的 DenseEmbedding 进行相似性搜索的稠密检索器。",
     )
 
+    REPRESENTATION = MultilingualString(
+        en="{embedding_model.model_name} · similarity {similarity_metric}"
+        " · top-k {top_k}",
+        es="{embedding_model.model_name} · similitud {similarity_metric}"
+        " · top-k {top_k}",
+        pt="{embedding_model.model_name} · similaridade {similarity_metric}"
+        " · top-k {top_k}",
+        de="{embedding_model.model_name} · Ähnlichkeit {similarity_metric}"
+        " · top-k {top_k}",
+        zh="{embedding_model.model_name} · 相似度 {similarity_metric} · top-k {top_k}",
+    )
+
     def __init__(self, **kwargs):
         """Initialize the dense embedding retriever.
 

@@ -635,6 +635,7 @@ export default function GenerativeChat({ indexStatus }) {
                               references={message.referenceOutput}
                               trace={message.traceOutput}
                               userMessage={message.userMessage}
+                              sessionId={sessionId}
                             />
                             {/* Add timestamp after sources with proper alignment */}
                             <Box

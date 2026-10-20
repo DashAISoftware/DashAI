@@ -38,9 +38,10 @@ const countDocuments = (references) => {
  * @param {object|null} [props.references] - Chunk reference map by ref key.
  * @param {Array|null} [props.trace] - Parsed retrieval trace entries.
  * @param {string} [props.userMessage] - The user message that produced them.
+ * @param {number|string} [props.sessionId] - The session that produced them.
  * @returns {JSX.Element} The sources summary card.
  */
-const SourcesDisplay = ({ references, trace, userMessage }) => {
+const SourcesDisplay = ({ references, trace, userMessage, sessionId }) => {
   const { t } = useTranslation("generative");
   const [modalOpen, setModalOpen] = useState(false);
   const documentCount = countDocuments(references);
@@ -121,6 +122,7 @@ const SourcesDisplay = ({ references, trace, userMessage }) => {
         userMessage={userMessage}
         trace={trace}
         references={references}
+        sessionId={sessionId}
       />
     </Box>
   );
