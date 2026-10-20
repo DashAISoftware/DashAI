@@ -162,17 +162,41 @@ export default function HubImportPanel({
     };
   }, [hasFileStep, stepValue, datafile?.id]);
 
+  useEffect(() => {
+    if (!hasFileStep || !datafile || stepValue === 0 || selectedFile) return;
+    let isMounted = true;
+    listDatafileFiles(datafile.id)
+      .then((f) => {
+        if (!isMounted) return;
+        setFiles(f);
+        if (f.length === 1) setSelectedFile(f[0]);
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [hasFileStep, stepValue, datafile?.id, selectedFile]);
+
   const availableLoaders = useMemo(
     () =>
-      dataloaders.filter((component) =>
-        loadsDataKind(component, "document")
-          ? !!datafile &&
-            !!selectedFile &&
-            documentLoaderSupportsFile(component, selectedFile)
-          : loadsDataKind(component, "dataset"),
-      ),
-    [dataloaders, datafile, selectedFile],
+      dataloaders
+        .filter((component) =>
+          loadsDataKind(component, "document")
+            ? !!datafile
+            : loadsDataKind(component, "dataset"),
+        )
+        .map((component) => ({
+          ...component,
+          category: component.metadata?.category,
+        })),
+    [dataloaders, datafile],
   );
+  const documentExtensions =
+    selectedValue?.metadata?.supported_extensions || [];
+  const selectedFileSupported =
+    !isDocument ||
+    !selectedFile ||
+    documentLoaderSupportsFile(selectedValue, selectedFile);
 
   // Preview
   useEffect(() => {
@@ -356,7 +380,7 @@ export default function HubImportPanel({
     !formHasErrors &&
     !importing &&
     (isDocument
-      ? !!datafile && !!selectedFile
+      ? !!datafile && !!selectedFile && selectedFileSupported
       : !previewLoading && !previewError && !!previewData);
 
   const handleBack = () => setStepValue((s) => s - 1);
@@ -499,6 +523,7 @@ export default function HubImportPanel({
               <Box sx={{ flex: 1, minHeight: 0 }}>
                 <ComponentSelector
                   components={availableLoaders}
+                  categoryKey="category"
                   selected={selectedValue}
                   onSelect={(item) => {
                     setLocalSelectedLoader(item);
@@ -551,6 +576,18 @@ export default function HubImportPanel({
                   {selectedFile}
                 </Typography>
               </Box>
+            )}
+            {!selectedFile && (
+              <Typography variant="body2" color="error">
+                {t("hub:stepFileSubtitle")}
+              </Typography>
+            )}
+            {!selectedFileSupported && (
+              <Typography variant="body2" color="error">
+                {t("datasets:document.unsupportedExtension", {
+                  extensions: documentExtensions.join(", "),
+                })}
+              </Typography>
             )}
           </Box>
         )}
