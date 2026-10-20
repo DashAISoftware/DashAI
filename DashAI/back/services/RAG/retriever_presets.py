@@ -4,14 +4,24 @@ from typing import Any, Dict, List, Optional
 
 from DashAI.back.core.schema_fields.defaults import resolve_component_defaults
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.models.RAG.RAG_defaults import (
+    DEFAULT_SEMANTIC_MODEL_NAME,
+    DEFAULT_TOP_K,
+    default_hybrid_retriever,
+    default_keyword_retriever,
+    default_semantic_retriever,
+)
 
-_SEMANTIC_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-_SEMANTIC_MODEL_SHORT = "paraphrase-multilingual-MiniLM-L12-v2"
+_SEMANTIC_MODEL_SHORT = DEFAULT_SEMANTIC_MODEL_NAME.rsplit("/", 1)[-1]
+
+KEYWORD_PRESET_KEY = "keyword"
+SEMANTIC_PRESET_KEY = "semantic"
+HYBRID_PRESET_KEY = "hybrid"
 
 #: Preset a session gets when it does not choose one. Keyword retrieval is the
 #: only paradigm that needs no model download, so it is the one default that can
 #: never make session creation fail with a "must be downloaded first" conflict.
-DEFAULT_PRESET_KEY = "keyword"
+DEFAULT_PRESET_KEY = KEYWORD_PRESET_KEY
 
 _KEYWORD_NAME = MultilingualString(
     en="Keyword",
@@ -37,58 +47,99 @@ _HYBRID_NAME = MultilingualString(
 
 
 def _keyword_preset(top_k: int, registry) -> Dict[str, Any]:
-    params = resolve_component_defaults("BM25Retriever", registry)
-    params["top_k"] = top_k
+    """Build the keyword preset from the centralized BM25 default.
+
+    Parameters
+    ----------
+    top_k : int
+        Number of chunks the recipe selects.
+    registry : ComponentRegistry
+        Registry used to resolve any parameter the centralized recipe omits.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The keyword preset recipe with its display metadata.
+    """
+    ref = default_keyword_retriever(top_k)
+    params = {**resolve_component_defaults(ref["component"], registry), **ref["params"]}
     return {
-        "key": "keyword",
+        "key": KEYWORD_PRESET_KEY,
         "display_name": _KEYWORD_NAME,
         "description": "BM25",
-        "component": "BM25Retriever",
+        "component": ref["component"],
         "params": params,
     }
 
 
 def _semantic_preset(top_k: int, registry) -> Dict[str, Any]:
-    params = resolve_component_defaults("DenseEmbeddingRetriever", registry)
-    params["embedding_model"]["params"]["model_name"] = _SEMANTIC_MODEL_NAME
-    params["top_k"] = top_k
+    """Build the semantic preset from the centralized dense default.
+
+    Parameters
+    ----------
+    top_k : int
+        Number of chunks the recipe selects.
+    registry : ComponentRegistry
+        Registry used to resolve any parameter the centralized recipe omits.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The semantic preset recipe with its display metadata.
+    """
+    ref = default_semantic_retriever(top_k)
+    params = {**resolve_component_defaults(ref["component"], registry), **ref["params"]}
     return {
-        "key": "semantic",
+        "key": SEMANTIC_PRESET_KEY,
         "display_name": _SEMANTIC_NAME,
         "description": _SEMANTIC_MODEL_SHORT,
-        "component": "DenseEmbeddingRetriever",
+        "component": ref["component"],
         "params": params,
     }
 
 
 def _hybrid_preset(top_k: int, registry) -> Dict[str, Any]:
-    keyword_k = (top_k + 1) // 2  # ceil(top_k / 2)
-    semantic_k = top_k // 2  # floor(top_k / 2)
+    """Build the hybrid preset from the centralized parallel default.
 
-    keyword_params = resolve_component_defaults("BM25Retriever", registry)
-    keyword_params["top_k"] = keyword_k
+    Parameters
+    ----------
+    top_k : int
+        Total number of chunks the recipe returns. The hybrid factory splits it
+        between the keyword and semantic children.
+    registry : ComponentRegistry
+        Registry used to resolve any parameter the centralized recipe omits.
 
-    semantic_params = resolve_component_defaults("DenseEmbeddingRetriever", registry)
-    semantic_params["embedding_model"]["params"]["model_name"] = _SEMANTIC_MODEL_NAME
-    semantic_params["top_k"] = semantic_k
-
+    Returns
+    -------
+    Dict[str, Any]
+        The hybrid preset recipe with its display metadata.
+    """
+    ref = default_hybrid_retriever(top_k)
+    params = {**resolve_component_defaults(ref["component"], registry), **ref["params"]}
     return {
-        "key": "hybrid",
+        "key": HYBRID_PRESET_KEY,
         "display_name": _HYBRID_NAME,
         "description": f"BM25 + {_SEMANTIC_MODEL_SHORT}",
-        "component": "ParallelRetriever",
-        "params": {
-            "merge_strategy": "round_robin",
-            "children": [
-                {"component": "BM25Retriever", "params": keyword_params},
-                {"component": "DenseEmbeddingRetriever", "params": semantic_params},
-            ],
-        },
+        "component": ref["component"],
+        "params": params,
     }
 
 
 def get_retriever_presets(top_k: int, registry) -> List[Dict[str, Any]]:
-    """Return the three retriever preset recipes with ``top_k`` applied."""
+    """Return the three retriever preset recipes with ``top_k`` applied.
+
+    Parameters
+    ----------
+    top_k : int
+        Number of chunks each recipe selects (or the total for the hybrid).
+    registry : ComponentRegistry
+        Registry used to resolve each component's schema defaults.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        Keyword, semantic and hybrid recipes, in that order.
+    """
     return [
         _keyword_preset(top_k, registry),
         _semantic_preset(top_k, registry),
@@ -96,8 +147,22 @@ def get_retriever_presets(top_k: int, registry) -> List[Dict[str, Any]]:
     ]
 
 
-def get_default_retriever(registry, top_k: int = 10) -> Dict[str, Any]:
-    """Return the ``{component, params}`` ref for the default preset."""
+def get_default_retriever(registry, top_k: int = DEFAULT_TOP_K) -> Dict[str, Any]:
+    """Return the ``{component, params}`` ref for the default preset.
+
+    Parameters
+    ----------
+    registry : ComponentRegistry
+        Registry used to resolve each component's schema defaults.
+    top_k : int, optional
+        Number of chunks the default recipe selects. Defaults to
+        :data:`DashAI.back.models.RAG.RAG_defaults.DEFAULT_TOP_K`.
+
+    Returns
+    -------
+    Dict[str, Any]
+        The default retriever configuration.
+    """
     recipe = next(
         preset
         for preset in get_retriever_presets(top_k, registry)
@@ -138,7 +203,7 @@ def match_preset_key(component: str, params: Dict[str, Any], registry) -> Option
         The matching preset key, or ``None`` for a custom configuration.
     """
     stripped = _strip_top_k(params)
-    for preset in get_retriever_presets(10, registry):
+    for preset in get_retriever_presets(DEFAULT_TOP_K, registry):
         if preset["component"] != component:
             continue
         if _strip_top_k(preset["params"]) == stripped:

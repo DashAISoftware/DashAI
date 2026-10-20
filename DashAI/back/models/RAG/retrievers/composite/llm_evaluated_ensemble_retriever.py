@@ -5,6 +5,11 @@ children (index, class name and configured ``top_k``) and chooses which children
 to consult each round. A child consulted again in a later round is delegated
 with an *escalated* retrieval size, so re-selection widens that child's
 contribution. Sufficiency is judged over the accumulated pool.
+
+The schema placeholders come from :mod:`DashAI.back.models.RAG.RAG_defaults`:
+``children`` seeds the default semantic and keyword retrievers and
+``llm_model`` seeds the default RAG function-calling LLM. Both are ordinary,
+fully modifiable values.
 """
 
 from __future__ import annotations
@@ -20,6 +25,14 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.RAG_defaults import (
+    DEFAULT_MAX_CHUNKS,
+    DEFAULT_MAX_ITERS,
+    default_function_calling_llm,
+    default_keyword_retriever,
+    default_retrieval_sufficiency_prompt,
+    default_semantic_retriever,
+)
 from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
     require_for_ensemble,
 )
@@ -33,31 +46,46 @@ class LLMEvaluatedEnsembleRetrieverSchema(BaseSchema):
 
     Attributes:
         children: At least two child retrievers, from which the LLM chooses.
+            Defaults to the default semantic and keyword retrievers; the value
+            is fully modifiable.
         max_chunks: Maximum number of chunks the pool may hold.
         max_iters: Maximum number of retrieval rounds.
         prompt: The retrieval-sufficiency prompt component.
         llm_model: The text-to-text model that chooses children and judges.
+            Defaults to the default RAG function-calling LLM; the value is
+            fully modifiable.
     """
 
     children: schema_field(
         list_field(component_field(parent="BaseRetriever"), min_items=2),
-        placeholder=[],
+        placeholder=[default_semantic_retriever(), default_keyword_retriever()],
         description=MultilingualString(
             en="Child retrievers the LLM may consult. A catalog of their"
-            " indices, names and top_k values is rendered into the prompt.",
+            " indices, names and top_k values is rendered into the prompt."
+            " Defaults to the default semantic and keyword retrievers; you can"
+            " change them.",
             es="Recuperadores hijos que el LLM puede consultar. Se renderiza un"
-            " catálogo de sus índices, nombres y valores top_k en el prompt.",
+            " catálogo de sus índices, nombres y valores top_k en el prompt."
+            " Por defecto usa los recuperadores semántico y de palabras clave"
+            " predeterminados; puedes cambiarlos.",
             pt="Recuperadores filhos que o LLM pode consultar. Um catálogo de"
-            " seus índices, nomes e valores top_k é renderizado no prompt.",
+            " seus índices, nomes e valores top_k é renderizado no prompt."
+            " Por padrão usa os recuperadores semântico e de palavras-chave"
+            " padrão; você pode alterá-los.",
             de="Kind-Retriever, die das LLM konsultieren darf. Ein Katalog ihrer"
-            " Indizes, Namen und top_k-Werte wird in den Prompt gerendert.",
-            zh="LLM 可咨询的子检索器。其索引、名称和 top_k 值的目录会渲染到提示词中。",
+            " Indizes, Namen und top_k-Werte wird in den Prompt gerendert."
+            " Standardmäßig werden der semantische Standard-Retriever und der"
+            " Standard-Stichwort-Retriever verwendet; sie sind änderbar.",
+            zh=(
+                "LLM 可咨询的子检索器。其索引、名称和 top_k 值的目录会渲染到提示词中。"
+                "默认为默认语义检索器和关键词检索器，可随时修改。"
+            ),
         ),
     )  # type: ignore
 
     max_chunks: schema_field(
         int_field(gt=0),
-        placeholder=10,
+        placeholder=DEFAULT_MAX_CHUNKS,
         description=MultilingualString(
             en="Maximum number of chunks the accumulated pool may hold.",
             es="Número máximo de fragmentos que puede contener el conjunto acumulado.",
@@ -69,7 +97,7 @@ class LLMEvaluatedEnsembleRetrieverSchema(BaseSchema):
 
     max_iters: schema_field(
         int_field(gt=0),
-        placeholder=3,
+        placeholder=DEFAULT_MAX_ITERS,
         description=MultilingualString(
             en="Maximum number of retrieval rounds. One planning call plus at"
             " most this many minus one judgement calls.",
@@ -87,7 +115,7 @@ class LLMEvaluatedEnsembleRetrieverSchema(BaseSchema):
 
     prompt: schema_field(
         component_field(parent="RetrievalSufficiencyPrompt"),
-        placeholder={"component": "DefaultRetrievalSufficiencyPrompt", "params": {}},
+        placeholder=default_retrieval_sufficiency_prompt(),
         description=MultilingualString(
             en="The prompt used to choose children and judge sufficiency.",
             es="El prompt usado para elegir hijos y juzgar la suficiencia.",
@@ -99,13 +127,24 @@ class LLMEvaluatedEnsembleRetrieverSchema(BaseSchema):
 
     llm_model: schema_field(
         component_field(parent="TextToTextGenerationTaskModel"),
-        placeholder={"component": "", "params": {}},
+        placeholder=default_function_calling_llm(),
         description=MultilingualString(
-            en="The language model that chooses children and judges sufficiency.",
-            es="El modelo de lenguaje que elige hijos y juzga la suficiencia.",
-            pt="O modelo de linguagem que escolhe filhos e julga a suficiência.",
-            de="Das Sprachmodell, das Kinder auswählt und die Suffizienz beurteilt.",
-            zh="选择子检索器并判断充分性的语言模型。",
+            en="The language model that chooses children and judges"
+            " sufficiency. Defaults to the default RAG function-calling LLM;"
+            " you can change it.",
+            es="El modelo de lenguaje que elige hijos y juzga la suficiencia."
+            " Por defecto usa el LLM de llamada a funciones RAG predeterminado;"
+            " puedes cambiarlo.",
+            pt="O modelo de linguagem que escolhe filhos e julga a suficiência."
+            " Por padrão usa o LLM de chamada de funções RAG padrão; você pode"
+            " alterá-lo.",
+            de="Das Sprachmodell, das Kinder auswählt und die Suffizienz"
+            " beurteilt. Standardmäßig wird das RAG-Standard-LLM für"
+            " Funktionsaufrufe verwendet; es ist änderbar.",
+            zh=(
+                "选择子检索器并判断充分性的语言模型。默认为默认 RAG 函数调用 LLM，"
+                "可随时修改。"
+            ),
         ),
     )  # type: ignore
 

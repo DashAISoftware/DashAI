@@ -18,6 +18,7 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_PROMPT,
     RAG_PARAM_RETRIEVER_MODEL,
 )
+from DashAI.back.models.RAG.RAG_defaults import DEFAULT_RAG_CONTEXT_WINDOW
 from DashAI.back.services.RAG.chunking_presets import get_default_chunking
 from DashAI.back.services.RAG.retriever_presets import get_default_retriever
 
@@ -32,7 +33,7 @@ DEFAULT_PROMPT = "DefaultRAGGenerationPrompt"
 #: paper over this by overriding the value on model selection; the override
 #: belongs here, where it applies to every client and is visible in the stored
 #: configuration.
-RAG_CONTEXT_WINDOW = 10000
+RAG_CONTEXT_WINDOW = DEFAULT_RAG_CONTEXT_WINDOW
 
 #: Room a RAG session reserves for the answer itself, for the same reason.
 RAG_MAX_TOKENS = 1000

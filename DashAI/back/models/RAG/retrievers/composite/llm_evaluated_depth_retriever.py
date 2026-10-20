@@ -6,6 +6,10 @@ accumulated pool is sufficient; when it is not, the model also supplies a larger
 retrieval size ``top_k`` that drives the next delegation. The retriever is
 *blind* to its child's identity: the prompt never names the child beyond the
 generic request, it just asks for a bigger retrieval.
+
+The schema placeholders come from :mod:`DashAI.back.models.RAG.RAG_defaults`:
+``children`` seeds the default hybrid retriever and ``llm_model`` seeds the
+default RAG function-calling LLM. Both are ordinary, fully modifiable values.
 """
 
 from __future__ import annotations
@@ -21,6 +25,13 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.RAG_defaults import (
+    DEFAULT_MAX_CHUNKS,
+    DEFAULT_MAX_ITERS,
+    default_function_calling_llm,
+    default_hybrid_retriever,
+    default_retrieval_sufficiency_prompt,
+)
 from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
     require_for_depth,
 )
@@ -34,33 +45,42 @@ class LLMEvaluatedDepthRetrieverSchema(BaseSchema):
     """Schema for :class:`LLMEvaluatedDepthRetriever`.
 
     Attributes:
-        children: Exactly one child retriever that is delegated to.
+        children: Exactly one child retriever that is delegated to. Defaults to
+            the default hybrid retriever; the value is fully modifiable.
         max_chunks: Maximum number of chunks the pool may hold.
         max_iters: Maximum number of retrieval rounds (judgements = iters - 1).
         prompt: The retrieval-sufficiency prompt component.
-        llm_model: The text-to-text model that judges sufficiency.
+        llm_model: The text-to-text model that judges sufficiency. Defaults to
+            the default RAG function-calling LLM; the value is fully modifiable.
     """
 
     children: schema_field(
         list_field(component_field(parent="BaseRetriever"), min_items=1, max_items=1),
-        placeholder=[],
+        placeholder=[default_hybrid_retriever()],
         description=MultilingualString(
             en="The single child retriever that is delegated to. The retriever"
-            " is blind to its identity: the prompt never names it.",
+            " is blind to its identity: the prompt never names it. Defaults to"
+            " the default hybrid retriever; you can change it.",
             es="El único recuperador hijo al que se delega. El recuperador es"
-            " ciego a su identidad: el prompt nunca lo nombra.",
+            " ciego a su identidad: el prompt nunca lo nombra. Por defecto usa"
+            " el recuperador híbrido predeterminado; puedes cambiarlo.",
             pt="O único recuperador filho ao qual se delega. O recuperador é"
-            " cego à sua identidade: o prompt nunca o nomeia.",
+            " cego à sua identidade: o prompt nunca o nomeia. Por padrão usa o"
+            " recuperador híbrido padrão; você pode alterá-lo.",
             de="Der einzige Kind-Retriever, an den delegiert wird. Der"
             " Retriever ist blind gegenüber seiner Identität: der Prompt nennt"
-            " ihn nie.",
-            zh="被委派的唯一子检索器。该检索器对其身份不可见：提示词从不提及它。",
+            " ihn nie. Standardmäßig wird der hybride Standard-Retriever"
+            " verwendet; er ist änderbar.",
+            zh=(
+                "被委派的唯一子检索器。该检索器对其身份不可见：提示词从不提及它。"
+                "默认为默认混合检索器，可随时修改。"
+            ),
         ),
     )  # type: ignore
 
     max_chunks: schema_field(
         int_field(gt=0),
-        placeholder=10,
+        placeholder=DEFAULT_MAX_CHUNKS,
         description=MultilingualString(
             en="Maximum number of chunks the accumulated pool may hold.",
             es="Número máximo de fragmentos que puede contener el conjunto acumulado.",
@@ -72,7 +92,7 @@ class LLMEvaluatedDepthRetrieverSchema(BaseSchema):
 
     max_iters: schema_field(
         int_field(gt=0),
-        placeholder=3,
+        placeholder=DEFAULT_MAX_ITERS,
         description=MultilingualString(
             en="Maximum number of retrieval rounds. The final round is not"
             " judged, so there are at most this many minus one LLM calls.",
@@ -90,7 +110,7 @@ class LLMEvaluatedDepthRetrieverSchema(BaseSchema):
 
     prompt: schema_field(
         component_field(parent="RetrievalSufficiencyPrompt"),
-        placeholder={"component": "DefaultRetrievalSufficiencyPrompt", "params": {}},
+        placeholder=default_retrieval_sufficiency_prompt(),
         description=MultilingualString(
             en="The prompt used to judge whether the retrieved chunks suffice.",
             es="El prompt usado para juzgar si los fragmentos recuperados son"
@@ -103,13 +123,20 @@ class LLMEvaluatedDepthRetrieverSchema(BaseSchema):
 
     llm_model: schema_field(
         component_field(parent="TextToTextGenerationTaskModel"),
-        placeholder={"component": "", "params": {}},
+        placeholder=default_function_calling_llm(),
         description=MultilingualString(
-            en="The language model that judges retrieval sufficiency.",
-            es="El modelo de lenguaje que juzga la suficiencia de la recuperación.",
-            pt="O modelo de linguagem que julga a suficiência da recuperação.",
-            de="Das Sprachmodell, das die Abrufsuffizienz beurteilt.",
-            zh="判断检索充分性的语言模型。",
+            en="The language model that judges retrieval sufficiency. Defaults"
+            " to the default RAG function-calling LLM; you can change it.",
+            es="El modelo de lenguaje que juzga la suficiencia de la"
+            " recuperación. Por defecto usa el LLM de llamada a funciones RAG"
+            " predeterminado; puedes cambiarlo.",
+            pt="O modelo de linguagem que julga a suficiência da recuperação."
+            " Por padrão usa o LLM de chamada de funções RAG padrão; você pode"
+            " alterá-lo.",
+            de="Das Sprachmodell, das die Abrufsuffizienz beurteilt."
+            " Standardmäßig wird das RAG-Standard-LLM für Funktionsaufrufe"
+            " verwendet; es ist änderbar.",
+            zh=("判断检索充分性的语言模型。默认为默认 RAG 函数调用 LLM，可随时修改。"),
         ),
     )  # type: ignore
 
@@ -122,6 +149,11 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
     verdict's ``top_k`` becomes the next delegation's retrieval-size hint,
     clamped to the remaining budget, with a progress guarantee that turns a
     zero-progress request into the smallest one that can add a chunk.
+
+    A composite child interprets that hint under its own contract. The default
+    hybrid child keeps its configured budget and may therefore fill the pool
+    before the first judgement; raise ``max_chunks`` or choose a child that
+    honours the hint when deeper rounds are required.
     """
 
     SCHEMA = LLMEvaluatedDepthRetrieverSchema

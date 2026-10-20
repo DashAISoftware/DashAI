@@ -9,6 +9,7 @@ class never reaches into ``PromptService`` internals.
 
 from __future__ import annotations
 
+import copy
 import logging
 from typing import Any, Callable, Dict, List
 
@@ -127,25 +128,30 @@ class RetrieverEvaluationValidationService:
         if not name or not isinstance(params, dict):
             return
 
-        merged = {**resolve_component_defaults(name, self._registry), **params}
+        # Copy the resolved defaults: list-valued placeholders (notably
+        # ``children``) are assigned by reference by the shared resolver, so
+        # mutating this payload would otherwise mutate the registry schema for
+        # every later session.
+        defaults = copy.deepcopy(resolve_component_defaults(name, self._registry))
+        merged = {**defaults, **params}
         llm_ref = merged.get(_LLM_MODEL_KEY)
         if isinstance(llm_ref, dict):
             llm_name = llm_ref.get("component")
             llm_params = llm_ref.get("params")
             if llm_name and isinstance(llm_params, dict):
-                llm_ref["params"] = {
-                    **resolve_component_defaults(llm_name, self._registry),
-                    **llm_params,
-                }
+                llm_defaults = copy.deepcopy(
+                    resolve_component_defaults(llm_name, self._registry)
+                )
+                llm_ref["params"] = {**llm_defaults, **llm_params}
         prompt_ref = merged.get(_PROMPT_KEY)
         if isinstance(prompt_ref, dict):
             prompt_name = prompt_ref.get("component")
             prompt_params = prompt_ref.get("params")
             if prompt_name and isinstance(prompt_params, dict):
-                prompt_ref["params"] = {
-                    **resolve_component_defaults(prompt_name, self._registry),
-                    **prompt_params,
-                }
+                prompt_defaults = copy.deepcopy(
+                    resolve_component_defaults(prompt_name, self._registry)
+                )
+                prompt_ref["params"] = {**prompt_defaults, **prompt_params}
         retriever_ref["params"] = merged
 
     # ------------------------------------------------------------------
