@@ -46,7 +46,10 @@ def downgrade() -> None:
         sa.Column("text", sa.Text(), nullable=False),
         sa.Column("metadata", sa.JSON(), nullable=True),
         sa.ForeignKeyConstraint(
-            ["chunk_set_id"], ["rag_chunk_set.id"], ondelete="CASCADE"
+            ["chunk_set_id"],
+            ["rag_chunk_set.id"],
+            name="fk_chunk_chunk_set_id",
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["document_id"], ["data_document.id"], ondelete="CASCADE"
