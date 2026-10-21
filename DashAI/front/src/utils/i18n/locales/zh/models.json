@@ -315,7 +315,9 @@
     "includesDataset": "该文件包含数据集“{{name}}”。如果数据是私密的，请不要分享。",
     "importSessionWarning": "会话中包含的模型在使用时会执行代码。请只导入你信任的人的会话。",
     "sessionImported": "会话已导入为“{{session}}”，数据集为“{{dataset}}”",
-    "importedRecipeRuns": "这些运行未经训练：{{names}}"
+    "importedRecipeRuns": "这些运行未经训练：{{names}}",
+    "importedNeedsDownloadTrained": "你可以用这些模型进行预测，但要重新训练，请先在可用模型中下载它们：{{names}}",
+    "importedNeedsDownloadUntrained": "这些模型未经训练，训练前必须先下载：{{names}}"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} 已完成所有运行。",

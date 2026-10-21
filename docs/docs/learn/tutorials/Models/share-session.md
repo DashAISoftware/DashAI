@@ -54,6 +54,11 @@ again after importing.
 - If your library versions differ from the ones used to export, the session
   is imported with a warning. If a model then fails, use **Retrain**: the
   configuration is always in the file.
+- If a model must be downloaded (for example a HuggingFace translator) and
+  you do not have it, dashAI tells you after importing. A trained run still
+  predicts from its own copy, and you only need the download to retrain it. A
+  run that arrives untrained needs it before training, and the notice offers a
+  **Download** button.
 
 :::warning
 A session file contains Python objects, and using its models runs code.

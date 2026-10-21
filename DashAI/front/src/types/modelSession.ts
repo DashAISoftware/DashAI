@@ -113,4 +113,11 @@ export interface ISessionImportResult {
   renamed: { session: boolean; dataset: boolean };
   warnings: string[];
   recipe_runs: string[];
+  needs_download_trained: IMissingDownload[];
+  needs_download_untrained: IMissingDownload[];
+}
+
+export interface IMissingDownload {
+  name: string;
+  display_name: string;
 }

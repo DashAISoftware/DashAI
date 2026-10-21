@@ -17,6 +17,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 
+from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dependencies.downloads.nested import missing_downloads
 from DashAI.back.model_package.manifest import (
     MANIFEST_ENTRY,
     MissingPluginError,
@@ -154,12 +156,60 @@ def _check_components(recipe: Dict[str, Any], component_registry: Any) -> None:
             )
 
 
+def _display_name(component_registry: Any, name: str, language: str) -> str:
+    display = component_registry[name].get("display_name")
+    if isinstance(display, MultilingualString):
+        return display.get(language)
+    return display or name
+
+
+def _missing_downloads(
+    recipe: Dict[str, Any], component_registry: Any, language: str
+) -> Dict[str, List[Dict[str, str]]]:
+    """Models (and nested components) of the runs that are not downloaded.
+
+    A trained run predicts from its own saved copy, so it only needs the
+    download to retrain; an untrained run needs it before anything else.
+    A component missing for both kinds is listed only as untrained.
+    """
+    missing: Dict[str, List[str]] = {"trained": [], "untrained": []}
+    for entry in recipe["runs"]:
+        names = [entry["model_name"]]
+        names += [
+            m["name"]
+            for m in missing_downloads(entry["parameters"] or {}, component_registry)
+        ]
+        kind = "trained" if entry["model_entry"] else "untrained"
+        for name in names:
+            component_class = component_registry[name]["class"]
+            if not getattr(component_class, "REQUIRES_DOWNLOAD", False):
+                continue
+            if component_registry.refresh_download_status(name):
+                continue
+            if name not in missing[kind]:
+                missing[kind].append(name)
+    missing["trained"] = [
+        n for n in missing["trained"] if n not in missing["untrained"]
+    ]
+    return {
+        kind: [
+            {
+                "name": name,
+                "display_name": _display_name(component_registry, name, language),
+            }
+            for name in names
+        ]
+        for kind, names in missing.items()
+    }
+
+
 def import_session_package(
     path: Union[str, Path],
     session_factory: "sessionmaker",
     component_registry: Any,
     config: Dict[str, Any],
     job_queue: Any,
+    language: str = "en",
 ) -> Dict[str, Any]:
     """Create a new session, its dataset and runs from a ``.dashai`` file.
 
@@ -169,6 +219,9 @@ def import_session_package(
         ``session_id``, ``dataset_id``, the final ``session_name`` and
         ``dataset_name``, whether each was ``renamed``, version ``warnings``
         and the names of the runs that arrived untrained (``recipe_runs``).
+        ``needs_download_trained`` and ``needs_download_untrained`` list the
+        models (``name`` and ``display_name`` in ``language``) that must be
+        downloaded before retraining, or before training at all.
 
     Raises
     ------
@@ -324,6 +377,8 @@ def import_session_package(
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
+    needs_download = _missing_downloads(recipe, component_registry, language)
+
     if needs_preprocessing:
         job_id = job_queue.put(PreprocessingJob(model_session_id=session_id)).id
         with session_factory() as db:
@@ -341,4 +396,6 @@ def import_session_package(
         },
         "warnings": notes,
         "recipe_runs": recipe_runs,
+        "needs_download_trained": needs_download["trained"],
+        "needs_download_untrained": needs_download["untrained"],
     }

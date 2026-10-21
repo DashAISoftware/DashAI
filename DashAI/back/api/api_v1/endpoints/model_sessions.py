@@ -1,7 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Union
 
-from fastapi import APIRouter, Depends, File, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Header, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
 from kink import di, inject
 from pydantic import ValidationError
@@ -933,6 +933,7 @@ async def update_model_session(
 @inject
 async def import_model_session(
     file: UploadFile = File(...),
+    accept_language: str | None = Header(default=None),
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
     config=Depends(lambda: di["config"]),
@@ -971,6 +972,7 @@ async def import_model_session(
             component_registry,
             config,
             job_queue,
+            (accept_language or "en").split("-")[0].lower(),
         )
     except (UnsupportedPackageFormatError, MissingPluginError) as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e

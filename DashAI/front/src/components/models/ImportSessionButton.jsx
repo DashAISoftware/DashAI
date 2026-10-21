@@ -16,6 +16,7 @@ import { useSnackbar } from "notistack";
 import { useNavigate } from "react-router-dom";
 import { importModelSession } from "../../api/modelSession";
 import { getApiErrorMessage } from "../../utils/apiError";
+import { startComponentDownload } from "./model/ComponentDownloadControl";
 
 /**
  * Header button that imports a .dashai file as a new session, after warning
@@ -23,11 +24,53 @@ import { getApiErrorMessage } from "../../utils/apiError";
  */
 export default function ImportSessionButton({ onImported }) {
   const { t } = useTranslation(["models", "common"]);
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const inputRef = useRef(null);
   const [warningOpen, setWarningOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+
+  const displayNames = (components) =>
+    components.map((component) => component.display_name).join(", ");
+
+  // Trained runs predict from their own saved copy, so the download only
+  // matters to retrain them; untrained runs need it before anything else.
+  const notifyMissingDownloads = (result) => {
+    if (result.needs_download_trained.length) {
+      enqueueSnackbar(
+        t("models:label.importedNeedsDownloadTrained", {
+          names: displayNames(result.needs_download_trained),
+        }),
+        { variant: "info" },
+      );
+    }
+    const untrained = result.needs_download_untrained;
+    if (untrained.length) {
+      enqueueSnackbar(
+        t("models:label.importedNeedsDownloadUntrained", {
+          names: displayNames(untrained),
+        }),
+        {
+          variant: "warning",
+          persist: true,
+          action: (key) => (
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => {
+                closeSnackbar(key);
+                untrained.forEach((component) =>
+                  startComponentDownload({ component, enqueueSnackbar, t }),
+                );
+              }}
+            >
+              {t("common:componentDownload.download")}
+            </Button>
+          ),
+        },
+      );
+    }
+  };
 
   const handleFile = async (event) => {
     const file = event.target.files?.[0];
@@ -57,6 +100,7 @@ export default function ImportSessionButton({ onImported }) {
           { variant: "info" },
         );
       }
+      notifyMissingDownloads(result);
     } catch (error) {
       const reason = getApiErrorMessage(error);
       const message = t("models:error.importSession");
