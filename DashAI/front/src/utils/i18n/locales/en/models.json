@@ -31,7 +31,8 @@
     "importSession": "Import session",
     "selectAll": "Select all",
     "selectNone": "None",
-    "chooseFile": "Choose file"
+    "chooseFile": "Choose file",
+    "gotIt": "Got it"
   },
   "error": {
     "exportModel": "Could not export the model",
@@ -318,7 +319,10 @@
     "sessionImported": "Session imported as \"{{session}}\" with the dataset \"{{dataset}}\"",
     "importedRecipeRuns": "These runs arrived untrained: {{names}}",
     "importedNeedsDownloadTrained": "You can predict with these models, but to retrain them download them first from Available Models: {{names}}",
-    "importedNeedsDownloadUntrained": "These models arrived untrained and must be downloaded before training: {{names}}"
+    "importedNeedsDownloadUntrained": "These models arrived untrained and must be downloaded before training: {{names}}",
+    "importingSession": "Importing session...",
+    "importingSessionHelp": "This can take a while if the session includes trained models.",
+    "sessionImportedTitle": "Session imported"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} has completed all its runs.",
