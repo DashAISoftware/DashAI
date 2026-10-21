@@ -122,8 +122,10 @@ def load_explorer_input(
     Returns
     -------
     DashAIDataset
-        The working dataset, or the selected document items as one column
-        named after their content type.
+        The working dataset, or the selected document items: their content
+        in a column named after the content type, then the ``kind``,
+        ``page`` and ``position`` item columns. Explorers keep only the
+        columns they select unless they ask for the item columns.
 
     Raises
     ------
@@ -133,7 +135,7 @@ def load_explorer_input(
     if notebook.data_kind == DOCUMENT:
         from DashAI.back.dataloaders.classes.dashai_document import load_document
         from DashAI.back.dataloaders.classes.document_items import (
-            items_as_column,
+            items_with_details,
             selection_from_columns,
         )
 
@@ -144,7 +146,7 @@ def load_explorer_input(
             )
         ((type_name, item_filter),) = selection.items()
         document = load_document(notebook_data_path(notebook))
-        return items_as_column(document, type_name, item_filter)
+        return items_with_details(document, type_name, item_filter)
     from DashAI.back.dataloaders.classes.dashai_dataset import load_dataset
 
     return load_dataset(notebook_data_path(notebook))

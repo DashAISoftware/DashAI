@@ -29,13 +29,16 @@ export default function ScopeStepConverter({
   const theme = useTheme();
   const [datasetInfo, setDatasetInfo] = useState(0);
   const tourContext = useTourContext();
-  const allowedTypes = tool?.metadata?.allowed_types || [];
   const allowedDtypes = tool?.metadata?.allowed_dtypes || [];
   const nonAllowedDtypes = tool?.metadata?.non_allowed_dtypes || [];
   const inputCardinality = tool?.metadata?.input_cardinality || {};
   const { t } = useTranslation(["common", "datasets"]);
   const { columnTypes, itemSelection } = useExplorersAndConverters();
   const isDocument = isDocumentNotebook(notebook);
+  const allowedTypes =
+    (isDocument && tool?.metadata?.document_allowed_types) ||
+    tool?.metadata?.allowed_types ||
+    [];
   const excludedColumnIds = useMemo(
     () => (targetColumn ? [targetColumn.idx - 1] : []),
     [targetColumn],

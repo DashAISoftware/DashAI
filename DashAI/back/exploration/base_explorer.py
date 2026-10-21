@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Dict, Final, List, Optional
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.artifacts import Artifact
 from DashAI.back.core.column_constraints import columns_satisfy_metadata
-from DashAI.back.core.data_kinds import normalize_data_kinds
+from DashAI.back.core.data_kinds import normalize_data_kinds, type_names
 from DashAI.back.core.schema_fields import BaseSchema
 from DashAI.back.dependencies.database.models import Explorer, Notebook
 from DashAI.back.static.icons import Icon
@@ -119,6 +119,8 @@ class BaseExplorer(ConfigObject, ABC):
         meta["requires_download"] = bool(getattr(cls, "REQUIRES_DOWNLOAD", False))
         meta["download_size_bytes"] = getattr(cls, "DOWNLOAD_SIZE_BYTES", None)
         meta["data_kinds"] = normalize_data_kinds(meta.get("data_kinds"))
+        if meta.get("document_allowed_types"):
+            meta["document_allowed_types"] = type_names(meta["document_allowed_types"])
 
         if meta.get("input_cardinality") is None:
             meta["input_cardinality"] = {"min": 1}

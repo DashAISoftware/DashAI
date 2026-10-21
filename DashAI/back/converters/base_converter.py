@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Final, List, Optional, Type, Union
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.core.data_kinds import normalize_data_kinds
+from DashAI.back.core.data_kinds import normalize_data_kinds, type_names
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.preprocessing.structure_types import (
     BlockItem,
@@ -134,6 +134,8 @@ class BaseConverter(ConfigObject, ABC):
             cls, "N_COMPONENTS_FEATURES_BOUNDED", False
         )
         meta["data_kinds"] = normalize_data_kinds(meta.get("data_kinds"))
+        if meta.get("document_allowed_types"):
+            meta["document_allowed_types"] = type_names(meta["document_allowed_types"])
 
         # Serialize allowed_types to the names the frontend compares against.
         # A DashAI type reports its own name via display_name(), which is the

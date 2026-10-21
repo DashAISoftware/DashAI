@@ -182,15 +182,32 @@ def test_the_document_tools_are_the_ones_we_think_they_are():
     )
     assert on_documents == [
         "CharacterReplacer",
+        "DescribeExplorer",
+        "DocumentItemFilter",
+        "ImageCaptioningConverter",
+        "LanguageFilter",
+        "NamedEntitiesExplorer",
+        "OCRConverter",
+        "RegexReplacer",
+        "Summarizer",
+        "TextCleaner",
+        "TextSplitter",
+        "TextStatisticsExplorer",
+        "TopTermsExplorer",
         "WordcloudExplorer",
     ], on_documents
 
 
-def test_no_document_converter_changes_the_row_count():
-    """A document keeps one value per item, so a sampler can never run on one."""
-    for name, metadata in TOOLS:
-        if "document" in metadata["data_kinds"] and "changes_row_count" in metadata:
-            assert not metadata["changes_row_count"], name
+def test_only_document_converters_change_the_row_count_of_a_document():
+    """A sampler cannot place its rows in a document; a DocumentConverter can."""
+    from DashAI.back.converters.document_converter import DocumentConverter
+
+    for component in get_initial_components():
+        if getattr(component, "TYPE", None) != "Converter":
+            continue
+        metadata = component.get_metadata()
+        if "document" in metadata["data_kinds"] and metadata["changes_row_count"]:
+            assert issubclass(component, DocumentConverter), component.__name__
 
 
 MULTI_COLUMN_CONVERTERS = (

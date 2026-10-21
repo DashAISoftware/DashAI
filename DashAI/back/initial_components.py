@@ -2,11 +2,21 @@ import logging
 
 from DashAI.back.converters.clustering.clustering import Clustering
 
+# Document converters
+from DashAI.back.converters.document.image_captioning import (
+    ImageCaptioningConverter,
+)
+from DashAI.back.converters.document.item_filter import DocumentItemFilter
+from DashAI.back.converters.document.language_filter import LanguageFilter
+from DashAI.back.converters.document.ocr import OCRConverter
+from DashAI.back.converters.document.text_splitter import TextSplitter
+
 # Hugging Face module
 from DashAI.back.converters.hugging_face.embedding import Embedding
 from DashAI.back.converters.hugging_face.image_embedding import (
     ImageEmbeddingConverter,
 )
+from DashAI.back.converters.hugging_face.summarizer import Summarizer
 from DashAI.back.converters.hugging_face.tokenizer import TokenizerConverter
 
 # Imbalanced_learn
@@ -74,6 +84,8 @@ from DashAI.back.converters.simple_converters.date_features import (
 )
 from DashAI.back.converters.simple_converters.nan_remover import NanRemover
 from DashAI.back.converters.simple_converters.numeric_expansion import NumericExpansion
+from DashAI.back.converters.simple_converters.regex_replacer import RegexReplacer
+from DashAI.back.converters.simple_converters.text_cleaner import TextCleaner
 from DashAI.back.converters.simple_converters.time_resampler import (
     TimeResamplerConverter,
 )
@@ -174,6 +186,9 @@ from DashAI.back.exploration.explorers.describe_explorer import DescribeExplorer
 from DashAI.back.exploration.explorers.ecdf_plot import ECDFPlotExplorer
 from DashAI.back.exploration.explorers.histogram_plot import HistogramPlotExplorer
 from DashAI.back.exploration.explorers.multibox_plot import MultiColumnBoxPlotExplorer
+from DashAI.back.exploration.explorers.named_entities import (
+    NamedEntitiesExplorer,
+)
 from DashAI.back.exploration.explorers.parallel_categories import (
     ParallelCategoriesExplorer,
 )
@@ -186,10 +201,14 @@ from DashAI.back.exploration.explorers.seasonal_decomposition import (
     SeasonalDecompositionExplorer,
 )
 from DashAI.back.exploration.explorers.silhouette_plot import SilhouettePlotExplorer
+from DashAI.back.exploration.explorers.text_statistics import (
+    TextStatisticsExplorer,
+)
 from DashAI.back.exploration.explorers.time_index_audit import TimeIndexAuditExplorer
 from DashAI.back.exploration.explorers.time_series_plot import (
     TimeSeriesPlotExplorer,
 )
+from DashAI.back.exploration.explorers.top_terms import TopTermsExplorer
 from DashAI.back.exploration.explorers.wordcloud import WordcloudExplorer
 
 # Jobs
@@ -843,6 +862,9 @@ def get_initial_components():
         DescribeExplorer,
         ScatterPlotExplorer,
         WordcloudExplorer,
+        TextStatisticsExplorer,
+        TopTermsExplorer,
+        NamedEntitiesExplorer,
         BoxPlotExplorer,
         MultiColumnBoxPlotExplorer,
         CorrelationMatrixExplorer,
@@ -870,6 +892,14 @@ def get_initial_components():
         Clustering,
         NanRemover,
         CharacterReplacer,
+        TextCleaner,
+        RegexReplacer,
+        DocumentItemFilter,
+        TextSplitter,
+        LanguageFilter,
+        OCRConverter,
+        ImageCaptioningConverter,
+        Summarizer,
         ColumnArithmetic,
         ColumnConcat,
         NumericExpansion,

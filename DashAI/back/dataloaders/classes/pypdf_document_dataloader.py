@@ -255,7 +255,7 @@ class PypdfDocumentDataLoader(DocumentDataLoader):
                         items.append(
                             DocumentItem(
                                 type=DashAIImage,
-                                content=DashAIImage(bytes=data, path=name),
+                                content=self.web_image(data, name),
                                 page=number,
                             )
                         )

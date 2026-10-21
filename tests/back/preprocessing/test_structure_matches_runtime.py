@@ -51,6 +51,7 @@ NEEDS_DOWNLOAD = {
     "TokenizerConverter",
     "ImageEmbeddingConverter",
     "SAM3SegmentConverter",
+    "Summarizer",
 }
 
 # (converter name, params on top of the schema placeholders, scope columns)
@@ -95,6 +96,8 @@ CASES = [
         {"char_to_replace": "-", "replacement_char": ""},
         ["code"],
     ),
+    ("TextCleaner", {}, ["text"]),
+    ("RegexReplacer", {"preset": "Numbers"}, ["text"]),
     ("ColumnArithmetic", {"operation": "add"}, ["i_full", "i2"]),
     ("ColumnArithmetic", {"operation": "multiply"}, ["i_null", "i2"]),
     ("ColumnArithmetic", {"operation": "divide"}, ["i_full", "f1"]),
@@ -136,6 +139,8 @@ EXACT = {
     "MaxAbsScaler",
     "Normalizer",
     "CharacterReplacer[char_to_replace=-,replacement_char=]",
+    "TextCleaner",
+    "RegexReplacer[preset=Numbers]",
     "ColumnArithmetic[operation=add]",
     "ColumnArithmetic[operation=multiply]",
     "ColumnArithmetic[operation=divide]",

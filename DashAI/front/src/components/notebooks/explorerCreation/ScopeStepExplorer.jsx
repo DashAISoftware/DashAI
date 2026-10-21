@@ -18,7 +18,6 @@ export default function ScopeStepExplorer({
 }) {
   const theme = useTheme();
   const [isSelectionValid, setIsSelectionValid] = useState(false);
-  const allowedTypes = tool?.metadata?.allowed_types || [];
   const allowedDtypes = tool?.metadata?.allowed_dtypes || [];
   const inputCardinality = tool?.metadata?.input_cardinality || {};
   const nonAllowedDtypes = tool?.metadata?.non_allowed_dtypes || [];
@@ -27,6 +26,10 @@ export default function ScopeStepExplorer({
   const { columnTypes, itemSelection, explorersAndConverters } =
     useExplorersAndConverters();
   const isDocument = isDocumentNotebook(notebook);
+  const allowedTypes =
+    (isDocument && tool?.metadata?.document_allowed_types) ||
+    tool?.metadata?.allowed_types ||
+    [];
 
   const allowedColumnNames = useMemo(() => {
     if (!tool?.metadata?.restricts_to_converter_columns) return null;
