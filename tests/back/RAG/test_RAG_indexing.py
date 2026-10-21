@@ -461,18 +461,37 @@ def test_changing_parameters_cancels_a_live_index(
         assert db.get(GenerativeSession, session_id).index_job_id is None
 
 
-def test_deleting_a_document_cancels_a_live_index(
+def test_detaching_a_document_cancels_a_live_index(
     client: TestClient, written_documents: list
 ):
     session_id, document_id = _create_session_with_document(
-        client, "index_cancel_delete", written_documents
+        client, "index_cancel_detach", written_documents
     )
-    job_id = f"live-del-{uuid.uuid4().hex[:8]}"
+    job_id = f"live-det-{uuid.uuid4().hex[:8]}"
     _write_queue_row(client, job_id, "started")
     _point_session_at_job(client, session_id, job_id)
 
-    assert client.delete(f"/api/v1/document/{document_id}").status_code == 204
+    response = client.delete(
+        f"/api/v1/rag/sessions/{session_id}/documents/{document_id}"
+    )
 
+    assert response.status_code == 204
     session_factory = client.app.container["session_factory"]
     with session_factory() as db:
         assert db.get(GenerativeSession, session_id).index_job_id is None
+
+
+def test_indexing_clears_the_reindex_mark(client: TestClient, written_documents: list):
+    session_id, _ = _create_session_with_document(
+        client, "index_reindex_mark", written_documents
+    )
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        db.get(GenerativeSession, session_id).needs_reindex = True
+        db.commit()
+    status_url = f"/api/v1/rag/sessions/{session_id}/index-status"
+    assert client.get(status_url).json()["needs_reindex"] is True
+
+    RAGIndexJob(session_id=session_id).run()
+
+    assert client.get(status_url).json()["needs_reindex"] is False

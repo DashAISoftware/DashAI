@@ -43,6 +43,7 @@ from DashAI.back.dependencies.database.models import (
     Notebook,
 )
 from DashAI.back.services.RAG.deferred_fs import remove_after_commit
+from DashAI.back.services.RAG.session_document_service import SessionDocumentService
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session, sessionmaker
@@ -90,6 +91,22 @@ def _document_loader_class(component_registry: "ComponentRegistry", name: str) -
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
         ) from e
     return loader_class
+
+
+def _users_payload(rows) -> list:
+    """Describe the sessions or notebooks that use a document.
+
+    Parameters
+    ----------
+    rows : list of GenerativeSession or Notebook
+        The users of the document.
+
+    Returns
+    -------
+    list of dict
+        ``{"id", "name"}`` per row.
+    """
+    return [{"id": row.id, "name": row.name} for row in rows]
 
 
 def _get_document_or_404(db: "Session", document_id: int) -> DataDocument:
@@ -547,11 +564,26 @@ async def delete_data_document(
     Raises
     ------
     HTTPException
-        404 for an unknown document, 409 while it is being parsed, 500 on
-        database errors.
+        404 for an unknown document, 409 while it is being parsed or while
+        RAG sessions use it (the detail lists them and the notebooks deleted
+        with it), 500 on database errors.
     """
     with session_factory() as db:
         document = _get_document_or_404(db, document_id)
+        sessions = SessionDocumentService(db).sessions_using(document_id)
+        if sessions:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "detail": (
+                        "This document is used by RAG sessions. Remove it from "
+                        "them before deleting it. Its notebooks are deleted "
+                        "with it."
+                    ),
+                    "sessions": _users_payload(sessions),
+                    "notebooks": _users_payload(document.notebooks),
+                },
+            )
         if document.status in BUSY_STATUSES:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,

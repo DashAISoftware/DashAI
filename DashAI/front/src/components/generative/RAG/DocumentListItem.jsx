@@ -1,38 +1,18 @@
-import React, { useState } from "react";
+import React from "react";
 import { Box, Chip, Typography, useTheme } from "@mui/material";
-import {
-  Description,
-  PictureAsPdf,
-  InsertDriveFile,
-  Article,
-} from "@mui/icons-material";
+import { Description as DocumentIcon } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
-
-/**
- * Returns the appropriate MUI icon component for the given file type.
- * @param {string} fileType - File extension (e.g. "pdf", "txt").
- * @returns {React.ElementType} An icon component.
- */
-const getDocumentIcon = (fileType) => {
-  const iconMap = {
-    pdf: PictureAsPdf,
-    txt: Article,
-  };
-
-  const IconComponent = iconMap[fileType?.toLowerCase()] || InsertDriveFile;
-  return IconComponent;
-};
 
 /**
  * A single clickable document row with icon and metadata, shown inside a list.
  *
  * @param {object}  props
- * @param {object}  props.document - The document object ({ id, name, type, ... }).
+ * @param {object}  props.document - The document object ({ id, name, ... }).
  * @param {boolean} [props.disabled=false] - Whether the item is greyed out and non-interactive.
  * @param {function} [props.onClick] - Click handler for the item.
  * @param {object}  [props.indexState] - This document's indexing state within
  *   the session (`{ chunks, indexed }`), as reported by the backend.
- * @param {node}    [props.actions] - Controls revealed on hover, at the end of
+ * @param {node}    [props.actions] - Controls shown at the end of
  *   the row. They stop their own clicks, so acting on a row does not also
  *   trigger the row itself.
  * @returns {JSX.Element}
@@ -45,20 +25,14 @@ export default function DocumentListItem({
   actions,
 }) {
   const { t } = useTranslation(["generative"]);
-  const [isHovered, setIsHovered] = useState(false);
   const theme = useTheme();
 
-  const DocumentIcon = getDocumentIcon(document.type);
-  const colorMap = { pdf: "primary.main", txt: "primary.main" };
-  const documentColor =
-    colorMap[document.type?.toLowerCase()] || theme.palette.text.disabled;
+  const documentColor = theme.palette.primary.main;
 
   const disabledOverlay = `repeating-linear-gradient(45deg, transparent, transparent 10px, ${theme.palette.action.disabled} 10px, ${theme.palette.action.disabled} 20px)`;
 
   return (
     <Box
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       onClick={disabled ? null : onClick}
       sx={{
         display: "flex",
@@ -133,15 +107,6 @@ export default function DocumentListItem({
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: disabled ? "text.disabled" : "text.secondary",
-              textTransform: "uppercase",
-            }}
-          >
-            {document.type || t("generative:rag.documents.table.unknownType")}
-          </Typography>
           {indexState && (
             <Chip
               size="small"
@@ -181,13 +146,6 @@ export default function DocumentListItem({
             display: "flex",
             alignItems: "center",
             flexShrink: 0,
-            // Kept mounted so the row does not reflow when the mouse arrives,
-            // and faded rather than hidden: `visibility: hidden` would drop
-            // these controls out of the tab order, and with the documents page
-            // gone there is no other way to reach them without a mouse.
-            opacity: isHovered ? 1 : 0,
-            transition: "opacity 0.2s",
-            "&:focus-within": { opacity: 1 },
           }}
         >
           {actions}

@@ -24,7 +24,7 @@ from DashAI.back.dependencies.database.models import (
     Chunk as ChunkDBModel,
 )
 from DashAI.back.dependencies.database.models import (
-    Document,
+    DataDocument,
     GenerativeSession,
     GenerativeSessionParameterHistory,
     RAGChunkSet,
@@ -141,8 +141,10 @@ class IndexStatusService:
         -------
         dict
             ``{status, chunk_set_id, total_chunks, retriever_ready, documents,
-            message}``. ``message`` is a :class:`MultilingualString` the caller
-            is expected to localize.
+            message, needs_reindex}``. ``message`` is a
+            :class:`MultilingualString` the caller is expected to localize;
+            ``needs_reindex`` is True after legacy documents were converted
+            and until the session is indexed again.
 
         Raises
         ------
@@ -161,7 +163,7 @@ class IndexStatusService:
             doc_id for doc_id in parameters.get(RAG_PARAM_DOCUMENTS) or [] if doc_id
         ]
 
-        chunk_set = self._find_chunk_set(document_ids, parameters)
+        chunk_set = self._find_chunk_set(session_id, document_ids, parameters)
         counts = self._chunk_counts(chunk_set.id, document_ids) if chunk_set else {}
         documents = self._describe_documents(document_ids, counts)
         total_chunks = sum(counts.values())
@@ -189,6 +191,7 @@ class IndexStatusService:
             "retriever_ready": retriever_ready,
             "documents": documents,
             "message": _MESSAGES[status],
+            "needs_reindex": bool(session.needs_reindex),
             "job_id": session.index_job_id if job else None,
             "job": {
                 "status": job["status"],
@@ -240,14 +243,38 @@ class IndexStatusService:
         }
 
     def _find_chunk_set(
-        self, document_ids: List[int], parameters: Dict[str, Any]
+        self,
+        session_id: int,
+        document_ids: List[int],
+        parameters: Dict[str, Any],
     ) -> Optional[RAGChunkSet]:
-        """Return the chunk set matching a configuration, without creating it."""
+        """Return the session's chunk set for a configuration, without creating it.
+
+        Parameters
+        ----------
+        session_id : int
+            The session owning the chunk set.
+        document_ids : list of int
+            ``data_document`` ids of the configuration.
+        parameters : dict
+            Session parameters holding the chunking configuration.
+
+        Returns
+        -------
+        RAGChunkSet or None
+            The matching chunk set, if it was ever built.
+        """
         config = self._pipeline_config(parameters)
         if not document_ids or config is None:
             return None
-        signature = self._chunking.build_chunk_set_signature(document_ids, config)
-        return self._db.query(RAGChunkSet).filter_by(signature=signature).first()
+        signature = self._chunking.build_chunk_set_signature(
+            session_id, document_ids, config
+        )
+        return (
+            self._db.query(RAGChunkSet)
+            .filter_by(signature=signature, session_id=session_id)
+            .first()
+        )
 
     def _was_indexed_before(
         self, session_id: int, current_parameters: Dict[str, Any]
@@ -273,7 +300,7 @@ class IndexStatusService:
             document_ids = [
                 doc_id for doc_id in parameters.get(RAG_PARAM_DOCUMENTS) or [] if doc_id
             ]
-            chunk_set = self._find_chunk_set(document_ids, parameters)
+            chunk_set = self._find_chunk_set(session_id, document_ids, parameters)
             if chunk_set and self._chunk_counts(chunk_set.id, document_ids):
                 return True
         return False
@@ -298,14 +325,28 @@ class IndexStatusService:
     def _describe_documents(
         self, document_ids: List[int], counts: Dict[int, int]
     ) -> List[Dict[str, Any]]:
-        """Build the per-document rows the UI renders next to each file."""
+        """Build the per document rows the UI renders next to each document.
+
+        Parameters
+        ----------
+        document_ids : list of int
+            ``data_document`` ids of the session.
+        counts : dict of int to int
+            Chunks per document in the current chunk set.
+
+        Returns
+        -------
+        list of dict
+            ``{document_id, name, file_name, chunks, indexed}`` per document.
+        """
         documents = []
         for document_id in document_ids:
-            record = self._db.get(Document, document_id)
+            record = self._db.get(DataDocument, document_id)
             chunks = counts.get(document_id, 0)
             documents.append(
                 {
                     "document_id": document_id,
+                    "name": record.name if record else None,
                     "file_name": record.file_name if record else None,
                     "chunks": chunks,
                     "indexed": chunks > 0,

@@ -44,15 +44,30 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
     setSelectedChunks([]);
   };
 
-  // Group references by document ID
+  // Group references by document ID. A citation of a document that no longer
+  // exists has no ID, so it is grouped by its document name instead.
   const groupedReferences = referenceEntries.reduce((acc, [key, ref]) => {
-    const docId = ref.document_id;
-    if (!acc[docId]) {
-      acc[docId] = [];
+    const groupKey =
+      ref.document_id != null
+        ? String(ref.document_id)
+        : `name:${ref.document_name ?? key}`;
+    if (!acc[groupKey]) {
+      acc[groupKey] = [];
     }
-    acc[docId].push({ key, ...ref });
+    acc[groupKey].push({ key, ...ref });
     return acc;
   }, {});
+
+  const pagesByDocument = Object.fromEntries(
+    Object.entries(groupedReferences).map(([docId, chunks]) => [
+      docId,
+      [
+        ...new Set(
+          chunks.map((chunk) => chunk.page).filter((page) => page != null),
+        ),
+      ].sort((a, b) => a - b),
+    ]),
+  );
 
   // Get document title - fallback to "Document X" if no title available
   const getDocumentTitle = (docId, chunks) => {
@@ -196,6 +211,19 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
                           <strong>{chunks.length}</strong>{" "}
                           {t("sourcesDisplay.chunk", { count: chunks.length })}
                         </Typography>
+                        {pagesByDocument[docId].length > 0 && (
+                          <Typography
+                            component="span"
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
+                          >
+                            {t("sourcesDisplay.pages", {
+                              count: pagesByDocument[docId].length,
+                              pages: pagesByDocument[docId].join(", "),
+                            })}
+                          </Typography>
+                        )}
                       </Box>
                     </Box>
 
@@ -203,7 +231,12 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
                       size="small"
                       variant="outlined"
                       startIcon={<VisibilityIcon />}
-                      onClick={() => handleOpenDocumentModal(docId, chunks)}
+                      onClick={() =>
+                        handleOpenDocumentModal(
+                          chunks[0].document_id ?? null,
+                          chunks,
+                        )
+                      }
                       sx={{
                         fontSize: "0.75rem",
                         py: 0.5,

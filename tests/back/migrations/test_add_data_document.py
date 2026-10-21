@@ -20,7 +20,7 @@ def test_upgrade_creates_and_downgrade_drops_table(tmp_path):
     assert "data_document" in sa.inspect(engine).get_table_names()
 
     command.downgrade(alembic_cfg, "2f0172d883dc")
-    command.downgrade(alembic_cfg, "a4c9d2e7f1b3@-1")
+    command.downgrade(alembic_cfg, "a7c3e91b5d20")
     command.downgrade(alembic_cfg, "a7c3e91b5d20@-1")
     assert "data_document" not in sa.inspect(engine).get_table_names()
 
@@ -39,7 +39,7 @@ def test_migration_matches_orm_model(tmp_path):
 
 def test_rag_document_table_is_untouched(tmp_path):
     db_path = tmp_path / "test.db"
-    command.upgrade(_config(db_path), "head")
+    command.upgrade(_config(db_path), "a7c3e91b5d20")
     engine = sa.create_engine(f"sqlite:///{db_path}")
 
     columns = {c["name"] for c in sa.inspect(engine).get_columns("document")}

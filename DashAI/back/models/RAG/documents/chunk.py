@@ -19,18 +19,26 @@ class Chunk:
         document_id: int,
         document_position: int,
         text: str,
+        page: Optional[int] = None,
     ):
         """Initialize a Chunk instance.
 
-        Args:
-            id: The database primary key, or None if not yet persisted.
-            document_id: The ID of the parent document.
-            document_position: The 0-based position of this chunk within
-                the document.
-            text: The text content of the chunk.
+        Parameters
+        ----------
+        id : int or None
+            The database primary key, or None if not yet persisted.
+        document_id : int
+            The ``data_document`` id of the parent document.
+        document_position : int
+            The 0 based position of this chunk within the document.
+        text : str
+            The text content of the chunk.
+        page : int, optional
+            Page of the document item the chunk starts in.
         """
         self.id: Optional[int] = id
         self.document_id = document_id
         self.document_position = document_position
         self.text = text
+        self.page = page
         self.hash = hash_function(text)

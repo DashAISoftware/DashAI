@@ -6,33 +6,45 @@
   },
   "documentReferences": {
     "chunkLabel": "Chunk {{position}}",
+    "chunkLabelWithPage": "Chunk {{position}}, page {{page}}",
     "chunksCount_one": "This document provided {{count}} chunk for this response:",
     "chunksCount_other": "This document provided {{count}} chunks for this response:",
     "close": "Close",
-    "fallbackTitle": "Document {{id}}"
+    "fallbackTitle": "Document {{id}}",
+    "openDocument": "Open document"
   },
   "documentsBar": {
-    "addDocuments": "Add documents",
-    "alreadyInSession": "\"{{file}}\" is already in this session",
-    "delete": "Remove from session",
-    "deleteWarning": "Its extracted text and chunks are removed too. The session re-indexes without it on your next message.",
-    "deleted": "Removed \"{{file}}\"",
-    "documentCount_one": "{{count}} document",
-    "documentCount_other": "{{count}} documents",
-    "failedDelete": "Failed to remove the document",
+    "addFromData": "Add from Data",
+    "addFromDataTitle": "Add documents from Data",
+    "addSelected_one": "Add {{count}} document",
+    "addSelected_other": "Add {{count}} documents",
+    "alreadyAttached": "Already in this session",
+    "attached_one": "Added {{count}} document to this session",
+    "attached_other": "Added {{count}} documents to this session",
+    "detach": "Remove from session",
+    "detachWarning": "The document stays in Data. This session reindexes without it.",
+    "detached": "Removed \"{{file}}\" from this session",
+    "failedAttach": "Failed to add the documents",
+    "failedDetach": "Failed to remove the document",
     "failedFetch": "Failed to fetch documents",
-    "failedPreview": "Failed to load the file",
-    "failedUpload": "Failed to upload document(s)",
-    "inCurrentSession": " in current session",
-    "inspect": "Text extraction",
     "noDocumentsFound": "No documents found",
     "noDocumentsInSession": "No documents in this session",
+    "noLibraryDocuments": "There are no documents in Data yet. Upload one to start.",
+    "noParsersFound": "No parsers match your search",
+    "parseFailed": "the file could not be parsed",
+    "parserLabel": "Parser",
+    "preview": "Preview",
+    "processingUpload": "\"{{file}}\" is being processed. It joins this session when it is ready.",
+    "searchParsers": "Search parsers",
     "searchPlaceholder": "Search documents",
-    "successUpload_one": "Successfully uploaded {{count}} document",
-    "successUpload_other": "Successfully uploaded {{count}} documents",
+    "selectParser": "Select a parser to see its parameters",
+    "selectToSeeDetails": "Select a document to see its details",
+    "stillProcessing": "Still being processed",
     "title": "Documents",
-    "uploadDocuments": "Upload your document(s)",
-    "uploadFailedReason": "Could not upload \"{{file}}\": {{reason}}"
+    "upload": "Upload",
+    "uploadFailedReason": "Could not upload \"{{file}}\": {{reason}}",
+    "uploadTitle": "Upload a document to Data",
+    "uploadToData": "Upload new"
   },
   "error": {
     "failedToCreateSession": "Failed to create session",
@@ -163,27 +175,8 @@
       "title": "New RAG session"
     },
     "documentPreview": {
-      "noPreview": "No preview available for this file type.",
-      "pdfPreview": "generative:rag.documentPreview.pdfPreview",
+      "openInData": "Open in Data",
       "title": "Preview Document"
-    },
-    "documents": {
-      "extractorModal": {
-        "close": "Close",
-        "explanation": "There are different ways to process text from a PDF. Each extractor may produce different results depending on the document structure. Try different options and compare the output. Important: RAG only uses text. If your PDF contains images with text (scanned documents, diagrams), that content is ignored: there is no OCR extractor available.",
-        "extractText": "Extract text",
-        "extractedContentLabel": "Extracted text",
-        "extracting": "Extracting text...",
-        "extractorLabel": "Extractor",
-        "noContent": "Select an extractor and the text will appear here.",
-        "rawContentLabel": "Original file",
-        "saveExtractor": "Save extractor",
-        "upToDate": "Up to date"
-      },
-      "table": {
-        "configureExtractor": "Configure extractor",
-        "unknownType": "Unknown"
-      }
     },
     "generator": {
       "advancedButton": "Open advanced configuration",
@@ -259,6 +252,8 @@
     "chunk_one": "chunk",
     "chunk_other": "chunks",
     "fallbackTitle": "sourcesDisplay.fallbackTitle",
+    "pages_one": "page {{pages}}",
+    "pages_other": "pages {{pages}}",
     "provided": "provided",
     "viewChunks": "View chunks",
     "viewSources": "View message sources"

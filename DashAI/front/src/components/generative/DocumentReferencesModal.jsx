@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -16,6 +17,7 @@ import {
   Close as CloseIcon,
   Article as ArticleIcon,
   ContentCopy as CopyIcon,
+  OpenInNew as OpenInNewIcon,
 } from "@mui/icons-material";
 
 /**
@@ -29,12 +31,15 @@ import {
  * @param {object}   props
  * @param {boolean}  props.open - Whether the dialog is visible.
  * @param {Function} props.onClose - Closes the dialog.
- * @param {object}   [props.document] - The document the chunks came from.
+ * @param {object}   [props.document] - The document the chunks came from; its
+ *   id is null when the document no longer exists, which hides the button
+ *   that opens it in Data.
  * @param {Array}    [props.chunks] - The chunks it provided.
  * @returns {JSX.Element|null} The dialog, or nothing without a document.
  */
 const DocumentReferencesModal = ({ open, onClose, document, chunks }) => {
   const { t } = useTranslation(["generative", "common"]);
+  const navigate = useNavigate();
   if (!document || !chunks) return null;
 
   const getDocumentTitle = (docId, docChunks) => {
@@ -133,9 +138,14 @@ const DocumentReferencesModal = ({ open, onClose, document, chunks }) => {
                     }}
                   />
                   <Typography variant="subtitle2">
-                    {t("generative:documentReferences.chunkLabel", {
-                      position: chunk.document_position ?? index + 1,
-                    })}
+                    {chunk.page != null
+                      ? t("generative:documentReferences.chunkLabelWithPage", {
+                          position: chunk.document_position ?? index + 1,
+                          page: chunk.page,
+                        })
+                      : t("generative:documentReferences.chunkLabel", {
+                          position: chunk.document_position ?? index + 1,
+                        })}
                   </Typography>
                 </Stack>
 
@@ -169,6 +179,17 @@ const DocumentReferencesModal = ({ open, onClose, document, chunks }) => {
       </DialogContent>
 
       <DialogActions sx={{ p: 2, bgcolor: "background.paper" }}>
+        {document.id != null && (
+          <Button
+            startIcon={<OpenInNewIcon />}
+            onClick={() => {
+              onClose();
+              navigate(`/app/data/documents/${document.id}`);
+            }}
+          >
+            {t("generative:documentReferences.openDocument")}
+          </Button>
+        )}
         <Button onClick={onClose} variant="outlined">
           {t("generative:documentReferences.close")}
         </Button>

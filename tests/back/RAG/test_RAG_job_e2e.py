@@ -204,7 +204,7 @@ class TestRAGJobMultiDocument:
         suffix_a = f"_multiA_{tag}"
         suffix_b = f"_multiB_{tag}"
         doc_a = _create_test_document(client, suffix=suffix_a)
-        doc_b = _create_test_document(client, suffix=suffix_b)
+        doc_b = _create_test_document(client, suffix=suffix_b, text=DOC_TEXT_2)
         path_a = write_test_doc_file(suffix_a, RAG_E2E_DOC_TEXT)
         path_b = write_test_doc_file(suffix_b, DOC_TEXT_2)
 

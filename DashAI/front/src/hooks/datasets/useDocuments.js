@@ -74,6 +74,16 @@ export function useDocuments({ t }) {
     try {
       await deleteDocument(id);
     } catch (error) {
+      const usedBy = error.response?.data?.detail?.sessions;
+      if (error.response?.status === 409 && Array.isArray(usedBy)) {
+        enqueueSnackbar(
+          t("datasets:error.documentInUse", {
+            sessions: usedBy.map((session) => session.name).join(", "),
+          }),
+          { variant: "warning" },
+        );
+        return false;
+      }
       if (error.response?.status !== 404) {
         const key =
           error.response?.status === 409

@@ -6,36 +6,48 @@
   },
   "documentReferences": {
     "chunkLabel": "Fragmento {{position}}",
+    "chunkLabelWithPage": "Fragmento {{position}}, página {{page}}",
     "chunksCount_many": "Este documento proporcionó {{count}} fragmentos para esta respuesta:",
     "chunksCount_one": "Este documento proporcionó {{count}} fragmento para esta respuesta:",
     "chunksCount_other": "Este documento proporcionó {{count}} fragmentos para esta respuesta:",
     "close": "Cerrar",
-    "fallbackTitle": "Documento {{id}}"
+    "fallbackTitle": "Documento {{id}}",
+    "openDocument": "Abrir documento"
   },
   "documentsBar": {
-    "addDocuments": "Agregar documentos",
-    "alreadyInSession": "\"{{file}}\" ya está en esta sesión",
-    "delete": "Quitar de la sesión",
-    "deleteWarning": "También se eliminan su texto extraído y sus fragmentos. La sesión se reindexará sin él en tu próximo mensaje.",
-    "deleted": "Se quitó \"{{file}}\"",
-    "documentCount_many": "{{count}} documentos",
-    "documentCount_one": "{{count}} documento",
-    "documentCount_other": "{{count}} documentos",
-    "failedDelete": "No se pudo quitar el documento",
+    "addFromData": "Agregar desde Datos",
+    "addFromDataTitle": "Agregar documentos desde Datos",
+    "addSelected_many": "Agregar {{count}} documentos",
+    "addSelected_one": "Agregar {{count}} documento",
+    "addSelected_other": "Agregar {{count}} documentos",
+    "alreadyAttached": "Ya está en esta sesión",
+    "attached_many": "Se agregaron {{count}} documentos a esta sesión",
+    "attached_one": "Se agregó {{count}} documento a esta sesión",
+    "attached_other": "Se agregaron {{count}} documentos a esta sesión",
+    "detach": "Quitar de la sesión",
+    "detachWarning": "El documento sigue en Datos. Esta sesión se reindexa sin él.",
+    "detached": "Se quitó \"{{file}}\" de esta sesión",
+    "failedAttach": "No se pudieron agregar los documentos",
+    "failedDetach": "No se pudo quitar el documento",
     "failedFetch": "Error al obtener documentos",
-    "failedPreview": "No se pudo cargar el archivo",
-    "failedUpload": "Error al subir documento(s)",
-    "inCurrentSession": " en la sesión actual",
-    "inspect": "Extracción de texto",
     "noDocumentsFound": "No se encontraron documentos",
     "noDocumentsInSession": "No hay documentos en esta sesión",
+    "noLibraryDocuments": "Todavía no hay documentos en Datos. Sube uno para empezar.",
+    "noParsersFound": "Ningún procesador coincide con tu búsqueda",
+    "parseFailed": "no se pudo procesar el archivo",
+    "parserLabel": "Procesador",
+    "preview": "Vista previa",
+    "processingUpload": "\"{{file}}\" se está procesando. Se agrega a esta sesión cuando esté listo.",
+    "searchParsers": "Buscar procesadores",
     "searchPlaceholder": "Buscar documentos",
-    "successUpload_many": "{{count}} documentos subidos exitosamente",
-    "successUpload_one": "{{count}} documento subido exitosamente",
-    "successUpload_other": "{{count}} documentos subidos exitosamente",
+    "selectParser": "Selecciona un procesador para ver sus parámetros",
+    "selectToSeeDetails": "Selecciona un documento para ver sus detalles",
+    "stillProcessing": "Aún se está procesando",
     "title": "Documentos",
-    "uploadDocuments": "Sube tu(s) documento(s)",
-    "uploadFailedReason": "No se pudo subir \"{{file}}\": {{reason}}"
+    "upload": "Subir",
+    "uploadFailedReason": "No se pudo subir \"{{file}}\": {{reason}}",
+    "uploadTitle": "Subir un documento a Datos",
+    "uploadToData": "Subir nuevo"
   },
   "error": {
     "failedToCreateSession": "Error al crear la sesión",
@@ -167,27 +179,8 @@
       "title": "Nueva sesión RAG"
     },
     "documentPreview": {
-      "noPreview": "No hay vista previa disponible para este tipo de archivo.",
-      "pdfPreview": "Vista previa de PDF no disponible.",
+      "openInData": "Abrir en Datos",
       "title": "Vista previa del documento"
-    },
-    "documents": {
-      "extractorModal": {
-        "close": "Cerrar",
-        "explanation": "Existen distintas formas de procesar el texto de un PDF. Cada extractor puede producir resultados diferentes según la estructura del documento. Prueba distintas opciones y compara el resultado. Importante: RAG solo utiliza texto. Si tu PDF contiene imágenes con texto (documentos escaneados, diagramas), ese contenido se ignora: no hay ningún extractor con OCR disponible.",
-        "extractText": "Extraer texto",
-        "extractedContentLabel": "Texto extraído",
-        "extracting": "Extrayendo texto...",
-        "extractorLabel": "Extractor",
-        "noContent": "Selecciona un extractor y el texto aparecerá aquí.",
-        "rawContentLabel": "Archivo original",
-        "saveExtractor": "Guardar extractor",
-        "upToDate": "Listo"
-      },
-      "table": {
-        "configureExtractor": "Configurar extractor",
-        "unknownType": "Desconocido"
-      }
     },
     "generator": {
       "advancedButton": "Abrir configuración avanzada",
@@ -264,6 +257,9 @@
     "chunk_one": "fragmento",
     "chunk_other": "fragmentos",
     "fallbackTitle": "Fuente {{id}}",
+    "pages_many": "páginas {{pages}}",
+    "pages_one": "página {{pages}}",
+    "pages_other": "páginas {{pages}}",
     "provided": "proporcionó",
     "viewChunks": "Ver fragmentos",
     "viewSources": "Ver fuentes del mensaje"

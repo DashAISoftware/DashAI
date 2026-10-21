@@ -6,33 +6,45 @@
   },
   "documentReferences": {
     "chunkLabel": "第 {{position}} 块",
+    "chunkLabelWithPage": "块 {{position}}，第 {{page}} 页",
     "chunksCount_one": "此文档为此回复提供了 {{count}} 个块：",
     "chunksCount_other": "此文档为此回复提供了 {{count}} 个块：",
     "close": "关闭",
-    "fallbackTitle": "文档 {{id}}"
+    "fallbackTitle": "文档 {{id}}",
+    "openDocument": "打开文档"
   },
   "documentsBar": {
-    "addDocuments": "添加文档",
-    "alreadyInSession": "“{{file}}”已在此会话中",
-    "delete": "从会话中移除",
-    "deleteWarning": "其提取的文本和分块也会一并删除。会话将在你的下一条消息时重新建立索引。",
-    "deleted": "已移除“{{file}}”",
-    "documentCount_one": "{{count}} 个文档",
-    "documentCount_other": "{{count}} 个文档",
-    "failedDelete": "无法移除该文档",
+    "addFromData": "从数据中添加",
+    "addFromDataTitle": "从数据中添加文档",
+    "addSelected_one": "添加 {{count}} 个文档",
+    "addSelected_other": "添加 {{count}} 个文档",
+    "alreadyAttached": "已在此会话中",
+    "attached_one": "已向此会话添加 {{count}} 个文档",
+    "attached_other": "已向此会话添加 {{count}} 个文档",
+    "detach": "从会话中移除",
+    "detachWarning": "文档仍保留在数据中。此会话将在没有它的情况下重新建立索引。",
+    "detached": "已从此会话中移除“{{file}}”",
+    "failedAttach": "无法添加文档",
+    "failedDetach": "无法移除文档",
     "failedFetch": "获取文档失败",
-    "failedPreview": "无法加载该文件",
-    "failedUpload": "上传文档失败",
-    "inCurrentSession": " 在当前会话中",
-    "inspect": "文本提取",
     "noDocumentsFound": "未找到文档",
     "noDocumentsInSession": "此会话中没有文档",
+    "noLibraryDocuments": "数据中还没有文档。请先上传一个。",
+    "noParsersFound": "没有与搜索匹配的解析器",
+    "parseFailed": "无法解析该文件",
+    "parserLabel": "解析器",
+    "preview": "预览",
+    "processingUpload": "“{{file}}”正在处理中，准备就绪后将加入此会话。",
+    "searchParsers": "搜索解析器",
     "searchPlaceholder": "搜索文档",
-    "successUpload_one": "成功上传 {{count}} 个文档",
-    "successUpload_other": "成功上传 {{count}} 个文档",
+    "selectParser": "选择一个解析器以查看其参数",
+    "selectToSeeDetails": "选择一个文档以查看其详细信息",
+    "stillProcessing": "仍在处理中",
     "title": "文档",
-    "uploadDocuments": "上传您的文档",
-    "uploadFailedReason": "无法上传“{{file}}”：{{reason}}"
+    "upload": "上传",
+    "uploadFailedReason": "无法上传“{{file}}”：{{reason}}",
+    "uploadTitle": "上传文档到数据",
+    "uploadToData": "上传新文档"
   },
   "error": {
     "failedToCreateSession": "创建会话失败",
@@ -162,27 +174,8 @@
       "title": "新建 RAG 会话"
     },
     "documentPreview": {
-      "noPreview": "此文件类型没有可用的预览。",
-      "pdfPreview": "PDF 预览不可用。",
+      "openInData": "在数据中打开",
       "title": "文档预览"
-    },
-    "documents": {
-      "extractorModal": {
-        "close": "关闭",
-        "explanation": "处理PDF文本有多种方式。每个提取器可能根据文档结构产生不同的结果。尝试不同选项并比较输出结果。重要提示：RAG仅使用文本。如果您的PDF包含带有文字的图像（扫描文档、图表），这些内容将被忽略：目前没有可用的OCR提取器。",
-        "extractText": "提取文本",
-        "extractedContentLabel": "提取的文本",
-        "extracting": "正在提取文本...",
-        "extractorLabel": "提取器",
-        "noContent": "选择一个提取器，文本将显示在此处。",
-        "rawContentLabel": "原始文件",
-        "saveExtractor": "保存提取器",
-        "upToDate": "已就绪"
-      },
-      "table": {
-        "configureExtractor": "配置提取器",
-        "unknownType": "未知"
-      }
     },
     "generator": {
       "advancedButton": "打开高级配置",
@@ -257,6 +250,8 @@
     "chunk_one": "个块",
     "chunk_other": "个块",
     "fallbackTitle": "来源 {{id}}",
+    "pages_one": "第 {{pages}} 页",
+    "pages_other": "第 {{pages}} 页",
     "provided": "提供了",
     "viewChunks": "查看块",
     "viewSources": "查看消息来源"

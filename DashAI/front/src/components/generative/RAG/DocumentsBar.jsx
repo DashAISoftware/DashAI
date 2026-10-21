@@ -4,70 +4,41 @@ import { useTranslation } from "react-i18next";
 import {
   Box,
   Button,
-  Dialog,
   IconButton,
+  Stack,
   Tooltip,
   Typography,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/AddCircleOutline";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import TuneIcon from "@mui/icons-material/Tune";
+import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import DescriptionIcon from "@mui/icons-material/Description";
+import { useTheme } from "@mui/material/styles";
 import { useSnackbar } from "notistack";
 import SearchBar from "../../threeSectionLayout/SearchBar";
 import DeleteConfirmationModal from "../../threeSectionLayout/DeleteConfirmationModal";
-import Upload from "../../shared/Upload";
 import DocumentList from "./DocumentList";
 import DocumentPreviewModal from "./DocumentPreviewModal";
-import DocumentInspectorModal from "./DocumentInspectorModal";
+import AddFromDataDialog from "./AddFromDataDialog";
+import RAGDocumentUpload from "./RAGDocumentUpload";
 import { getApiErrorMessage } from "../../../utils/apiError";
-import { normalizeUrl } from "../../../utils/urlUtils";
 import {
-  addDocument,
-  deleteDocument,
-  getSessionDocuments,
+  attachSessionDocuments,
+  detachSessionDocument,
+  listSessionDocuments,
 } from "../../../api/rag";
 
-/**
- * Shapes a document response for the list rows.
- * @param {object} doc - A document as returned by the API.
- * @returns {object} The row model.
- */
 function toRow(doc) {
   return {
     id: doc.id,
-    name: doc.file_name,
-    type: doc.file_type,
-    uploadedAt: doc.created,
-    file_name: doc.file_name,
-    file_type: doc.file_type,
-    preview: doc.preview_url,
+    name: doc.name,
+    status: doc.status,
+    totalPages: doc.total_pages,
     created: doc.created,
-    optional_metadata: doc.optional_metadata,
-    // Carried so the inspector opens on the document's own extractor rather
-    // than having to fetch it again.
-    extractor: doc.extractor,
-    default_extractor: doc.default_extractor,
   };
 }
 
-/**
- * The documents of one RAG session: add, inspect, and remove them.
- *
- * Everything the old standalone documents page could do lives here, because a
- * document now belongs to exactly one session and there is nowhere else to
- * manage it from. Reading the extracted text and choosing an extractor happen
- * in a modal: the panel is too narrow to read a document in, and the centre
- * column is deliberately reserved for the conversation.
- *
- * @param {object}   props
- * @param {number}   props.sessionId - The session whose documents these are.
- * @param {object}   [props.indexStatus] - Index state, used to badge each row
- *   with its chunk count.
- * @param {Function} [props.onDocumentChange] - Called after the set of
- *   documents changes, so the caller can re-poll the index status.
- * @param {boolean}  [props.showSearch=true] - Whether to show the search bar.
- * @returns {JSX.Element} The documents panel.
- */
 export default function DocumentsBar({
   sessionId,
   indexStatus,
@@ -76,18 +47,15 @@ export default function DocumentsBar({
 }) {
   const { t } = useTranslation("generative");
   const { enqueueSnackbar } = useSnackbar();
+  const theme = useTheme();
 
   const [documents, setDocuments] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
-  const [previewText, setPreviewText] = useState("");
-  const [inspectDoc, setInspectDoc] = useState(null);
-  const [pendingDelete, setPendingDelete] = useState(null);
+  const [pendingDetach, setPendingDetach] = useState(null);
 
-  // Per-document chunk counts, so each row can say whether it is indexed.
-  // Indexing is a property of the session, not of one file, so every row shows
-  // it while a run is in flight.
   const indexStateByDocument = useMemo(() => {
     const indexing = indexStatus?.status === "indexing";
     const map = {};
@@ -100,7 +68,7 @@ export default function DocumentsBar({
   const fetchDocuments = useCallback(async () => {
     if (!sessionId) return;
     try {
-      const data = await getSessionDocuments(sessionId);
+      const data = await listSessionDocuments(sessionId);
       setDocuments(data.map(toRow));
     } catch (error) {
       console.error("Failed to fetch documents:", error);
@@ -112,102 +80,57 @@ export default function DocumentsBar({
     fetchDocuments();
   }, [fetchDocuments]);
 
+  const attachedIds = useMemo(
+    () => new Set(documents.map((doc) => doc.id)),
+    [documents],
+  );
+
   const filteredDocuments = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return documents;
     return documents.filter((doc) => doc.name.toLowerCase().includes(query));
   }, [documents, searchQuery]);
 
-  /**
-   * Uploads the selected files into this session.
-   * @param {File|File[]} files - File(s) to upload.
-   * @param {string} [url] - Optional source URL.
-   */
-  const handleFileUpload = async (files, url) => {
-    if (!files) return;
-    const fileList = Array.isArray(files) ? files : [files];
-    let uploaded = 0;
-
-    for (const file of fileList) {
+  const handleAttach = useCallback(
+    async (documentIds) => {
+      if (documentIds.length === 0) return;
       try {
-        const result = await addDocument({
-          sessionId,
-          file,
-          optional_metadata: { name: file.name, source: url || "local_upload" },
-        });
-        if (result.duplicate) {
-          // The session already holds these exact bytes, so there is nothing
-          // to do and nothing to confirm.
-          enqueueSnackbar(
-            t("documentsBar.alreadyInSession", { file: file.name }),
-            { variant: "info" },
-          );
-          continue;
-        }
-        setDocuments((previous) => [toRow(result.document), ...previous]);
-        uploaded += 1;
-      } catch (error) {
-        // Tell the user which file failed and why, then keep going with the
-        // rest of the selection.
-        console.error("Upload failed:", error);
+        const data = await attachSessionDocuments(sessionId, documentIds);
+        setDocuments(data.map(toRow));
         enqueueSnackbar(
-          t("documentsBar.uploadFailedReason", {
-            file: file.name,
-            reason: getApiErrorMessage(error, t("documentsBar.failedUpload")),
-          }),
+          t("documentsBar.attached", { count: documentIds.length }),
+          { variant: "success" },
+        );
+        onDocumentChange?.();
+      } catch (error) {
+        console.error("Failed to attach documents:", error);
+        enqueueSnackbar(
+          getApiErrorMessage(error, t("documentsBar.failedAttach")),
           { variant: "error" },
         );
       }
-    }
+    },
+    [sessionId, enqueueSnackbar, t, onDocumentChange],
+  );
 
-    if (uploaded > 0) {
-      enqueueSnackbar(t("documentsBar.successUpload", { count: uploaded }), {
-        variant: "success",
-      });
-      onDocumentChange?.();
-    }
-    setUploadOpen(false);
-  };
-
-  /** Opens the plain preview, fetching the text for a txt document. */
-  const handlePreview = async (doc) => {
-    setPreviewText("");
-    setPreviewDoc(doc);
-    if (doc.file_type === "txt" && doc.preview) {
-      try {
-        const response = await fetch(normalizeUrl(doc.preview));
-        setPreviewText(await response.text());
-      } catch (error) {
-        console.error("Error loading TXT:", error);
-        setPreviewText(t("documentsBar.failedPreview"));
-      }
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    const doc = pendingDelete;
-    setPendingDelete(null);
+  const handleConfirmDetach = async () => {
+    const doc = pendingDetach;
+    setPendingDetach(null);
     if (!doc) return;
     try {
-      await deleteDocument(doc.id);
+      await detachSessionDocument(sessionId, doc.id);
       setDocuments((previous) => previous.filter((row) => row.id !== doc.id));
-      enqueueSnackbar(t("documentsBar.deleted", { file: doc.name }), {
+      enqueueSnackbar(t("documentsBar.detached", { file: doc.name }), {
         variant: "success",
       });
       onDocumentChange?.();
     } catch (error) {
-      console.error("Failed to delete document:", error);
+      console.error("Failed to detach document:", error);
       enqueueSnackbar(
-        getApiErrorMessage(error, t("documentsBar.failedDelete")),
+        getApiErrorMessage(error, t("documentsBar.failedDetach")),
         { variant: "error" },
       );
     }
-  };
-
-  /** Re-reads the list after an extractor change, and re-polls the index. */
-  const handleExtractorChanged = async () => {
-    await fetchDocuments();
-    onDocumentChange?.();
   };
 
   return (
@@ -222,38 +145,68 @@ export default function DocumentsBar({
         maxWidth: "100%",
       }}
     >
-      <Box sx={{ p: 2, flexShrink: 0 }}>
-        <Typography variant="h6">{t("documentsBar.title")}</Typography>
-        <Typography variant="caption" sx={{ color: "text.secondary", mt: 1 }}>
-          {t("documentsBar.documentCount", {
-            count: filteredDocuments.length,
-          })}
-          {t("documentsBar.inCurrentSession")}
-        </Typography>
-      </Box>
-
-      <Box sx={{ flexShrink: 0, px: 2, pb: 2 }}>
-        <Button
-          variant="contained"
-          fullWidth
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={() => setUploadOpen(true)}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          flexShrink: 0,
+          py: 2,
+          px: 4,
+          mx: 4,
+          mt: 4,
+          mb: 2,
+        }}
+      >
+        <DescriptionIcon
+          sx={{ color: theme.palette.primary.main, mr: 4, fontSize: 20 }}
+        />
+        <Typography
+          noWrap
+          color="text.primary"
+          sx={{ ...theme.typography.h5, flex: 1 }}
         >
-          {t("documentsBar.addDocuments")}
-        </Button>
-      </Box>
-
-      {showSearch && documents.length > 1 && (
-        <Box
+          {t("documentsBar.title")}
+        </Typography>
+        <Typography
+          variant="body2"
+          component="div"
           sx={{
-            px: 2,
-            pb: 2,
-            borderBottom: 1,
-            borderColor: "divider",
-            flexShrink: 0,
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
+            borderRadius: "50%",
+            width: 20,
+            height: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
+          {documents.length}
+        </Typography>
+        <Stack direction="row" spacing={0.5} sx={{ ml: 2 }}>
+          <Tooltip title={t("documentsBar.addFromData")}>
+            <IconButton
+              size="small"
+              onClick={() => setPickerOpen(true)}
+              aria-label={t("documentsBar.addFromData")}
+            >
+              <LibraryAddIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={t("documentsBar.uploadToData")}>
+            <IconButton
+              size="small"
+              onClick={() => setUploadOpen(true)}
+              aria-label={t("documentsBar.uploadToData")}
+            >
+              <UploadFileIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      </Box>
+
+      {/* {showSearch && documents.length > 1 && (
+        <Box sx={{ px: 4, pb: 2, flexShrink: 0 }}>
           <SearchBar
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
@@ -261,7 +214,7 @@ export default function DocumentsBar({
             placeholder={t("documentsBar.searchPlaceholder")}
           />
         </Box>
-      )}
+      )} */}
 
       <Box
         sx={{
@@ -269,7 +222,8 @@ export default function DocumentsBar({
           minHeight: 0,
           overflowY: "auto",
           overflowX: "hidden",
-          p: 2,
+          px: 4,
+          pb: 2,
           width: "100%",
           minWidth: 0,
         }}
@@ -278,25 +232,16 @@ export default function DocumentsBar({
           <DocumentList
             documents={filteredDocuments}
             indexStateByDocument={indexStateByDocument}
-            onDocumentClick={handlePreview}
+            onDocumentClick={setPreviewDoc}
             renderActions={(doc) => (
               <>
-                <Tooltip title={t("documentsBar.inspect")}>
+                <Tooltip title={t("documentsBar.detach")}>
                   <IconButton
                     size="small"
-                    onClick={() => setInspectDoc(doc)}
-                    aria-label={t("documentsBar.inspect")}
+                    onClick={() => setPendingDetach(doc)}
+                    aria-label={t("documentsBar.detach")}
                   >
-                    <TuneIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title={t("documentsBar.delete")}>
-                  <IconButton
-                    size="small"
-                    onClick={() => setPendingDelete(doc)}
-                    aria-label={t("documentsBar.delete")}
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
+                    <DeleteIcon fontSize="small" color="error" />
                   </IconButton>
                 </Tooltip>
               </>
@@ -306,8 +251,10 @@ export default function DocumentsBar({
           <Box
             sx={{
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              gap: 1,
               height: "100%",
               p: 2,
             }}
@@ -320,64 +267,60 @@ export default function DocumentsBar({
                 ? t("documentsBar.noDocumentsFound")
                 : t("documentsBar.noDocumentsInSession")}
             </Typography>
+            {!searchQuery && (
+              <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{ flexWrap: "wrap", justifyContent: "center" }}
+              >
+                <Button
+                  size="small"
+                  startIcon={<LibraryAddIcon fontSize="small" />}
+                  onClick={() => setPickerOpen(true)}
+                >
+                  {t("documentsBar.addFromData")}
+                </Button>
+                <Button
+                  size="small"
+                  startIcon={<UploadFileIcon fontSize="small" />}
+                  onClick={() => setUploadOpen(true)}
+                >
+                  {t("documentsBar.uploadToData")}
+                </Button>
+              </Stack>
+            )}
           </Box>
         )}
       </Box>
 
-      <Dialog
+      {pickerOpen && (
+        <AddFromDataDialog
+          open
+          onClose={() => setPickerOpen(false)}
+          attachedIds={attachedIds}
+          onConfirm={handleAttach}
+        />
+      )}
+
+      <RAGDocumentUpload
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            maxHeight: "80vh",
-            minHeight: "300px",
-            display: "flex",
-            flexDirection: "column",
-          },
-        }}
-      >
-        <Box
-          sx={{
-            flex: 1,
-            overflow: "auto",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Upload
-            onFileUpload={handleFileUpload}
-            multiple
-            emptyUploadText={t("documentsBar.uploadDocuments")}
-            sx={{ flex: 1 }}
-          />
-        </Box>
-      </Dialog>
+        onReady={handleAttach}
+      />
 
       <DocumentPreviewModal
         open={previewDoc !== null}
-        onClose={() => {
-          setPreviewDoc(null);
-          setPreviewText("");
-        }}
+        onClose={() => setPreviewDoc(null)}
         document={previewDoc}
-        txtContent={previewText}
-      />
-
-      <DocumentInspectorModal
-        open={inspectDoc !== null}
-        onClose={() => setInspectDoc(null)}
-        document={inspectDoc}
-        onExtractorChanged={handleExtractorChanged}
       />
 
       <DeleteConfirmationModal
-        open={pendingDelete !== null}
-        onClose={() => setPendingDelete(null)}
-        onConfirm={handleConfirmDelete}
-        content={pendingDelete?.name}
-        warning={t("documentsBar.deleteWarning")}
+        open={pendingDetach !== null}
+        onClose={() => setPendingDetach(null)}
+        onConfirm={handleConfirmDetach}
+        content={pendingDetach?.name}
+        warning={t("documentsBar.detachWarning")}
       />
     </Box>
   );
