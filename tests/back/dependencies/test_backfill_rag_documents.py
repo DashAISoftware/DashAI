@@ -150,7 +150,13 @@ def _session(db, name, documents) -> int:
 
 
 def _stage(
-    db, legacy_id, session_id, file_path, component="PlainTextExtractor", params=None
+    db,
+    legacy_id,
+    session_id,
+    file_path,
+    component="PlainTextExtractor",
+    params=None,
+    file_hash="h1",
 ):
     """Insert a staged legacy document.
 
@@ -168,6 +174,8 @@ def _stage(
         Extractor component the row was parsed with.
     params : dict, optional
         Extractor parameters.
+    file_hash : str
+        Hash of the legacy file; rows sharing it share one Data document.
     """
     db.add(
         RAGLegacyDocument(
@@ -176,7 +184,7 @@ def _stage(
             file_name="notes.txt",
             file_type="txt",
             file_path=file_path,
-            file_hash="h1",
+            file_hash=file_hash,
             extractor_component=component,
             extractor_params=params or {},
         )
@@ -283,6 +291,45 @@ def test_chat_citations_follow_the_new_ids(factory, documents_root):
         document = db.query(DataDocument).one()
         stored = db.query(ProcessData).filter_by(data_type="Dict").one()
         assert json.loads(stored.data)["5_0"]["document_id"] == document.id
+
+
+@pytest.mark.parametrize("converts", [True, False])
+def test_a_citation_without_a_converted_document_loses_its_id(
+    factory, documents_root, converts
+):
+    with factory() as db:
+        session_id = _session(db, "legacy_failed", [5, 6])
+        if converts:
+            _stage(db, 5, session_id, _blob(documents_root, "h1", "cited text"))
+        _stage(
+            db, 6, session_id, str(documents_root / "blobs" / "gone"), file_hash="h2"
+        )
+        process = GenerativeProcess(session_id=session_id)
+        db.add(process)
+        db.flush()
+        references = {
+            f"{legacy_id}_0": {"document_id": legacy_id, "text": "c"}
+            for legacy_id in (5, 6)
+        }
+        db.add(
+            ProcessData(
+                process_id=process.id,
+                data=json.dumps(references),
+                data_type="Dict",
+                is_input=False,
+            )
+        )
+        db.commit()
+
+    backfill_rag_documents(factory, REGISTRY, documents_root)
+
+    with factory() as db:
+        stored = json.loads(
+            db.query(ProcessData).filter_by(data_type="Dict").one().data
+        )
+        expected = db.query(DataDocument).one().id if converts else None
+        assert stored["5_0"]["document_id"] == expected
+        assert stored["6_0"]["document_id"] is None
 
 
 def test_unowned_chunk_sets_are_removed(factory, documents_root):

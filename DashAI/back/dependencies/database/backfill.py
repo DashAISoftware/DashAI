@@ -285,8 +285,7 @@ def _convert_session_rows(
         session.needs_reindex = True
         session.index_job_id = None
         SessionDocumentService(db).sync_session_documents(session)
-        if id_map:
-            _remap_chat_references(db, session.id, id_map)
+        _remap_chat_references(db, session.id, id_map)
 
     paths = [legacy.file_path for legacy in converted]
     for legacy in converted:
@@ -524,7 +523,9 @@ def _remap_chat_references(
     """Point a session's stored chat citations at the new document ids.
 
     All ids of the session are mapped at once, so a new id that equals another
-    legacy id is never mapped twice.
+    legacy id is never mapped twice. A legacy id with no new id, because its
+    file could not be converted, becomes None, so it never names an unrelated
+    ``data_document`` that happens to take that id.
 
     Parameters
     ----------
@@ -558,8 +559,11 @@ def _remap_chat_references(
             continue
         changed = False
         for reference in references.values():
-            if isinstance(reference, dict) and reference.get("document_id") in id_map:
-                reference["document_id"] = id_map[reference["document_id"]]
+            if not isinstance(reference, dict):
+                continue
+            legacy_id = reference.get("document_id")
+            if legacy_id is not None:
+                reference["document_id"] = id_map.get(legacy_id)
                 changed = True
         if changed:
             row.data = json.dumps(references, ensure_ascii=False)

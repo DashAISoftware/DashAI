@@ -156,3 +156,83 @@ def test_staging_migration_keeps_legacy_documents(tmp_path):
     assert tuple(restored) == (5, 1, "PdfPlumberExtractor")
     assert "rag_legacy_document" not in sa.inspect(engine).get_table_names()
     engine.dispose()
+
+
+def test_staging_migration_scopes_citations_to_their_session(tmp_path):
+    db_path = tmp_path / "citations.db"
+    cfg = _config(db_path)
+    engine = sa.create_engine(f"sqlite:///{db_path}")
+    command.upgrade(cfg, LINK_REVISION)
+    with engine.begin() as conn:
+        for session_id in (1, 2):
+            conn.execute(
+                sa.text(
+                    "INSERT INTO generative_session (id, created, last_modified, "
+                    "task_name, model_name, parameters, name, needs_reindex) "
+                    "VALUES (:id, '2026-01-01', '2026-01-01', 'RAGTask', "
+                    "'RAGPipeline', '{}', :name, 0)"
+                ),
+                {"id": session_id, "name": f"s{session_id}"},
+            )
+        conn.execute(
+            sa.text(
+                "INSERT INTO rag_extractor (id, component_name, params) VALUES "
+                "(1, 'PlainTextExtractor', '{}')"
+            )
+        )
+        # Document 5 is the original that k4l5m6n7o8p9 kept in session 1 and
+        # 7 its clone in session 2; 8 exists only in session 2.
+        for document_id, session_id, file_hash in (
+            (5, 1, "h"),
+            (7, 2, "h"),
+            (8, 2, "k"),
+        ):
+            conn.execute(
+                sa.text(
+                    "INSERT INTO document (id, session_id, file_name, file_type, "
+                    "file_path, file_hash, optional_metadata, extractor_id, "
+                    "created, last_modified) VALUES (:id, :session_id, 'a.txt', "
+                    "'txt', '/blobs/x', :file_hash, NULL, 1, '2026-01-01', "
+                    "'2026-01-01')"
+                ),
+                {"id": document_id, "session_id": session_id, "file_hash": file_hash},
+            )
+        # Document 6 was deleted after it was cited.
+        for process_id, session_id, cited in ((1, 1, (5, 6, 8)), (2, 2, (5, 7))):
+            conn.execute(
+                sa.text(
+                    "INSERT INTO generative_process (id, created, last_modified, "
+                    "session_id, status) VALUES (:id, '2026-01-01', '2026-01-01', "
+                    ":session_id, 'FINISHED')"
+                ),
+                {"id": process_id, "session_id": session_id},
+            )
+            references = {
+                f"{document_id}_0": {"document_id": document_id, "text": "c"}
+                for document_id in cited
+            }
+            conn.execute(
+                sa.text(
+                    "INSERT INTO process_data (data, data_type, process_id, "
+                    "is_input) VALUES (:data, 'Dict', :process_id, 0)"
+                ),
+                {"data": json.dumps(references), "process_id": process_id},
+            )
+
+    command.upgrade(cfg, STAGING_REVISION)
+    with engine.connect() as conn:
+        stored = {
+            row.process_id: json.loads(row.data)
+            for row in conn.execute(
+                sa.text("SELECT process_id, data FROM process_data")
+            )
+        }
+    cited = {
+        process_id: {key: ref["document_id"] for key, ref in references.items()}
+        for process_id, references in stored.items()
+    }
+    assert cited == {
+        1: {"5_0": 5, "6_0": None, "8_0": None},
+        2: {"5_0": 7, "7_0": 7},
+    }
+    engine.dispose()
