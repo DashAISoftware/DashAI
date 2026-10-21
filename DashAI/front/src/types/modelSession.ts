@@ -86,3 +86,31 @@ export interface IModelSession {
   preprocessing_error?: string | null;
   preprocessing_job_id?: string | null;
 }
+
+export interface IExportPreviewRun {
+  id: number;
+  name: string;
+  status: string;
+  goal_metric: string;
+  goal_metric_value: number | null;
+  in_progress: boolean;
+  with_model: boolean;
+  missing_model_file: boolean;
+}
+
+export interface IExportPreview {
+  session_name: string;
+  dataset_name: string;
+  runs: IExportPreviewRun[];
+  size_bytes: { with_models: number; recipe_only: number };
+}
+
+export interface ISessionImportResult {
+  session_id: number;
+  dataset_id: number;
+  session_name: string;
+  dataset_name: string;
+  renamed: { session: boolean; dataset: boolean };
+  warnings: string[];
+  recipe_runs: string[];
+}

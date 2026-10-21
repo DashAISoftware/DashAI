@@ -7,6 +7,7 @@ from DashAI.back.model_package.manifest import (
     FORMAT_VERSION,
     MissingPluginError,
     UnsupportedPackageFormatError,
+    WrongPackageKindError,
     check_manifest,
     current_versions,
     plugin_distributions,
@@ -50,3 +51,16 @@ def test_a_class_from_another_distribution_is_reported_with_its_version():
     found = plugin_distributions([SklearnLinearRegression])
     assert [p["name"] for p in found] == ["scikit-learn"]
     assert found[0]["version"]
+
+
+def test_a_manifest_of_another_kind_is_refused():
+    with pytest.raises(WrongPackageKindError, match="session"):
+        check_manifest(_manifest(kind="session"))
+
+
+def test_a_manifest_without_kind_is_read_as_a_model():
+    check_manifest(_manifest())
+
+
+def test_the_expected_kind_and_format_can_be_chosen():
+    check_manifest(_manifest(kind="session", format_version=3), "session", 3)

@@ -26,7 +26,12 @@
     "saveAndRunModel": "Save and Run Model",
     "showOperations": "Show Operations",
     "showParameters": "Show Parameters",
-    "updateAndRetrain": "Update & Retrain"
+    "updateAndRetrain": "Update & Retrain",
+    "exportSession": "Export session",
+    "importSession": "Import session",
+    "selectAll": "Select all",
+    "selectNone": "None",
+    "chooseFile": "Choose file"
   },
   "error": {
     "exportModel": "Could not export the model",
@@ -70,7 +75,10 @@
     "failedToLoadTests": "Could not load saved tests.",
     "failedToDeleteTest": "Could not delete the test.",
     "failedToSaveTest": "Failed to save the test results.",
-    "fetchingInnerSplitters": "Failed to load inner splitters for nested cross validaiton"
+    "fetchingInnerSplitters": "Failed to load inner splitters for nested cross validaiton",
+    "exportSession": "Could not export the session",
+    "importSession": "Could not import the session",
+    "loadExportPreview": "Could not load the session runs"
   },
   "label": {
     "addModelToSession": "Add Model to Session",
@@ -298,7 +306,17 @@
     "last": "Final",
     "supervisedBadge": "Supervised",
     "unsupervisedBadge": "Unsupervised",
-    "reports": "Reports"
+    "reports": "Reports",
+    "exportSessionTitle": "Export \"{{name}}\"",
+    "includeTrainedModels": "Include trained models",
+    "includeTrainedModelsHelp": "Uncheck it to export only the configuration, without trained models: the file is smaller, and whoever imports it has to train the models.",
+    "recipeOnly": "will arrive untrained",
+    "waitUntilFinished": "wait until it finishes",
+    "approxSize": "Approximate size: {{size}}",
+    "includesDataset": "The file includes the dataset \"{{name}}\". Do not share it if the data is private.",
+    "importSessionWarning": "A session contains models that run code when they are used. Import only sessions from people you trust.",
+    "sessionImported": "Session imported as \"{{session}}\" with the dataset \"{{dataset}}\"",
+    "importedRecipeRuns": "These runs arrived untrained: {{names}}"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} has completed all its runs.",

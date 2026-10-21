@@ -1,7 +1,7 @@
 import logging
 from typing import TYPE_CHECKING, Union
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from fastapi.exceptions import HTTPException
 from kink import di, inject
 from pydantic import ValidationError
@@ -12,6 +12,7 @@ from DashAI.back.api.api_v1.schemas.model_sessions_params import (
     ModelSessionBulkDeleteParams,
     ModelSessionParams,
     PreprocessingStructureParams,
+    SessionExportParams,
 )
 from DashAI.back.api.utils import remove_path
 from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
@@ -926,3 +927,155 @@ async def update_model_session(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Internal database error",
             ) from e
+
+
+@router.post("/import", status_code=status.HTTP_201_CREATED)
+@inject
+async def import_model_session(
+    file: UploadFile = File(...),
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+    config=Depends(lambda: di["config"]),
+    job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
+):
+    """Create a new session, its dataset and runs from an uploaded ``.dashai``.
+
+    Raises
+    ------
+    HTTPException
+        400 if the file is not a usable DashAI session, 409 if it needs a
+        newer DashAI or a missing plugin, 500 on any other failure.
+    """
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    from fastapi.concurrency import run_in_threadpool
+
+    from DashAI.back.model_package.manifest import (
+        MissingPluginError,
+        ModelPackageError,
+        UnsupportedPackageFormatError,
+    )
+    from DashAI.back.session_package.load import import_session_package
+
+    workdir = Path(tempfile.mkdtemp(prefix="dashai-upload-"))
+    try:
+        upload = workdir / "session.dashai"
+        with open(upload, "wb") as handle:
+            shutil.copyfileobj(file.file, handle)
+        return await run_in_threadpool(
+            import_session_package,
+            upload,
+            session_factory,
+            component_registry,
+            config,
+            job_queue,
+        )
+    except (UnsupportedPackageFormatError, MissingPluginError) as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+    except ModelPackageError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+        ) from e
+    except Exception as e:
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error importing the session",
+        ) from e
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
+@router.get("/{model_session_id}/export/preview")
+@inject
+async def get_session_export_preview(
+    model_session_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """What exporting the session would carry: its runs and the file size.
+
+    Raises
+    ------
+    HTTPException
+        404 if the session does not exist.
+    """
+    from DashAI.back.session_package.export import (
+        SessionNotFoundError,
+        export_preview,
+    )
+
+    try:
+        return export_preview(model_session_id, session_factory)
+    except SessionNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+        ) from e
+
+
+@router.post("/{model_session_id}/export")
+@inject
+async def export_model_session(
+    model_session_id: int,
+    params: SessionExportParams,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
+):
+    """Download the session and the chosen runs as a ``.dashai`` file.
+
+    Raises
+    ------
+    HTTPException
+        404 if the session does not exist, 409 if the chosen runs cannot be
+        exported, 500 on any other failure.
+    """
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    from fastapi.concurrency import run_in_threadpool
+    from fastapi.responses import FileResponse
+    from starlette.background import BackgroundTask
+
+    from DashAI.back.session_package.export import (
+        SessionNotExportableError,
+        SessionNotFoundError,
+        build_session_package,
+        session_filename,
+    )
+
+    workdir = Path(tempfile.mkdtemp(prefix="dashai-export-"))
+    destination = workdir / "session.dashai"
+    try:
+        manifest = await run_in_threadpool(
+            build_session_package,
+            model_session_id,
+            params.run_ids,
+            params.include_trained_models,
+            destination,
+            session_factory,
+            component_registry,
+        )
+    except SessionNotFoundError as e:
+        shutil.rmtree(workdir, ignore_errors=True)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Session not found"
+        ) from e
+    except SessionNotExportableError as e:
+        shutil.rmtree(workdir, ignore_errors=True)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+    except Exception as e:
+        shutil.rmtree(workdir, ignore_errors=True)
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error exporting the session",
+        ) from e
+
+    return FileResponse(
+        destination,
+        media_type="application/zip",
+        filename=session_filename(manifest["info"]["session_name"]),
+        background=BackgroundTask(shutil.rmtree, workdir, ignore_errors=True),
+    )

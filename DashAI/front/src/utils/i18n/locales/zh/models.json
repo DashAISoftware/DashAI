@@ -26,7 +26,12 @@
     "showOperations": "显示操作",
     "showParameters": "显示参数",
     "updateAndRetrain": "更新并重新训练",
-    "uploadNewDataset": "上传新数据集"
+    "uploadNewDataset": "上传新数据集",
+    "exportSession": "导出会话",
+    "importSession": "导入会话",
+    "selectAll": "全选",
+    "selectNone": "全不选",
+    "chooseFile": "选择文件"
   },
   "error": {
     "exportModel": "无法导出模型",
@@ -70,7 +75,10 @@
     "failedToLoadTests": "无法加载已保存的检验。",
     "failedToDeleteTest": "无法删除该检验。",
     "failedToSaveTest": "无法保存检验结果。",
-    "fetchingInnerSplitters": "无法加载用于嵌套交叉验证的内部划分器"
+    "fetchingInnerSplitters": "无法加载用于嵌套交叉验证的内部划分器",
+    "exportSession": "无法导出会话",
+    "importSession": "无法导入会话",
+    "loadExportPreview": "无法加载会话的运行"
   },
   "label": {
     "addModelToSession": "将模型添加到会话",
@@ -297,7 +305,17 @@
     "unsupervisedBadge": "无监督",
     "wilcoxonPairwiseComparisons": "带 Holm 校正的成对 Wilcoxon 检验",
     "withHpo": "含 HPO",
-    "withoutHpo": "不含 HPO"
+    "withoutHpo": "不含 HPO",
+    "exportSessionTitle": "导出“{{name}}”",
+    "includeTrainedModels": "包含已训练的模型",
+    "includeTrainedModelsHelp": "取消勾选则只导出配置，不含已训练的模型：文件更小，导入者需要自行训练模型。",
+    "recipeOnly": "将以未训练状态导入",
+    "waitUntilFinished": "请等待其完成",
+    "approxSize": "大约大小：{{size}}",
+    "includesDataset": "该文件包含数据集“{{name}}”。如果数据是私密的，请不要分享。",
+    "importSessionWarning": "会话中包含的模型在使用时会执行代码。请只导入你信任的人的会话。",
+    "sessionImported": "会话已导入为“{{session}}”，数据集为“{{dataset}}”",
+    "importedRecipeRuns": "这些运行未经训练：{{names}}"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} 已完成所有运行。",

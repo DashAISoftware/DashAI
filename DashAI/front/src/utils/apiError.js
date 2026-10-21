@@ -35,3 +35,29 @@ export function getApiErrorMessage(error, fallback = "") {
 
   return fallback;
 }
+
+/**
+ * Like getApiErrorMessage, for requests made with responseType "blob".
+ *
+ * A failed download still arrives as a Blob, so the JSON with `detail` has to
+ * be read out of it before the message can be found.
+ *
+ * @param {unknown} error - The rejected value, typically an axios error.
+ * @param {string} [fallback=""] - Returned when no message can be recovered.
+ * @returns {Promise<string>} A human-readable reason, or the fallback.
+ */
+export async function getApiErrorMessageAsync(error, fallback = "") {
+  const data = error?.response?.data;
+  if (typeof Blob !== "undefined" && data instanceof Blob) {
+    try {
+      const parsed = JSON.parse(await data.text());
+      return getApiErrorMessage(
+        { ...error, response: { ...error.response, data: parsed } },
+        fallback,
+      );
+    } catch {
+      return getApiErrorMessage({ message: error?.message }, fallback);
+    }
+  }
+  return getApiErrorMessage(error, fallback);
+}

@@ -11,6 +11,8 @@ import GroupedCollapsibleList from "../threeSectionLayout/GroupedCollapsibleList
 import SearchBar from "../threeSectionLayout/SearchBar";
 import NewItemButton from "../threeSectionLayout/NewItemButton";
 import InfoSessionModal from "./InfoSessionModal";
+import ExportSessionDialog from "./ExportSessionDialog";
+import ImportSessionButton from "./ImportSessionButton";
 import { useTranslation } from "react-i18next";
 import { useModels } from "./ModelsContext";
 
@@ -43,6 +45,8 @@ export default function ModelsLeftBar({ onToggle }) {
     setOpenSections,
     openFolderIds,
     setOpenFolderIds,
+    fetchSessions,
+    fetchDatasets,
   } = useModels();
   const navigate = useNavigate();
 
@@ -51,6 +55,7 @@ export default function ModelsLeftBar({ onToggle }) {
   const [filteredDatasets, setFilteredDatasets] = useState(datasets);
   const [filteredSessions, setFilteredSessions] = useState(sessions);
   const [selectedInfoSession, setSelectedInfoSession] = useState(null);
+  const [exportSessionId, setExportSessionId] = useState(null);
   const { t } = useTranslation(["models", "datasets", "common"]);
 
   const SEARCH_THRESHOLD = 10;
@@ -369,6 +374,12 @@ export default function ModelsLeftBar({ onToggle }) {
           onItemDelete={onSessionDelete}
           onItemEdit={editSession}
           onItemInfo={handleSessionInfo}
+          onItemExport={setExportSessionId}
+          headerActions={
+            <ImportSessionButton
+              onImported={() => Promise.all([fetchSessions(), fetchDatasets()])}
+            />
+          }
           title={t("common:sessions")}
           Icon={Biotech}
           getItemDescription={getSessionDescription}
@@ -388,6 +399,12 @@ export default function ModelsLeftBar({ onToggle }) {
 
       {/* Footer */}
       <Footer />
+
+      <ExportSessionDialog
+        open={exportSessionId != null}
+        sessionId={exportSessionId}
+        onClose={() => setExportSessionId(null)}
+      />
 
       {/* Session Info Modal */}
       {selectedInfoSession && (

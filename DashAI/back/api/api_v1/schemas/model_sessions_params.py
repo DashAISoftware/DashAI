@@ -41,3 +41,8 @@ class PreprocessingStructureParams(BaseModel):
 
 class ModelSessionBulkDeleteParams(BaseModel):
     ids: List[int]
+
+
+class SessionExportParams(BaseModel):
+    run_ids: List[int]
+    include_trained_models: bool = True

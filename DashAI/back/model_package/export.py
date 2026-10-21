@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Dict
 
 from DashAI.back.model_package.manifest import (
     FORMAT_VERSION,
+    KIND_MODEL,
     MANIFEST_ENTRY,
     MODEL_ENTRY,
     PACKAGE_EXTENSION,
@@ -144,6 +145,7 @@ def build_package(
 
     manifest = {
         "format_version": FORMAT_VERSION,
+        "kind": KIND_MODEL,
         "model": {
             "name": model_name,
             **_class_reference(model_class),

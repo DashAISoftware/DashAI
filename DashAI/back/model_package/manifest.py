@@ -13,6 +13,8 @@ import warnings
 from typing import Any, Dict, Iterable, List, Optional
 
 FORMAT_VERSION = 1
+# What a DashAI file holds. Files written before kinds existed are models.
+KIND_MODEL = "model"
 PACKAGE_EXTENSION = ".dashai-model"
 
 MANIFEST_ENTRY = "manifest.json"
@@ -28,6 +30,10 @@ TRACKED_LIBRARIES = ("scikit-learn", "torch", "transformers")
 
 class ModelPackageError(Exception):
     """A file cannot be used as a DashAI model package."""
+
+
+class WrongPackageKindError(ModelPackageError):
+    """The file is a DashAI file of another kind (a session, not a model)."""
 
 
 class UnsupportedPackageFormatError(ModelPackageError):
@@ -79,22 +85,42 @@ def plugin_distributions(classes: Iterable[type]) -> List[Dict[str, Optional[str
     return [{"name": name, "version": found[name]} for name in sorted(found)]
 
 
-def check_manifest(manifest: Dict[str, Any]) -> None:
-    """Refuse a package this installation cannot load; warn on version drift.
+def check_manifest(
+    manifest: Dict[str, Any],
+    kind: str = KIND_MODEL,
+    format_version: int = FORMAT_VERSION,
+) -> None:
+    """Refuse a file this installation cannot load; warn on version drift.
+
+    Parameters
+    ----------
+    manifest : dict
+        The file's parsed ``manifest.json``.
+    kind : str
+        The kind of file the caller expects.
+    format_version : int
+        The newest format of that kind this DashAI reads.
 
     Raises
     ------
+    WrongPackageKindError
+        If the file is a DashAI file of another kind.
     UnsupportedPackageFormatError
-        If the package format is newer than this DashAI understands.
+        If the file format is newer than this DashAI understands.
     MissingPluginError
-        If a plugin the package was built from is not installed.
+        If a plugin the file was built from is not installed.
     """
-    format_version = manifest.get("format_version")
-    if not isinstance(format_version, int) or format_version > FORMAT_VERSION:
+    found = manifest.get("kind", KIND_MODEL)
+    if found != kind:
+        raise WrongPackageKindError(
+            f"This file is a DashAI {found} file, not a {kind} file."
+        )
+
+    version = manifest.get("format_version")
+    if not isinstance(version, int) or version > format_version:
         raise UnsupportedPackageFormatError(
-            f"This model package uses format {format_version!r}, which is newer "
-            f"than the one this DashAI reads ({FORMAT_VERSION}). Update DashAI "
-            "to load it."
+            f"This file uses format {version!r}, which is newer than the one "
+            f"this DashAI reads ({format_version}). Update DashAI to load it."
         )
 
     for plugin in manifest.get("plugins", []):
@@ -103,7 +129,7 @@ def check_manifest(manifest: Dict[str, Any]) -> None:
             if plugin.get("version"):
                 requirement += f"=={plugin['version']}"
             raise MissingPluginError(
-                f"This model needs the plugin '{plugin['name']}'. "
+                f"This file needs the plugin '{plugin['name']}'. "
                 f"Install it with: pip install {requirement}"
             )
 
@@ -111,7 +137,7 @@ def check_manifest(manifest: Dict[str, Any]) -> None:
         actual = _python_version() if name == "python" else installed_version(name)
         if actual != expected:
             warnings.warn(
-                f"The model was exported with {name} {expected}, but "
+                f"The file was exported with {name} {expected}, but "
                 f"{actual or 'no version'} is installed. Loading or predicting "
                 "may fail or give different results.",
                 UserWarning,

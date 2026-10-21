@@ -26,7 +26,12 @@
     "showOperations": "Mostrar Operações",
     "showParameters": "Mostrar Parâmetros",
     "updateAndRetrain": "Atualizar e Retreinar",
-    "uploadNewDataset": "Enviar Novo Conjunto de Dados"
+    "uploadNewDataset": "Enviar Novo Conjunto de Dados",
+    "exportSession": "Exportar sessão",
+    "importSession": "Importar sessão",
+    "selectAll": "Selecionar todos",
+    "selectNone": "Nenhum",
+    "chooseFile": "Escolher arquivo"
   },
   "error": {
     "exportModel": "Não foi possível exportar o modelo",
@@ -70,7 +75,10 @@
     "failedToSaveTest": "Não foi possível salvar os resultados do teste.",
     "selectMetric": "Por favor, selecione uma métrica",
     "failedToExecuteTest": "Erro ao executar o teste estatístico",
-    "fetchingInnerSplitters": "Não foi possível carregar os divisores internos para a validação cruzada aninhada."
+    "fetchingInnerSplitters": "Não foi possível carregar os divisores internos para a validação cruzada aninhada.",
+    "exportSession": "Não foi possível exportar a sessão",
+    "importSession": "Não foi possível importar a sessão",
+    "loadExportPreview": "Não foi possível carregar os runs da sessão"
   },
   "label": {
     "addModelToSession": "Adicionar Modelo à Sessão",
@@ -304,7 +312,17 @@
     "unsupervisedBadge": "Não supervisionado",
     "wilcoxonPairwiseComparisons": "Testes de Wilcoxon aos pares com correção de Holmes",
     "withHpo": "Com HPO",
-    "withoutHpo": "Sem HPO"
+    "withoutHpo": "Sem HPO",
+    "exportSessionTitle": "Exportar \"{{name}}\"",
+    "includeTrainedModels": "Incluir modelos treinados",
+    "includeTrainedModelsHelp": "Desmarque para exportar só a configuração, sem modelos treinados: o arquivo fica menor e quem importar terá que treinar os modelos.",
+    "recipeOnly": "chegará sem treinar",
+    "waitUntilFinished": "aguarde terminar",
+    "approxSize": "Tamanho aproximado: {{size}}",
+    "includesDataset": "O arquivo inclui o dataset \"{{name}}\". Não o compartilhe se os dados forem privados.",
+    "importSessionWarning": "Uma sessão contém modelos que executam código ao serem usados. Importe apenas sessões de pessoas em quem você confia.",
+    "sessionImported": "Sessão importada como \"{{session}}\" com o dataset \"{{dataset}}\"",
+    "importedRecipeRuns": "Estes runs chegaram sem treinar: {{names}}"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} concluiu todas as suas execuções.",
