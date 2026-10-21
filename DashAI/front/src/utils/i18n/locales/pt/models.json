@@ -1,5 +1,6 @@
 {
   "button": {
+    "exportModel": "Exportar modelo",
     "addConverter": "Adicionar Conversor",
     "addNewPrediction": "Adicionar Nova Previsão",
     "createExplainer": "Criar Explicador",
@@ -28,6 +29,7 @@
     "uploadNewDataset": "Enviar Novo Conjunto de Dados"
   },
   "error": {
+    "exportModel": "Não foi possível exportar o modelo",
     "completeRequiredFields": "Por favor, preencha todos os campos obrigatórios",
     "createRun": "Erro ao tentar criar uma nova execução: {{name}}",
     "createRunReason": "Erro ao tentar criar uma nova execução \"{{name}}\": {{reason}}",

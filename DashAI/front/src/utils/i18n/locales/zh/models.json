@@ -1,5 +1,6 @@
 {
   "button": {
+    "exportModel": "导出模型",
     "addConverter": "添加转换器",
     "addNewPrediction": "添加新预测",
     "createExplainer": "创建解释器",
@@ -28,6 +29,7 @@
     "uploadNewDataset": "上传新数据集"
   },
   "error": {
+    "exportModel": "无法导出模型",
     "completeRequiredFields": "请填写所有必填字段",
     "createRun": "创建新运行时出错：{{name}}",
     "createRunReason": "创建新运行 \"{{name}}\" 时出错：{{reason}}",

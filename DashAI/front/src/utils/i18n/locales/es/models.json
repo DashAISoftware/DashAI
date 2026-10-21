@@ -1,5 +1,6 @@
 {
   "button": {
+    "exportModel": "Exportar modelo",
     "addConverter": "Agregar Converter",
     "createExplainer": "Crear Explicador",
     "createGlobalExplainer": "Nuevo Explicador Global",
@@ -28,6 +29,7 @@
     "updateAndRetrain": "Actualizar y Re-entrenar"
   },
   "error": {
+    "exportModel": "No se pudo exportar el modelo",
     "completeRequiredFields": "Por favor complete todos los campos requeridos",
     "createRun": "Error al intentar crear una nueva ejecución: {{name}}",
     "createRunReason": "Error al intentar crear una nueva ejecución \"{{name}}\": {{reason}}",
