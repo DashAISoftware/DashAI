@@ -8,6 +8,7 @@ interface componentQuery {
   relatedComponent?: string;
   componentParent?: string;
   hasRelatedOfType?: string;
+  dataKind?: string;
 }
 
 export const getComponents = async ({
@@ -17,6 +18,7 @@ export const getComponents = async ({
   relatedComponent = "",
   hasRelatedOfType = "",
   componentParent = "",
+  dataKind = "",
 }: componentQuery = {}): Promise<IComponent[]> => {
   let params = {};
 
@@ -38,6 +40,10 @@ export const getComponents = async ({
 
   if (hasRelatedOfType !== "") {
     params = { ...params, has_related_of_type: hasRelatedOfType };
+  }
+
+  if (dataKind !== "") {
+    params = { ...params, data_kind: dataKind };
   }
 
   const url = model ? `/v1/component/${model}/` : `/v1/component/`;

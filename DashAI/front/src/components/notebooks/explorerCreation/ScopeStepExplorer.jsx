@@ -3,9 +3,11 @@ import { Box, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import FormSchemaButtonGroup from "../../shared/FormSchemaButtonGroup";
 import ColumnSelector from "../ColumnSelector";
+import DocumentItemScope from "../documentNotebook/DocumentItemScope";
+import { useExplorersAndConverters } from "../context/ExplorersAndConvertersContext";
+import { isDocumentNotebook } from "../notebookColumns";
 import { useTourContext } from "../../tour/TourProvider";
 import { useTranslation } from "react-i18next";
-import { useExplorersAndConverters } from "../context/ExplorersAndConvertersContext";
 
 export default function ScopeStepExplorer({
   notebook,
@@ -22,7 +24,9 @@ export default function ScopeStepExplorer({
   const nonAllowedDtypes = tool?.metadata?.non_allowed_dtypes || [];
   const tourContext = useTourContext();
   const { t } = useTranslation(["datasets", "common"]);
-  const { explorersAndConverters } = useExplorersAndConverters();
+  const { columnTypes, itemSelection, explorersAndConverters } =
+    useExplorersAndConverters();
+  const isDocument = isDocumentNotebook(notebook);
 
   const allowedColumnNames = useMemo(() => {
     if (!tool?.metadata?.restricts_to_converter_columns) return null;
@@ -64,19 +68,33 @@ export default function ScopeStepExplorer({
           variant="body2"
           sx={{ color: theme.palette.text.primary, mb: 3 }}
         >
-          {t("datasets:label.selectColumnsForExplorerScope")}
+          {isDocument
+            ? t("datasets:documentNotebook.scopeExplorerDescription")
+            : t("datasets:label.selectColumnsForExplorerScope")}
         </Typography>
 
-        <ColumnSelector
-          file_path={notebook.file_path}
-          inputCardinality={inputCardinality}
-          allowedTypes={allowedTypes}
-          allowedDtypes={allowedDtypes}
-          nonAllowedDtypes={nonAllowedDtypes}
-          allowedColumnNames={allowedColumnNames}
-          onSelectionChange={(selected) => setScopeColumns(selected)}
-          onValidationChange={(isValid) => setIsSelectionValid(isValid)}
-        />
+        {isDocument ? (
+          <DocumentItemScope
+            notebookId={notebook.id}
+            columnTypes={columnTypes}
+            metadata={tool?.metadata}
+            single
+            initialSelection={itemSelection}
+            onSelectionChange={(selected) => setScopeColumns(selected)}
+            onValidationChange={(isValid) => setIsSelectionValid(isValid)}
+          />
+        ) : (
+          <ColumnSelector
+            file_path={notebook.file_path}
+            inputCardinality={inputCardinality}
+            allowedTypes={allowedTypes}
+            allowedDtypes={allowedDtypes}
+            nonAllowedDtypes={nonAllowedDtypes}
+            allowedColumnNames={allowedColumnNames}
+            onSelectionChange={(selected) => setScopeColumns(selected)}
+            onValidationChange={(isValid) => setIsSelectionValid(isValid)}
+          />
+        )}
       </Box>
 
       {/* Buttons */}

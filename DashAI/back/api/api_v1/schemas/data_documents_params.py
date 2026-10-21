@@ -31,6 +31,21 @@ class DataDocumentCreateParams(BaseModel):
     dataloader_params: Dict[str, Any] = Field(default_factory=dict)
 
 
+class DataDocumentFromNotebookParams(BaseModel):
+    """Body of ``POST /api/v1/documents/from-notebook``.
+
+    Attributes
+    ----------
+    name : str
+        Unique name of the new document.
+    notebook_id : int
+        The document notebook whose working copy becomes the new document.
+    """
+
+    name: str
+    notebook_id: int
+
+
 class DataDocumentUpdateParams(BaseModel):
     """Body of ``PATCH /api/v1/documents/{id}``.
 

@@ -7,7 +7,7 @@ import ParameterStepConverter from "./ParameterStepConverter";
 import ScopeStepConverter from "./ScopeStepConverter";
 import { startJobPolling } from "../../../utils/jobPoller";
 import { enqueueConverterJob } from "../../../api/job";
-import { getDatasetTypesByFilePath } from "../../../api/datasets";
+import { fetchNotebookColumnTypes } from "../notebookColumns";
 import { useTranslation } from "react-i18next";
 
 export default function FormConverterSection({
@@ -69,7 +69,7 @@ export default function FormConverterSection({
             );
 
             if (updated.status === 3 && notebook?.file_path) {
-              getDatasetTypesByFilePath(notebook.file_path)
+              fetchNotebookColumnTypes(notebook)
                 .then((types) => setColumnTypes(types ?? {}))
                 .catch(console.error);
             }

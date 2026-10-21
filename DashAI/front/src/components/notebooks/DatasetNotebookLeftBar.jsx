@@ -174,6 +174,16 @@ export default function DatasetsNotebooksLeftBar({
   };
 
   const getNotebookDescription = (notebook) => {
+    if (notebook.data_kind === DOCUMENT_KIND) {
+      const sourceDocument = documents.find(
+        (item) => item.id === notebook.document_id,
+      );
+      return sourceDocument?.name
+        ? t("datasets:documentNotebook.fromDocument", {
+            documentName: sourceDocument.name,
+          })
+        : t("datasets:documentNotebook.noDocument");
+    }
     if (notebook.dataset_id && datasets.length > 0) {
       const associatedDataset = datasets.find(
         (dataset) => dataset.id === notebook.dataset_id,
@@ -264,11 +274,16 @@ export default function DatasetsNotebooksLeftBar({
       : moveDatasetToFolder(id, folderId);
   };
 
+  const openNotebookDocumentId = () =>
+    notebooks.find((notebook) => notebook.id === selectedNotebookId)
+      ?.document_id ?? null;
+
   const onDataItemDelete = async (itemId) => {
     const { kind, id } = parseDataItemId(itemId);
     if (kind === DOCUMENT_KIND) {
+      const openDocumentId = openNotebookDocumentId();
       const success = await deleteDocumentById(id);
-      if (success && id === selectedDocumentId) {
+      if (success && (id === selectedDocumentId || id === openDocumentId)) {
         navigate("/app/data");
       }
       return;
@@ -289,6 +304,7 @@ export default function DatasetsNotebooksLeftBar({
     const documentIds = parsed
       .filter((item) => item.kind === DOCUMENT_KIND)
       .map((item) => item.id);
+    const openDocumentId = openNotebookDocumentId();
 
     let datasetsDeleted = true;
     if (datasetIds.length > 0) {
@@ -305,7 +321,9 @@ export default function DatasetsNotebooksLeftBar({
 
     if (
       (datasetsDeleted && datasetIds.includes(selectedDatasetId)) ||
-      (documentsDeleted && documentIds.includes(selectedDocumentId))
+      (documentsDeleted &&
+        (documentIds.includes(selectedDocumentId) ||
+          documentIds.includes(openDocumentId)))
     ) {
       navigate("/app/data");
     }
@@ -475,6 +493,7 @@ export default function DatasetsNotebooksLeftBar({
         <InfoNotebookModal
           notebookData={selectedInfoNotebook}
           datasets={datasets}
+          documents={documents}
           open={!!selectedInfoNotebook}
           onClose={() => setSelectedInfoNotebook(null)}
         />

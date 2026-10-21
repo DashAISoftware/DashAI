@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Any, Dict, Final, List, Optional
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.artifacts import Artifact
+from DashAI.back.core.column_constraints import columns_satisfy_metadata
+from DashAI.back.core.data_kinds import normalize_data_kinds
 from DashAI.back.core.schema_fields import BaseSchema
 from DashAI.back.dependencies.database.models import Explorer, Notebook
 from DashAI.back.static.icons import Icon
@@ -116,6 +118,7 @@ class BaseExplorer(ConfigObject, ABC):
         )
         meta["requires_download"] = bool(getattr(cls, "REQUIRES_DOWNLOAD", False))
         meta["download_size_bytes"] = getattr(cls, "DOWNLOAD_SIZE_BYTES", None)
+        meta["data_kinds"] = normalize_data_kinds(meta.get("data_kinds"))
 
         if meta.get("input_cardinality") is None:
             meta["input_cardinality"] = {"min": 1}
@@ -192,37 +195,8 @@ class BaseExplorer(ConfigObject, ABC):
         bool
             True if all column constraints are satisfied, False otherwise.
         """
-        metadata = cls.get_metadata()
-        selected_columns = explorer_info.columns
-        allowed_types = metadata.get("allowed_types", [])
-        allowed_dtypes = metadata.get("allowed_dtypes", [])
-        input_cardinality = metadata.get("input_cardinality", {})
-
-        # Check cardinality
-        n = len(selected_columns)
-        if "exact" in input_cardinality and n != input_cardinality["exact"]:
-            return False
-        if "min" in input_cardinality and n < input_cardinality["min"]:
-            return False
-        if "max" in input_cardinality and n > input_cardinality["max"]:
-            return False
-
-        # Global dtype blacklist: dtypes that are never valid for this explorer.
-        non_allowed_dtypes = metadata.get("non_allowed_dtypes", [])
-        for column in selected_columns:
-            column_name = column["columnName"]
-            col_info = column_spec.get(column_name, {})
-            col_type = col_info.get("type", "")
-            col_dtype = col_info.get("dtype", "")
-
-            if allowed_types and col_type not in allowed_types:
-                return False
-            if non_allowed_dtypes and col_dtype in non_allowed_dtypes:
-                return False
-            if allowed_dtypes and col_dtype not in allowed_dtypes:
-                return False
-
-        return True
+        column_names = [column["columnName"] for column in explorer_info.columns]
+        return columns_satisfy_metadata(cls.get_metadata(), column_names, column_spec)
 
     def prepare_dataset(
         self, loaded_dataset: "DashAIDataset", columns: List[Dict[str, Any]]

@@ -4,11 +4,13 @@ Mounted at ``/api/v1/documents``. The session scoped RAG documents keep their
 own router at ``/api/v1/document`` until branch 5 retires it.
 """
 
-import io
+import json
 import logging
 import os
+import shutil
+import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, List
 
 from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
@@ -19,15 +21,27 @@ from sqlalchemy import exc, select
 
 from DashAI.back.api.api_v1.schemas.data_documents_params import (
     DataDocumentCreateParams,
+    DataDocumentFromNotebookParams,
     DataDocumentSchema,
     DataDocumentUpdateParams,
 )
-from DashAI.back.core.enums.status import DocumentStatus
+from DashAI.back.api.document_content import (
+    image_response,
+    read_content_page,
+    read_outline,
+    require_content_type,
+)
+from DashAI.back.core.enums.status import ConverterStatus, DocumentStatus
 from DashAI.back.dataloaders.classes.dataloader import (
     DataKindMismatchError,
     require_data_kind,
 )
-from DashAI.back.dependencies.database.models import DataDocument, Folder
+from DashAI.back.dependencies.database.models import (
+    Converter,
+    DataDocument,
+    Folder,
+    Notebook,
+)
 from DashAI.back.services.RAG.deferred_fs import remove_after_commit
 
 if TYPE_CHECKING:
@@ -41,7 +55,6 @@ router = APIRouter()
 
 BASE_URL = "/api/v1/documents"
 BUSY_STATUSES = (DocumentStatus.DELIVERED, DocumentStatus.STARTED)
-CONTENT_TYPES = ("Text", "Image")
 
 
 def _document_loader_class(component_registry: "ComponentRegistry", name: str) -> type:
@@ -190,6 +203,168 @@ async def create_data_document(
             ) from e
         except exc.SQLAlchemyError as e:
             db.rollback()
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
+        db.refresh(document)
+        return document
+
+
+def _copy_notebook_document(
+    working_copy: str, target: Path, derived_from: dict
+) -> dict:
+    """Copy a notebook's working copy into a new document folder.
+
+    Parameters
+    ----------
+    working_copy : str
+        The notebook's ``document`` directory.
+    target : Path
+        The new ``<DOCUMENTS_PATH>/<uuid>`` folder; must not exist.
+    derived_from : dict
+        Where the document comes from, stored in its metadata.
+
+    Returns
+    -------
+    dict
+        The item counts of the copied document, keyed by type name.
+    """
+    shutil.copytree(working_copy, target / "document")
+    sidecar_path = target / "document" / "document.json"
+    with open(sidecar_path, "r", encoding="utf-8") as f:
+        sidecar = json.load(f)
+    sidecar["metadata"] = {**sidecar.get("metadata", {}), "derived_from": derived_from}
+    with open(sidecar_path, "w", encoding="utf-8") as f:
+        json.dump(sidecar, f, indent=2, sort_keys=True, ensure_ascii=False)
+    return sidecar.get("content_counts", {})
+
+
+@router.post(
+    "/from-notebook",
+    response_model=DataDocumentSchema,
+    status_code=status.HTTP_201_CREATED,
+)
+@inject
+def create_data_document_from_notebook(
+    params: DataDocumentFromNotebookParams,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    config=Depends(lambda: di["config"]),
+):
+    """Save the working copy of a document notebook as a new document.
+
+    The new document keeps the file name, loader and page count of the
+    document the notebook was created from, has no source file, and records
+    its origin in its metadata. The handler is synchronous so FastAPI runs
+    the copy in its threadpool.
+
+    Parameters
+    ----------
+    params : DataDocumentFromNotebookParams
+        Name of the new document and the notebook to save.
+    session_factory : sessionmaker
+        Session factory from the DI container.
+    config : dict
+        App configuration with ``DOCUMENTS_PATH``.
+
+    Returns
+    -------
+    DataDocument
+        The new, finished document.
+
+    Raises
+    ------
+    HTTPException
+        404 for an unknown notebook; 409 for a taken name or while a
+        converter of the notebook is still running; 422 for an empty name or
+        a dataset notebook; 500 when the copy or the database fails.
+    """
+    from DashAI.back.dataloaders.classes.notebook_data import notebook_data_path
+
+    name = params.name.strip()
+    if not name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Name cannot be empty",
+        )
+    with session_factory() as db:
+        notebook = db.get(Notebook, params.notebook_id)
+        if notebook is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Notebook not found"
+            )
+        if notebook.data_kind != "document":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Only document notebooks can be saved as documents",
+            )
+        running = db.execute(
+            select(Converter.id).where(
+                Converter.notebook_id == notebook.id,
+                Converter.status.notin_(
+                    [ConverterStatus.FINISHED, ConverterStatus.ERROR]
+                ),
+            )
+        ).first()
+        if running:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Wait for the notebook converters to finish",
+            )
+        taken = db.execute(
+            select(DataDocument.id).where(DataDocument.name == name)
+        ).scalar()
+        if taken:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A document with the name '{name}' already exists",
+            )
+
+        source = notebook.document
+        target = Path(config["DOCUMENTS_PATH"]) / uuid.uuid4().hex
+        try:
+            counts = _copy_notebook_document(
+                notebook_data_path(notebook),
+                target,
+                {
+                    "document_id": source.id,
+                    "document_name": source.name,
+                    "notebook_id": notebook.id,
+                    "notebook_name": notebook.name,
+                },
+            )
+        except (OSError, ValueError) as e:
+            shutil.rmtree(target, ignore_errors=True)
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="The notebook document could not be copied",
+            ) from e
+
+        document = DataDocument(
+            name=name,
+            file_name=source.file_name,
+            file_type=source.file_type,
+            file_hash="",
+            file_path=os.path.realpath(target),
+            dataloader=source.dataloader,
+            dataloader_params=source.dataloader_params,
+            content_counts=counts,
+            total_pages=source.total_pages,
+            status=DocumentStatus.FINISHED,
+        )
+        db.add(document)
+        try:
+            db.commit()
+        except exc.SQLAlchemyError as e:
+            db.rollback()
+            shutil.rmtree(target, ignore_errors=True)
+            if isinstance(e, exc.IntegrityError):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"A document with the name '{name}' already exists",
+                ) from e
             logger.exception(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -348,7 +523,10 @@ async def delete_data_document(
     document_id: int,
     session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
 ):
-    """Delete a document row and, once that commits, its folder on disk.
+    """Delete a document row, its notebooks and, once that commits, their folders.
+
+    The notebooks go through the ORM cascade on DataDocument.notebooks,
+    because SQLite does not enforce the foreign key cascade.
 
     A document whose job is queued or running cannot be deleted: the job
     would recreate the folder after the row is gone. Cancelling the job moves
@@ -383,6 +561,8 @@ async def delete_data_document(
                 ),
             )
         remove_after_commit(db, document.file_path)
+        for notebook in document.notebooks:
+            remove_after_commit(db, notebook.file_path)
         db.delete(document)
         try:
             db.commit()
@@ -443,28 +623,6 @@ def _require_finished(document: DataDocument) -> None:
         )
 
 
-def _image_media_type(data: bytes) -> str:
-    """Detect an image MIME type with Pillow.
-
-    Parameters
-    ----------
-    data : bytes
-        Encoded image.
-
-    Returns
-    -------
-    str
-        The MIME type, ``application/octet-stream`` when unknown.
-    """
-    from PIL import Image
-
-    try:
-        with Image.open(io.BytesIO(data)) as image:
-            return Image.MIME.get(image.format, "application/octet-stream")
-    except Exception:
-        return "application/octet-stream"
-
-
 @router.get("/{document_id}/content")
 @inject
 def get_data_document_content(
@@ -504,69 +662,16 @@ def get_data_document_content(
     HTTPException
         404, 409 as in ``_document_dir``; 422 for an unknown type.
     """
-    from DashAI.back.dataloaders.classes.dashai_document import read_content_columns
-    from DashAI.back.types.dashai_image import DashAIImage
-    from DashAI.back.types.value_types import Text
-
-    if content_type != "all" and content_type not in CONTENT_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Unknown content type '{content_type}'. Use all, Text or Image.",
-        )
+    require_content_type(content_type)
     directory = _document_dir(session_factory, document_id)
-    entries: List[Dict[str, Any]] = []
-    if content_type in ("all", "Text"):
-        texts = read_content_columns(directory, Text)
-        entries.extend(
-            {
-                "type": "Text",
-                "position": position,
-                "page": page,
-                "kind": kind,
-                "attrs": attrs,
-                "content": text,
-            }
-            for text, position, page, kind, attrs in zip(
-                texts["content"],
-                texts["position"],
-                texts["page"],
-                texts["kind"],
-                texts["attrs"],
-                strict=True,
-            )
-        )
-    if content_type in ("all", "Image"):
-        images = read_content_columns(directory, DashAIImage, with_content=False)
-        entries.extend(
-            {
-                "type": "Image",
-                "position": position,
-                "page": page,
-                "kind": kind,
-                "attrs": attrs,
-                "url": f"{BASE_URL}/{document_id}/images/{position}",
-            }
-            for position, page, kind, attrs in zip(
-                images["position"],
-                images["page"],
-                images["kind"],
-                images["attrs"],
-                strict=True,
-            )
-        )
-    entries.sort(key=lambda entry: entry["position"])
-    return {
-        "document_id": document_id,
-        "content_type": content_type,
-        "total": len(entries),
-        "offset": offset,
-        "limit": limit,
-        "items": entries[offset : offset + limit],
-    }
-
-
-OUTLINE_LABEL_KINDS = ("title", "heading", "caption")
-OUTLINE_LABEL_LENGTH = 120
+    page = read_content_page(
+        directory,
+        content_type,
+        offset,
+        limit,
+        lambda position: f"{BASE_URL}/{document_id}/images/{position}",
+    )
+    return {"document_id": document_id, **page}
 
 
 @router.get("/{document_id}/outline")
@@ -600,48 +705,8 @@ def get_data_document_outline(
     HTTPException
         404, 409 as in ``_document_dir``.
     """
-    from DashAI.back.dataloaders.classes.dashai_document import read_content_columns
-    from DashAI.back.types.dashai_image import DashAIImage
-    from DashAI.back.types.value_types import Text
-
-    directory = _document_dir(session_factory, document_id)
-    texts = read_content_columns(directory, Text)
-    images = read_content_columns(directory, DashAIImage, with_content=False)
-    entries: List[Dict[str, Any]] = [
-        {
-            "position": position,
-            "type": "Text",
-            "kind": kind,
-            "page": page,
-            "level": attrs.get("level"),
-            "label": " ".join(text.split())[:OUTLINE_LABEL_LENGTH]
-            if kind in OUTLINE_LABEL_KINDS
-            else None,
-        }
-        for text, position, page, kind, attrs in zip(
-            texts["content"],
-            texts["position"],
-            texts["page"],
-            texts["kind"],
-            texts["attrs"],
-            strict=True,
-        )
-    ]
-    entries.extend(
-        {
-            "position": position,
-            "type": "Image",
-            "kind": kind,
-            "page": page,
-            "level": None,
-            "label": None,
-        }
-        for position, page, kind in zip(
-            images["position"], images["page"], images["kind"], strict=True
-        )
-    )
-    entries.sort(key=lambda entry: entry["position"])
-    return {"document_id": document_id, "total": len(entries), "items": entries}
+    outline = read_outline(_document_dir(session_factory, document_id))
+    return {"document_id": document_id, **outline}
 
 
 @router.get("/{document_id}/images/{position}")
@@ -675,18 +740,7 @@ def get_data_document_image(
         404 when the position is not an image; 404, 409 as in
         ``_document_dir``.
     """
-    from DashAI.back.dataloaders.classes.dashai_document import read_content_at
-    from DashAI.back.types.dashai_image import DashAIImage
-
-    value = read_content_at(
-        _document_dir(session_factory, document_id), DashAIImage, position
-    )
-    if value is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
-        )
-    data = value["bytes"]
-    return Response(content=data, media_type=_image_media_type(data))
+    return image_response(_document_dir(session_factory, document_id), position)
 
 
 def _serve_source(

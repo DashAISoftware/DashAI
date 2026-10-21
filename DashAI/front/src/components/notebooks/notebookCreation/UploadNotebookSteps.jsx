@@ -1,7 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Typography, TextField, Box } from "@mui/material";
+import {
+  Typography,
+  TextField,
+  Box,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
+import TableChartOutlinedIcon from "@mui/icons-material/TableChartOutlined";
+import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import { useFormik } from "formik";
 import DatasetAutocomplete from "./DatasetAutocomplete";
+import DocumentAutocomplete from "./DocumentAutocomplete";
 import { createNotebook } from "../../../api/notebook";
 import { useSnackbar } from "notistack";
 import NoteBox from "../NoteBox";
@@ -10,16 +19,29 @@ import { useTranslation } from "react-i18next";
 import StepperNavigationFooter from "../../shared/StepperNavigationFooter";
 import { generateSequentialName } from "../../../utils/nameGenerator";
 
+const SOURCE_KIND_DATASET = "dataset";
+const SOURCE_KIND_DOCUMENT = "document";
+
 export default function UploadNotebookSteps({
   backHome,
   datasets,
+  documents = [],
   handleNotebookCreated,
   existingNotebooks = [],
   preselectedDatasetId = null,
+  preselectedDocumentId = null,
 }) {
+  const [sourceKind, setSourceKind] = useState(
+    preselectedDocumentId ? SOURCE_KIND_DOCUMENT : SOURCE_KIND_DATASET,
+  );
   const [selectedDataset, setSelectedDataset] = useState(
     preselectedDatasetId
       ? datasets.find((d) => d.id === preselectedDatasetId) || null
+      : null,
+  );
+  const [selectedDocument, setSelectedDocument] = useState(
+    preselectedDocumentId
+      ? documents.find((d) => d.id === preselectedDocumentId) || null
       : null,
   );
   const { enqueueSnackbar } = useSnackbar();
@@ -48,10 +70,15 @@ export default function UploadNotebookSteps({
           return;
         }
 
+        const source =
+          sourceKind === SOURCE_KIND_DOCUMENT
+            ? { document_id: selectedDocument.id }
+            : { dataset_id: selectedDataset.id };
+
         const notebookData = {
           name: notebookName,
           description: values.description,
-          dataset_id: selectedDataset.id,
+          ...source,
         };
 
         const createdNotebook = await createNotebook(notebookData);
@@ -83,7 +110,9 @@ export default function UploadNotebookSteps({
   }, [defaultName]);
 
   const nameError = formik.values.name.trim() ? null : t("common:nameRequired");
-  const isValid = selectedDataset && !nameError;
+  const isDocumentSource = sourceKind === SOURCE_KIND_DOCUMENT;
+  const selectedSource = isDocumentSource ? selectedDocument : selectedDataset;
+  const isValid = selectedSource && !nameError;
 
   return (
     <Box
@@ -117,7 +146,11 @@ export default function UploadNotebookSteps({
         <NoteBox
           className="notebook-note-box"
           data-tour="notebook-note-box"
-          message={t("datasets:label.notebookCreationNote")}
+          message={
+            isDocumentSource
+              ? t("datasets:documentNotebook.creationNote")
+              : t("datasets:label.notebookCreationNote")
+          }
         />
 
         <TextField
@@ -146,11 +179,46 @@ export default function UploadNotebookSteps({
           helperText={formik.touched.description && formik.errors.description}
         />
 
-        <DatasetAutocomplete
-          datasets={datasets}
-          selectedDataset={selectedDataset}
-          setSelectedDataset={setSelectedDataset}
-        />
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            {t("datasets:documentNotebook.sourceKind")}
+          </Typography>
+          <ToggleButtonGroup
+            value={sourceKind}
+            exclusive
+            size="small"
+            onChange={(_event, next) => next && setSourceKind(next)}
+          >
+            <ToggleButton
+              value={SOURCE_KIND_DATASET}
+              sx={{ gap: 1, textTransform: "none" }}
+            >
+              <TableChartOutlinedIcon fontSize="small" />
+              {t("datasets:documentNotebook.sourceDataset")}
+            </ToggleButton>
+            <ToggleButton
+              value={SOURCE_KIND_DOCUMENT}
+              sx={{ gap: 1, textTransform: "none" }}
+            >
+              <ArticleOutlinedIcon fontSize="small" />
+              {t("datasets:documentNotebook.sourceDocument")}
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {isDocumentSource ? (
+          <DocumentAutocomplete
+            documents={documents}
+            selectedDocument={selectedDocument}
+            setSelectedDocument={setSelectedDocument}
+          />
+        ) : (
+          <DatasetAutocomplete
+            datasets={datasets}
+            selectedDataset={selectedDataset}
+            setSelectedDataset={setSelectedDataset}
+          />
+        )}
       </Box>
 
       <StepperNavigationFooter

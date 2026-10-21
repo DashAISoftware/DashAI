@@ -473,7 +473,8 @@ class DashAIDocument(DashAIData):
         dataset : DashAIDataset
             New contents, with ``content``, ``position`` and ``page``
             columns and the same positions as the current contents. Each
-            item keeps its current ``kind`` and ``attrs``.
+            item keeps its current ``kind``, and its current ``attrs``
+            unless the dataset has an ``attrs`` column of JSON objects.
 
         Returns
         -------
@@ -485,7 +486,7 @@ class DashAIDocument(DashAIData):
         ValueError
             If columns are missing, the positions differ, or the new
             contents are invalid (null content, image without bytes, page
-            lower than 1).
+            lower than 1, attributes the item kind does not take).
         """
         self._check_supported(content_type)
         if isinstance(dataset, DashAIDataset) and dataset._indices is None:
@@ -501,13 +502,14 @@ class DashAIDocument(DashAIData):
             raise ValueError(
                 "Replacement must keep the same item positions, in the same order."
             )
+        attrs_source = table if ATTRS_COLUMN in table.column_names else current
         rebuilt = build_content_table(
             content_type,
             table.column(CONTENT_COLUMN).to_pylist(),
             positions,
             table.column(PAGE_COLUMN).to_pylist(),
             current.column(KIND_COLUMN).to_pylist(),
-            [json.loads(v) for v in current.column(ATTRS_COLUMN).to_pylist()],
+            [json.loads(v) for v in attrs_source.column(ATTRS_COLUMN).to_pylist()],
         )
         contents = dict(self._contents)
         if rebuilt.num_rows:

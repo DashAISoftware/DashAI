@@ -49,7 +49,7 @@ export default function SessionConvertersRightBar({
 
   useEffect(() => {
     let cancelled = false;
-    getComponents({ selectTypes: ["Converter"] })
+    getComponents({ selectTypes: ["Converter"], dataKind: "dataset" })
       .then((data) => {
         if (!cancelled) setConverters(Array.isArray(data) ? data : []);
       })

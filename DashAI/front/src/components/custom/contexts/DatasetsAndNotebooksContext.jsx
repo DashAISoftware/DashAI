@@ -64,6 +64,7 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     editNotebook,
     addNotebookOptimistically,
     removeNotebooksByDatasetId,
+    removeNotebooksByDocumentId,
   } = useNotebooks({ t });
   const {
     documents,
@@ -78,6 +79,11 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     startDocumentPolling,
     refreshDocument,
   } = useDocuments({ t });
+  const deleteDocumentAndNotebooks = async (id) => {
+    const success = await deleteDocumentById(id);
+    if (success) removeNotebooksByDocumentId(id);
+    return success;
+  };
 
   // Derived once from the URL present at mount so a direct navigation to
   // .../data/new (or .../notebooks/new) renders the right step on the
@@ -165,7 +171,8 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     fetchDocuments,
     selectDocument,
     clearSelectedDocument,
-    deleteDocumentById,
+    deleteDocumentById: deleteDocumentAndNotebooks,
+    removeNotebooksByDocumentId,
     editDocument,
     moveDocumentToFolder,
     addDocumentOptimistically,

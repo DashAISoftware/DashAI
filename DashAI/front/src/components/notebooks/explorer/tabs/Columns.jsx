@@ -12,16 +12,19 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
 import { getColorByColumnType } from "../../../../utils";
+import { kindLabel } from "../../../documents/documentKinds";
 
 function Columns({ data }) {
   const theme = useTheme();
-  const { t } = useTranslation(["common"]);
+  const { t } = useTranslation(["common", "datasets"]);
 
   // columns can be an array [{columnName, dataType, ...}] or a plain object {name: type}
   const rows = Array.isArray(data)
     ? data.map((col) => ({
         name: col.columnName ?? col.name ?? String(col),
         type: col.dataType ?? col.valueType ?? col.type ?? null,
+        kinds: Array.isArray(col.kinds) ? col.kinds : null,
+        positions: Array.isArray(col.positions) ? col.positions : null,
       }))
     : data
       ? Object.entries(data).map(([name, colInfo]) => ({
@@ -38,7 +41,7 @@ function Columns({ data }) {
       <Divider sx={{ mt: 2, mb: 2, borderColor: "ui.borderLight" }} />
       <Table size="small">
         <TableBody>
-          {rows.map(({ name, type }) => (
+          {rows.map(({ name, type, kinds, positions }) => (
             <TableRow
               key={name}
               sx={{ "&:last-child td": { borderBottom: 0 } }}
@@ -58,6 +61,24 @@ function Columns({ data }) {
                 >
                   {name}
                 </Typography>
+                {kinds && (
+                  <Typography variant="caption" color="text.secondary">
+                    {kinds.map((kind) => kindLabel(t, kind)).join(", ")}
+                  </Typography>
+                )}
+                {positions && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block" }}
+                  >
+                    {t("datasets:documentNotebook.pickedItems", {
+                      positions: positions
+                        .map((position) => position + 1)
+                        .join(", "),
+                    })}
+                  </Typography>
+                )}
               </TableCell>
               <TableCell
                 align="right"

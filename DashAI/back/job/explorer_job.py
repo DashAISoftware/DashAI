@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from kink import inject
 from sqlalchemy import exc
 
+from DashAI.back.core.data_kinds import DOCUMENT
 from DashAI.back.dependencies.database.models import Explorer, Notebook
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.units.context import ExecutionContext
@@ -90,6 +91,7 @@ class ExplorerJob(BaseJob):
     ) -> None:
         from kink import di
 
+        from DashAI.back.dataloaders.classes.notebook_data import load_explorer_input
         from DashAI.back.exploration.artifact_store import store_artifacts
 
         session_factory = di["session_factory"]
@@ -138,7 +140,13 @@ class ExplorerJob(BaseJob):
             # Load the dataset from the notebook: its own working copy, which
             # is what the converters rewrite.
             try:
-                LoadDatasetUnit(notebook_id=notebook_info.id)(ctx)
+                if notebook_info.data_kind == DOCUMENT:
+                    ctx.put(
+                        "dataset",
+                        load_explorer_input(notebook_info, explorer_info.columns),
+                    )
+                else:
+                    LoadDatasetUnit(notebook_id=notebook_info.id)(ctx)
             except Exception as e:
                 # Anything the load unit raises has to leave the row in ERROR.
                 # Nothing else marks it: the Huey error signal only writes to

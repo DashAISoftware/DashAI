@@ -34,6 +34,7 @@ KEYS_THE_FRONTEND_READS = (
     "allowed_dtypes",
     "non_allowed_dtypes",
     "input_cardinality",
+    "data_kinds",
 )
 
 #: Renamed keys. A component that resurrects one is talking to a consumer that
@@ -157,3 +158,56 @@ def test_the_declared_blacklists_are_the_ones_we_think_they_are():
         "ScatterMatrixExplorer",
         "ScatterPlotExplorer",
     ], with_blacklist
+
+
+TOOLS = [
+    (component.__name__, component.get_metadata())
+    for component in get_initial_components()
+    if getattr(component, "TYPE", None) in ("Converter", "Explorer")
+]
+
+
+@pytest.mark.parametrize(("name", "metadata"), TOOLS, ids=[n for n, _ in TOOLS])
+def test_data_kinds_are_known_kinds(name: str, metadata: Dict[str, Any]):
+    kinds = metadata["data_kinds"]
+    assert isinstance(kinds, list), (name, kinds)
+    assert kinds, (name, kinds)
+    assert set(kinds) <= {"dataset", "document"}, (name, kinds)
+
+
+def test_the_document_tools_are_the_ones_we_think_they_are():
+    """A named list, so offering a tool on documents is a decision."""
+    on_documents = sorted(
+        name for name, metadata in TOOLS if "document" in metadata["data_kinds"]
+    )
+    assert on_documents == [
+        "CharacterReplacer",
+        "WordcloudExplorer",
+    ], on_documents
+
+
+def test_no_document_converter_changes_the_row_count():
+    """A document keeps one value per item, so a sampler can never run on one."""
+    for name, metadata in TOOLS:
+        if "document" in metadata["data_kinds"] and "changes_row_count" in metadata:
+            assert not metadata["changes_row_count"], name
+
+
+MULTI_COLUMN_CONVERTERS = (
+    "BagOfWordsConverter",
+    "Embedding",
+    "ImageEmbeddingConverter",
+    "TFIDFConverter",
+    "TokenizerConverter",
+)
+
+
+def test_multi_column_converters_stay_datasets_only():
+    """They turn one value into many columns, which a document cannot hold."""
+    kinds = {
+        name: metadata["data_kinds"]
+        for name, metadata in TOOLS
+        if name in MULTI_COLUMN_CONVERTERS
+    }
+    assert set(kinds) == set(MULTI_COLUMN_CONVERTERS), kinds
+    assert all(value == ["dataset"] for value in kinds.values()), kinds

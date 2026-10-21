@@ -37,6 +37,8 @@ export default function DatasetsCenterContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectedDatasetIdFromState =
     location.state?.preselectedDatasetId ?? null;
+  const preselectedDocumentIdFromState =
+    location.state?.preselectedDocumentId ?? null;
 
   useEffect(() => {
     if (searchParams.get("action") === "upload") {
@@ -88,6 +90,12 @@ export default function DatasetsCenterContent() {
     });
   };
 
+  const handleNewNotebookFromDocument = () => {
+    navigate("/app/data/notebooks/new", {
+      state: { preselectedDocumentId: selectedDocumentId },
+    });
+  };
+
   if (selectedNotebookId && selectedOption === "notebook") {
     return (
       <NotebookVisualization
@@ -111,7 +119,11 @@ export default function DatasetsCenterContent() {
 
   if (selectedDocumentId && selectedOption === "document") {
     return (
-      <DocumentView key={selectedDocumentId} dataDocument={selectedDocument} />
+      <DocumentView
+        key={selectedDocumentId}
+        dataDocument={selectedDocument}
+        onNewNotebook={handleNewNotebookFromDocument}
+      />
     );
   }
 
@@ -158,9 +170,11 @@ export default function DatasetsCenterContent() {
             navigate("/app/data");
           }}
           datasets={datasets}
+          documents={documents}
           handleNotebookCreated={handleNotebookCreated}
           existingNotebooks={notebooks}
           preselectedDatasetId={preselectedDatasetIdFromState}
+          preselectedDocumentId={preselectedDocumentIdFromState}
         />
       </Box>
     );

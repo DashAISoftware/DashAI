@@ -7,6 +7,7 @@ from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     Float,
@@ -171,6 +172,9 @@ class DataDocument(Base):
     )
 
     folder: Mapped[Optional["Folder"]] = relationship(back_populates="data_documents")
+    notebooks: Mapped[List["Notebook"]] = relationship(
+        cascade="all, delete-orphan", back_populates="document"
+    )
 
     def set_status_as_delivered(self) -> None:
         """Mark the document as delivered to the job queue."""
@@ -923,12 +927,25 @@ class Converter(Base):
 
 class Notebook(Base):
     __tablename__ = "notebook"
+    __table_args__ = (
+        CheckConstraint(
+            "(dataset_id IS NOT NULL AND document_id IS NULL) "
+            "OR (dataset_id IS NULL AND document_id IS NOT NULL)",
+            name="notebook_exactly_one_source",
+        ),
+    )
     """
     Table to store all the information about a notebook.
+
+    A notebook works on a private copy of exactly one source, a dataset or a
+    document.
     """
     id: Mapped[int] = mapped_column(primary_key=True)
-    dataset_id: Mapped[int] = mapped_column(
-        ForeignKey("dataset.id", ondelete="CASCADE")
+    dataset_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("dataset.id", ondelete="CASCADE"), nullable=True
+    )
+    document_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("data_document.id", ondelete="CASCADE"), nullable=True
     )
     created: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now)
     last_modified: Mapped[DateTime] = mapped_column(
@@ -939,14 +956,28 @@ class Notebook(Base):
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=True)
     description: Mapped[str] = mapped_column(String, nullable=True)
-    # Relationships
     explorers: Mapped[List["Explorer"]] = relationship(
         back_populates="notebook", cascade="all, delete-orphan"
     )
     converters: Mapped[List["Converter"]] = relationship(
         back_populates="notebook", cascade="all, delete-orphan"
     )
-    dataset: Mapped["Dataset"] = relationship(back_populates="notebooks")
+    dataset: Mapped[Optional["Dataset"]] = relationship(back_populates="notebooks")
+    document: Mapped[Optional["DataDocument"]] = relationship(
+        back_populates="notebooks"
+    )
+
+    @property
+    def data_kind(self) -> str:
+        """Kind of data the notebook works on.
+
+        Returns
+        -------
+        str
+            ``"document"`` when the notebook was created from a document,
+            ``"dataset"`` otherwise.
+        """
+        return "document" if self.document_id is not None else "dataset"
 
 
 class GenerativeSessionParameterHistory(Base):

@@ -7,7 +7,7 @@ import {
   getExplorersByNotebookId,
   getConvertersByNotebookId,
 } from "../../../api/notebook";
-import { getDatasetTypesByFilePath } from "../../../api/datasets";
+import { fetchNotebookColumnTypes } from "../notebookColumns";
 import ExplorerBox from "../explorer/ExplorerBox";
 import ConverterBox from "../converter/ConverterBox";
 import DeleteConfirmationModal from "../../threeSectionLayout/DeleteConfirmationModal";
@@ -25,6 +25,7 @@ const CARD_HEIGHT = "520px";
 
 const RowItem = React.memo(function RowItem({
   item,
+  isDocument,
   handleExplorerDeleteClick,
   handleConverterDeleteClick,
   handleStatusChange,
@@ -50,6 +51,7 @@ const RowItem = React.memo(function RowItem({
       ) : item.type === "converter" ? (
         <ConverterBox
           converter={item}
+          isDocument={isDocument}
           handleConverterDeleteClick={handleConverterDeleteClick}
           onStatusChange={(id, newStatus) =>
             handleStatusChange(id, newStatus, "converter")
@@ -128,7 +130,7 @@ export default function NotebookView({ notebook }) {
       const [explorersData, convertersData, types] = await Promise.all([
         getExplorersByNotebookId(notebook.id),
         getConvertersByNotebookId(notebook.id),
-        getDatasetTypesByFilePath(notebook.file_path),
+        fetchNotebookColumnTypes(notebook),
       ]);
       const explorersWithType = explorersData.map((item) => ({
         ...item,
@@ -150,6 +152,7 @@ export default function NotebookView({ notebook }) {
     }
   }, [
     notebook?.id,
+    notebook?.data_kind,
     setExplorersAndConverters,
     setConvertersLoaded,
     setColumnTypes,
@@ -259,12 +262,12 @@ export default function NotebookView({ notebook }) {
         ),
       );
       if (newStatus === 3 && type === "converter" && notebook?.file_path) {
-        getDatasetTypesByFilePath(notebook.file_path)
+        fetchNotebookColumnTypes(notebook)
           .then((types) => setColumnTypes(types ?? {}))
           .catch(console.error);
       }
     },
-    [notebook?.file_path, setColumnTypes, setExplorersAndConverters],
+    [notebook, setColumnTypes, setExplorersAndConverters],
   );
 
   useEffect(() => {
@@ -414,6 +417,7 @@ export default function NotebookView({ notebook }) {
           itemContent={(index, item) => (
             <RowItem
               item={item}
+              isDocument={notebook.data_kind === "document"}
               handleExplorerDeleteClick={handleExplorerDeleteClick}
               handleConverterDeleteClick={handleConverterDeleteClick}
               handleStatusChange={handleStatusChange}
