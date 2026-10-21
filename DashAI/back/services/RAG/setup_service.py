@@ -13,7 +13,7 @@ from DashAI.back.models.RAG.chunking_models.base_chunking_model import (
 from DashAI.back.models.RAG.chunking_models.chunking_model_factory import (
     ChunkingFactoryResult,
 )
-from DashAI.back.models.RAG.documents import Chunk, RAGDocument
+from DashAI.back.models.RAG.documents import Chunk, SourceDocument
 from DashAI.back.models.RAG.prompts.base_prompt import BasePrompt
 from DashAI.back.models.RAG.RAG_models_factory import RAGModelsFactory
 from DashAI.back.models.RAG.RAG_pipeline import RAGPipeline, RAGPipelineConfig
@@ -47,7 +47,7 @@ class IndexResult:
 
     pipeline_id: int
     chunk_set_id: int
-    documents: Dict[int, RAGDocument]
+    documents: Dict[int, SourceDocument]
     chunking_model_id: int
     chunking: ChunkingFactoryResult
     retriever: RetrieverSetupResult
@@ -83,7 +83,7 @@ class SetupService:
         self._RAG_path = RAG_path
 
         self._documents = DocumentService(db)
-        self._chunking = ChunkingService(db, registry)
+        self._chunking = ChunkingService(db, registry, RAG_path)
         self._prompts = PromptService(db, registry)
         self._llm = LLMService(db, registry)
 
@@ -326,7 +326,7 @@ class SetupService:
         self,
         config: RAGPipelineConfig,
         pipeline_id: int,
-        documents: Dict[int, RAGDocument],
+        documents: Dict[int, SourceDocument],
         prompt_model: BasePrompt,
         chunking_model_id: int,
         chunking_model: BaseChunkingModel,
@@ -340,7 +340,7 @@ class SetupService:
         ----------
         config : RAGPipelineConfig
         pipeline_id : int
-        documents : Dict[int, RAGDocument]
+        documents : Dict[int, SourceDocument]
         prompt_model : BasePrompt
         chunking_model_id : int
         chunking_model : BaseChunkingModel

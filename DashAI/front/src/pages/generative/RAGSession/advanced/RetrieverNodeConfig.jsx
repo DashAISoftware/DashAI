@@ -22,6 +22,8 @@ import {
   loadRetrieverKinds,
   isComposite as isCompositeKind,
   isEmbedding as isEmbeddingKind,
+  retrieverCategory,
+  sortByCategory,
 } from "../retrieverKinds";
 
 /**
@@ -47,7 +49,7 @@ export default function RetrieverNodeConfig({
   onSave,
   onClose,
 }) {
-  const { t } = useTranslation(["generative"]);
+  const { t } = useTranslation(["generative", "common"]);
   const [kindsLoaded, setKindsLoaded] = useState(false);
 
   const allOptions = useMemo(() => {
@@ -58,14 +60,17 @@ export default function RetrieverNodeConfig({
       }
     }
     const seen = new Set();
-    return list
-      .filter((c) => c.configurable_object !== false)
-      .filter((c) => {
-        if (seen.has(c.name)) return false;
-        seen.add(c.name);
-        return true;
-      });
-  }, [allComponents, leafRegistry, kindsLoaded]);
+    return sortByCategory(
+      list
+        .filter((c) => c.configurable_object !== false)
+        .filter((c) => {
+          if (seen.has(c.name)) return false;
+          seen.add(c.name);
+          return true;
+        }),
+      t("common:other"),
+    );
+  }, [allComponents, leafRegistry, kindsLoaded, t]);
 
   const [selectedModel, setSelectedModel] = useState(null);
   const [params, setParams] = useState({});
@@ -157,11 +162,7 @@ export default function RetrieverNodeConfig({
             onChange={handleModelChange}
             getOptionLabel={(opt) => getDisplay(opt)}
             isOptionEqualToValue={(a, b) => a.name === b.name}
-            groupBy={(opt) => {
-              if (isCompositeKind(opt.name))
-                return t("generative:rag.composite.compositeGroup");
-              return t("generative:rag.composite.simpleGroup");
-            }}
+            groupBy={(opt) => retrieverCategory(opt, t("common:other"))}
             renderInput={(p) => (
               <TextField
                 {...p}

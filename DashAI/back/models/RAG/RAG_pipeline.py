@@ -24,7 +24,7 @@ from DashAI.back.core.schema_fields import (
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.base_generative_model import BaseGenerativeModel
-from DashAI.back.models.RAG.documents import Chunk, RAGDocument
+from DashAI.back.models.RAG.documents import Chunk, SourceDocument
 from DashAI.back.models.RAG.exceptions import (
     RAGPipelineConfigError,
     RAGPipelineInputError,
@@ -292,7 +292,7 @@ class RAGPipeline(BaseGenerativeModel):
     pipeline_id: int
     chunking_model_id: int
     documents_ids: List[int]
-    documents: Dict[int, RAGDocument]
+    documents: Dict[int, SourceDocument]
     prompt_model: BasePrompt
     chunking_model: BaseChunkingModel
     chunks: Dict[int, Dict[int, Chunk]]
@@ -342,7 +342,7 @@ class RAGPipeline(BaseGenerativeModel):
         config: RAGPipelineConfig,
         pipeline_id: int,
         chunking_model_id: int,
-        documents: Dict[int, RAGDocument],
+        documents: Dict[int, SourceDocument],
         chunks: Dict[int, Dict[int, Chunk]],
         prompt_model: BasePrompt,
         chunking_model: BaseChunkingModel,
@@ -355,7 +355,7 @@ class RAGPipeline(BaseGenerativeModel):
             config: Validated pipeline configuration.
             pipeline_id: Database ID for the pipeline run.
             chunking_model_id: Database ID for the chunking model.
-            documents: Mapping of document IDs to RAGDocument instances.
+            documents: Mapping of document IDs to SourceDocument instances.
             chunks: Mapping of document IDs to their chunk dicts.
             prompt_model: The prompt template model.
             chunking_model: The chunking model instance.
@@ -410,7 +410,7 @@ class RAGPipeline(BaseGenerativeModel):
         chunk_dict: Dict[str, ChunkReference] = {}
         for retrieved_chunk in chunks:
             document_id: int = retrieved_chunk.document_id
-            document: RAGDocument | None = self.documents.get(document_id)
+            document: SourceDocument | None = self.documents.get(document_id)
             if document is None:
                 raise RAGPipelineRuntimeError(
                     f"Document with ID {document_id} not found in pipeline documents."

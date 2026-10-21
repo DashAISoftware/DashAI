@@ -12,11 +12,13 @@ from DashAI.back.converters.document.ocr import OCRConverter
 from DashAI.back.converters.document.text_splitter import TextSplitter
 
 # Hugging Face module
-from DashAI.back.converters.hugging_face.embedding import Embedding
 from DashAI.back.converters.hugging_face.image_embedding import (
     ImageEmbeddingConverter,
 )
 from DashAI.back.converters.hugging_face.summarizer import Summarizer
+from DashAI.back.converters.hugging_face.text_embedding import (
+    TEXT_EMBEDDING_CONVERTERS,
+)
 from DashAI.back.converters.hugging_face.tokenizer import TokenizerConverter
 
 # Imbalanced_learn
@@ -367,15 +369,6 @@ from DashAI.back.models.RAG.chunking_models import (
     RecursiveCharacterChunkModel,
     TokenChunkModel,
 )
-from DashAI.back.models.RAG.embeddings.dense import (
-    BERTEmbedding,
-    DistilBERTEmbedding,
-    E5Embedding,
-    InstructorEmbedding,
-    LaBSEmbedding,
-    RoBERTaEmbedding,
-    SentenceTransformerEmbedding,
-)
 from DashAI.back.models.RAG.prompts import (
     CustomAugmentationPrompt,
     CustomRAGGenerationPrompt,
@@ -400,11 +393,9 @@ from DashAI.back.models.RAG.retrievers.dense.dense_embedding_retriever import (
 )
 from DashAI.back.models.RAG.retrievers.sparse.bm25_retriever import (
     BM25Retriever,
-    BM25VectorizerModel,
 )
 from DashAI.back.models.RAG.retrievers.sparse.tfidf_retriever import (
     TFIDFRetriever,
-    TFIDFVectorizerModel,
 )
 from DashAI.back.models.resnet18_image_classifier import ResNet18ImageClassifier
 from DashAI.back.models.resnet50_image_classifier import ResNet50ImageClassifier
@@ -914,8 +905,8 @@ def get_initial_components():
         OrdinalEncoder,
         PolynomialFeatures,
         StandardScaler,
-        Embedding,
         ImageEmbeddingConverter,
+        *TEXT_EMBEDDING_CONVERTERS,
         SAM3SegmentConverter,
         TFIDFConverter,
         TokenizerConverter,
@@ -973,13 +964,6 @@ def get_initial_components():
         RecursiveCharacterChunkModel,
         TokenChunkModel,
         # Encodings
-        SentenceTransformerEmbedding,
-        BERTEmbedding,
-        DistilBERTEmbedding,
-        RoBERTaEmbedding,
-        E5Embedding,
-        InstructorEmbedding,
-        LaBSEmbedding,
         # Prompts
         DefaultRAGGenerationPrompt,
         CustomRAGGenerationPrompt,
@@ -988,9 +972,7 @@ def get_initial_components():
         CustomAugmentationPrompt,
         # Retrievers
         BM25Retriever,
-        BM25VectorizerModel,
         TFIDFRetriever,
-        TFIDFVectorizerModel,
         DenseEmbeddingRetriever,
         SentenceTransformerCrossEncoderRetriever,
         MMRRerankerRetriever,

@@ -52,6 +52,12 @@ class SubComponent1(Component1):
         return TEST_SCHEMA_1
 
 
+class AllMpnetBaseV2Component(BaseConfigComponent1):
+    @classmethod
+    def get_schema(cls):
+        return TEST_SCHEMA_1
+
+
 class Component3(BaseStaticComponent):
     DESCRIPTION = "Some static component"
 
@@ -255,7 +261,7 @@ def test_get_base_type_two_base_classes_typerror():
         match=(
             r"Component ComponentWithTwoBaseClasses has more than one base "
             r"class with a 'TYPE' class attribute: "
-            r"\['ComponentWithTwoBaseClasses', 'BaseConfigComponent1'"
+            r"\['BaseConfigComponent1'"
             r", 'BaseConfigComponent2'\]."
         ),
     ):
@@ -279,6 +285,14 @@ def test_get_base_type():
     assert test_register._get_base_type(Component3) == "StaticComponent"
     assert test_register._get_base_type(Component1) == "ConfigComponent1"
     assert test_register._get_base_type(Component2) == "ConfigComponent1"
+
+
+def test_component_with_base_in_its_own_name_registers_with_the_base_type():
+    test_register = ComponentRegistry()
+
+    assert test_register._get_base_type(AllMpnetBaseV2Component) == "ConfigComponent1"
+    test_register.register_component(AllMpnetBaseV2Component)
+    assert "AllMpnetBaseV2Component" in test_register
 
 
 def test__contains__():

@@ -15,7 +15,7 @@ import FormSchemaFieldWithOptions from "../../components/shared/FormSchemaFieldW
 import FormSchemaFieldWithCollapse from "../../components/shared/FormSchemaFieldWithCollapse";
 import FormSchemaFieldWithOptimizers from "../../components/shared/FormSchemaFieldWithOptimizers";
 import FormSchemaFieldWithParent from "../../components/shared/FormSchemaFieldWithParent";
-import { getModelFromSubform, normalizeEmptyValue } from "../../utils/schema";
+import { normalizeEmptyValue } from "../../utils/schema";
 
 function ParamsSettings({
   open,
@@ -110,7 +110,7 @@ function ParamsSettings({
               name={objName}
               label={fieldSchema.title}
               description={fieldSchema.description}
-              selectedModel={getModelFromSubform(value)}
+              parent={fieldSchema.parent}
               field={{
                 value: value,
                 onChange: fieldOnChange,

@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -380,10 +381,12 @@ class CleanupService:
             self.db.commit()
 
     def invalidate_legacy_artifacts(self, *, commit: bool = True) -> int:
-        """Delete the chunk sets built before chunk sets had an owner.
+        """Delete the chunk sets that have no owning session.
 
-        They indexed rows of the legacy ``document`` table, which no longer
-        exist, so nothing can use them again.
+        Migration d8f3a1c6e2b9 detaches every chunk set that existed before
+        chunks became Arrow documents, and older ones indexed rows of the
+        legacy ``document`` table. None of them can be used again, so this
+        removes their rows and folders at startup.
 
         Parameters
         ----------
@@ -481,6 +484,17 @@ class CleanupService:
             self.db.delete(dense_detail)
             self.db.delete(bridge)
 
+        chunk_folders = {
+            str(Path(row[0]).parent)
+            for row in self.db.query(RAGChunkSetDocument.path)
+            .filter(
+                RAGChunkSetDocument.chunk_set_id == chunk_set_id,
+                RAGChunkSetDocument.path.isnot(None),
+            )
+            .all()
+        }
+        for folder in chunk_folders:
+            remove_after_commit(self.db, folder)
         chunk_set = self.db.get(RAGChunkSet, chunk_set_id)
         if chunk_set is not None:
             self.db.delete(chunk_set)

@@ -16,18 +16,15 @@ call on every page load.
 import logging
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.dependencies.database.models import (
-    Chunk as ChunkDBModel,
-)
 from DashAI.back.dependencies.database.models import (
     DataDocument,
     GenerativeSession,
     GenerativeSessionParameterHistory,
     RAGChunkSet,
+    RAGChunkSetDocument,
 )
 from DashAI.back.dependencies.job_queues.base_job_queue import BaseJobQueue
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
@@ -36,7 +33,9 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_DOCUMENTS,
     RAG_PARAM_RETRIEVER_MODEL,
 )
-from DashAI.back.models.RAG.retrievers.dense.dense_retriever import DenseRetriever
+from DashAI.back.models.RAG.retrievers.dense.dense_embedding_retriever import (
+    DenseEmbeddingRetriever,
+)
 from DashAI.back.models.RAG.retrievers.sparse.sparse_retriever import SparseRetriever
 from DashAI.back.services.RAG.chunking_service import ChunkingService
 from DashAI.back.services.RAG.index_job_service import get_index_job, get_live_index_job
@@ -312,12 +311,14 @@ class IndexStatusService:
         if not document_ids:
             return {}
         rows = (
-            self._db.query(ChunkDBModel.document_id, func.count(ChunkDBModel.id))
-            .filter(
-                ChunkDBModel.chunk_set_id == chunk_set_id,
-                ChunkDBModel.document_id.in_(document_ids),
+            self._db.query(
+                RAGChunkSetDocument.document_id, RAGChunkSetDocument.n_chunks
             )
-            .group_by(ChunkDBModel.document_id)
+            .filter(
+                RAGChunkSetDocument.chunk_set_id == chunk_set_id,
+                RAGChunkSetDocument.document_id.in_(document_ids),
+                RAGChunkSetDocument.n_chunks > 0,
+            )
             .all()
         )
         return dict(rows)
@@ -381,7 +382,7 @@ class IndexStatusService:
         model_class = self._registry[component]["class"]
         sorted_params = dict(sorted(params.items()))
         try:
-            if issubclass(model_class, DenseRetriever):
+            if issubclass(model_class, DenseEmbeddingRetriever):
                 return (
                     self._retrievers.find_dense(component, sorted_params, chunk_set_id)
                     is not None

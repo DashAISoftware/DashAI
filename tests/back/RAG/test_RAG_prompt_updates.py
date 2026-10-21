@@ -1,4 +1,5 @@
 from DashAI.back.dependencies.database.models import GenerativeSession
+from tests.back.RAG.conftest import TFIDF_PARAMS
 
 
 def _get_prompt_list(client):
@@ -20,22 +21,9 @@ def _create_rag_session(session_factory, prompt_id: int, name: str):
         "retriever_model": {
             "component": "TFIDFRetriever",
             "params": {
-                "TFIDFVectorizer": {
-                    "component": "TFIDFVectorizerModel",
-                    "params": {
-                        "strip_accents": "None",
-                        "lowercase": True,
-                        "analyzer": "word",
-                        "stop_words": [],
-                        "ngram_range": [1, 1],
-                        "max_df": 1.0,
-                        "min_df": 0.0,
-                        "max_features": 1000,
-                        "norm": "l2",
-                        "use_idf": True,
-                        "smooth_idf": True,
-                        "sublinear_tf": False,
-                    },
+                "vectorizer": {
+                    "component": "TFIDFConverter",
+                    "params": dict(TFIDF_PARAMS),
                 },
                 "similarity_function": "cosine",
                 "top_k": 1,

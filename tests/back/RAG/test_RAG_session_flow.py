@@ -22,7 +22,7 @@ Coverage
 
 from fastapi.testclient import TestClient
 
-from tests.back.RAG.conftest import _add_document_to_session
+from tests.back.RAG.conftest import BOW_PARAMS, TFIDF_PARAMS, _add_document_to_session
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -42,16 +42,9 @@ def _base_session_params() -> dict:
             "retriever_model": {
                 "component": "BM25Retriever",
                 "params": {
-                    "BM25Vectorizer": {
-                        "component": "BM25VectorizerModel",
-                        "params": {
-                            "strip_accents": None,
-                            "lowercase": True,
-                            "stop_words": None,
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": None,
-                        },
+                    "vectorizer": {
+                        "component": "BagOfWordsConverter",
+                        "params": dict(BOW_PARAMS),
                     },
                     "k1": 1.5,
                     "b": 0.75,
@@ -175,22 +168,9 @@ class TestParameterStateTransitions:
         new_retriever = {
             "component": "TFIDFRetriever",
             "params": {
-                "TFIDFVectorizer": {
-                    "component": "TFIDFVectorizerModel",
-                    "params": {
-                        "strip_accents": "None",
-                        "lowercase": True,
-                        "analyzer": "word",
-                        "stop_words": [],
-                        "ngram_range": [1, 1],
-                        "max_df": 1.0,
-                        "min_df": 0.0,
-                        "max_features": 1000,
-                        "norm": "l2",
-                        "use_idf": True,
-                        "smooth_idf": True,
-                        "sublinear_tf": False,
-                    },
+                "vectorizer": {
+                    "component": "TFIDFConverter",
+                    "params": dict(TFIDF_PARAMS),
                 },
                 "similarity_function": "cosine",
                 "top_k": 10,
@@ -528,7 +508,7 @@ class TestCrossComponentValidation:
 
        Since the strict recursive validation contract, every ``{component,
        params}`` (including nested sub-components such as
-       ``BM25VectorizerModel`` inside ``BM25Retriever``) is validated against
+       ``BagOfWordsConverter`` inside ``BM25Retriever``) is validated against
        its own schema **at creation time**.  Invalid sub-component field
        types or ranges are therefore **rejected** (400) during session
        creation, instead of being deferred to pipeline runtime.

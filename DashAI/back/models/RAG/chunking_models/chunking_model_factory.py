@@ -1,7 +1,6 @@
 """Pure factory for chunking models.
 
-Resolves a component name + parameters into a BaseChunkingModel instance
-and chunks the provided documents. Phase 1 only — no DB access.
+Resolves a component name and parameters into a BaseChunkingModel instance.
 """
 
 from dataclasses import dataclass
@@ -12,17 +11,19 @@ from DashAI.back.models.RAG.chunking_models.base_chunking_model import (
     BaseChunkingModel,
 )
 from DashAI.back.models.RAG.documents.chunk import Chunk
-from DashAI.back.models.RAG.documents.rag_document import RAGDocument
 from DashAI.back.models.RAG.exceptions import RAGComponentNotFoundError
 
 
 @dataclass(frozen=True)
 class ChunkingFactoryResult:
-    """Result of a chunking model creation via :class:`ChunkingModelFactory`.
+    """A chunking model and the chunks of one chunk set.
 
-    Attributes:
-        model: The instantiated chunking model.
-        chunks: A dictionary mapping document IDs to their chunk dictionaries.
+    Attributes
+    ----------
+    model : BaseChunkingModel
+        The instantiated chunking model.
+    chunks : dict
+        Chunks keyed by document id, then by position.
     """
 
     model: BaseChunkingModel
@@ -30,30 +31,20 @@ class ChunkingFactoryResult:
 
 
 class ChunkingModelFactory:
-    """Creates a chunking model and chunks documents. Phase 1 only — no DB."""
+    """Creates a chunking model from a registered component name."""
 
-    def __init__(
-        self,
-        registry: ComponentRegistry,
-        documents: dict[int, RAGDocument],
-    ):
-        """Initialize the factory with a component registry and document mapping.
+    def __init__(self, registry: ComponentRegistry):
+        """Store the registry.
 
-        Args:
-            registry: The component registry used to resolve chunking model
-                classes by name.
-            documents: A dictionary mapping document IDs to RAGDocument
-                instances to be chunked.
+        Parameters
+        ----------
+        registry : ComponentRegistry
+            Registry resolving chunking model classes by name.
         """
         self._registry = registry
-        self._documents = documents
 
-    def create(
-        self,
-        component_name: str,
-        params: dict[str, Any],
-    ) -> ChunkingFactoryResult:
-        """Build a chunking model and chunk the documents.
+    def create(self, component_name: str, params: dict[str, Any]) -> BaseChunkingModel:
+        """Build a chunking model.
 
         Parameters
         ----------
@@ -64,8 +55,13 @@ class ChunkingModelFactory:
 
         Returns
         -------
-        ChunkingFactoryResult
-            The instantiated model and its chunk dictionary.
+        BaseChunkingModel
+            The instantiated model.
+
+        Raises
+        ------
+        RAGComponentNotFoundError
+            If the component is not registered.
         """
         try:
             model_class = self._registry[component_name]["class"]
@@ -73,8 +69,4 @@ class ChunkingModelFactory:
             raise RAGComponentNotFoundError(
                 f"Component '{component_name}' not found in registry"
             ) from err
-
-        model_params = {**params, "documents": self._documents}
-        model = model_class(**model_params)
-        model.compute_chunks()
-        return ChunkingFactoryResult(model=model, chunks=model.get_chunks())
+        return model_class(**params)

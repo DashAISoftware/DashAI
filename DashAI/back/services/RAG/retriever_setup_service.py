@@ -32,7 +32,9 @@ from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
 from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
-from DashAI.back.models.RAG.retrievers.dense.dense_retriever import DenseRetriever
+from DashAI.back.models.RAG.retrievers.dense.dense_embedding_retriever import (
+    DenseEmbeddingRetriever,
+)
 from DashAI.back.models.RAG.retrievers.persistence import (
     DensePersistence,
     SparsePersistence,
@@ -241,7 +243,7 @@ class RetrieverSetupService:
         Returns:
             Initialized retriever model, or ``None`` if not cached.
         """
-        if issubclass(model_class, DenseRetriever):
+        if issubclass(model_class, DenseEmbeddingRetriever):
             return self._load_dense(class_name, sorted_params)
         if issubclass(model_class, SparseRetriever):
             return self._load_sparse(class_name, sorted_params)
@@ -257,7 +259,7 @@ class RetrieverSetupService:
             sorted_params: Deterministically sorted parameters.
 
         Returns:
-            Fully initialized DenseRetriever, or ``None`` if not cached.
+            Fully initialized DenseEmbeddingRetriever, or ``None`` if not cached.
 
         Raises:
             SQLAlchemyError: On database lookup failure.
@@ -334,7 +336,7 @@ class RetrieverSetupService:
         Raises:
             RAGRetrieverError: If the retriever type is unsupported.
         """
-        if issubclass(model_class, DenseRetriever):
+        if issubclass(model_class, DenseEmbeddingRetriever):
             return self._build_dense_persistence_for(params)
         elif issubclass(model_class, SparseRetriever):
             return self._build_sparse_persistence_for(model_class, params)
@@ -350,10 +352,8 @@ class RetrieverSetupService:
         schema-component format ``{"component": "<class>", "params": {...}}``,
         set by ``DenseEmbeddingRetriever.__init__``.
 
-        When the embedding model key is absent (e.g. for
-        ``HuggingFaceDenseRetriever`` subclasses that create the embedding
-        internally during ``init_model()``), an empty persistence is returned
-        and the caller must handle embedding computation in Phase 2.
+        When the embedding model key is absent, an empty persistence is
+        returned and the caller must handle embedding computation in Phase 2.
 
         Args:
             params: Configuration parameters containing ``embedding_model``
@@ -456,20 +456,22 @@ class RetrieverSetupService:
         Raises:
             ValueError: If the retriever type is unsupported.
         """
-        if isinstance(model, DenseRetriever):
+        if isinstance(model, DenseEmbeddingRetriever):
             return self._save_dense(model, sorted_params)
         if isinstance(model, SparseRetriever):
             return self._save_sparse(model, sorted_params)
         raise ValueError(f"Unsupported retriever: {type(model).__name__}")
 
-    def _save_dense(self, model: DenseRetriever, sorted_params: dict[str, Any]) -> int:
+    def _save_dense(
+        self, model: DenseEmbeddingRetriever, sorted_params: dict[str, Any]
+    ) -> int:
         """Persist a dense retriever: embedding matrices, bridge, and detail record.
 
         All DB operations share a single transaction; the caller's session
         is committed once at the end.
 
         Args:
-            model: The initialized DenseRetriever.
+            model: The initialized DenseEmbeddingRetriever.
             sorted_params: Deterministically sorted parameters.
 
         Returns:

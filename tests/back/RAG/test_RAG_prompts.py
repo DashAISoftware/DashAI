@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from DashAI.back.dependencies.database.models import RAGPrompt
 from DashAI.back.services.RAG.prompt_service import PromptService
+from tests.back.RAG.conftest import BOW_PARAMS
 
 # ---------------------------------------------------------------------------
 # helpers — matching test_rag_component_api_configs.py patterns
@@ -30,16 +31,9 @@ def _base_session_params() -> dict:
             "retriever_model": {
                 "component": "BM25Retriever",
                 "params": {
-                    "BM25Vectorizer": {
-                        "component": "BM25VectorizerModel",
-                        "params": {
-                            "strip_accents": None,
-                            "lowercase": True,
-                            "stop_words": None,
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": None,
-                        },
+                    "vectorizer": {
+                        "component": "BagOfWordsConverter",
+                        "params": dict(BOW_PARAMS),
                     },
                     "k1": 1.5,
                     "b": 0.75,

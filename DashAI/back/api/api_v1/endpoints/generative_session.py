@@ -651,6 +651,16 @@ async def update_generative_session_params(
                         status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
                     ) from e
 
+                nested_missing = missing_downloads(normalized, component_registry)
+                if nested_missing:
+                    names = ", ".join(m["name"] for m in nested_missing)
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            f"These components must be downloaded before use: {names}."
+                        ),
+                    )
+
                 # Merge validated new params into old params
                 updated_parameters = {**old_parameters, **normalized}
 

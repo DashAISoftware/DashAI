@@ -2,7 +2,6 @@
 
 import uuid
 
-from DashAI.back.dependencies.database.models import Chunk as ChunkRow
 from DashAI.back.dependencies.database.models import (
     RAGChunkSet,
     RAGChunkSetDocument,
@@ -15,7 +14,7 @@ from tests.back.RAG.conftest import _insert_data_document, _insert_rag_session
 
 
 def _chunk_set_with_sparse_index(db, session_id, document_id, storage) -> int:
-    """Insert a chunk set with one chunk and a fitted sparse retriever.
+    """Insert a chunk set with one stored chunk folder and a fitted sparse retriever.
 
     Parameters
     ----------
@@ -38,10 +37,14 @@ def _chunk_set_with_sparse_index(db, session_id, document_id, storage) -> int:
     )
     db.add(chunk_set)
     db.flush()
-    db.add(RAGChunkSetDocument(chunk_set_id=chunk_set.id, document_id=document_id))
+    chunk_folder = storage.parent / f"{storage.name}_chunks" / str(document_id)
+    chunk_folder.mkdir(parents=True)
     db.add(
-        ChunkRow(
-            chunk_set_id=chunk_set.id, document_id=document_id, chunk_index=0, text="t"
+        RAGChunkSetDocument(
+            chunk_set_id=chunk_set.id,
+            document_id=document_id,
+            path=str(chunk_folder),
+            n_chunks=1,
         )
     )
     pipeline = RAGPipeline(
@@ -80,11 +83,11 @@ def test_invalidating_a_session_leaves_other_sessions_alone(orm_db, tmp_path):
     CleanupService(orm_db).invalidate_session_artifacts(first.id)
 
     assert orm_db.get(RAGChunkSet, first_set) is None
-    assert orm_db.query(ChunkRow).filter_by(chunk_set_id=first_set).count() == 0
     assert orm_db.get(RAGChunkSet, second_set) is not None
-    assert orm_db.query(ChunkRow).filter_by(chunk_set_id=second_set).count() == 1
     assert not (tmp_path / "a").exists()
     assert (tmp_path / "b").exists()
+    assert not (tmp_path / "a_chunks").exists()
+    assert (tmp_path / "b_chunks").exists()
 
 
 def test_legacy_chunk_sets_are_the_ones_without_a_session(orm_db, tmp_path):
@@ -103,3 +106,5 @@ def test_legacy_chunk_sets_are_the_ones_without_a_session(orm_db, tmp_path):
     assert orm_db.get(RAGChunkSet, owned_set) is not None
     assert not (tmp_path / "legacy").exists()
     assert (tmp_path / "owned").exists()
+    assert not (tmp_path / "legacy_chunks").exists()
+    assert (tmp_path / "owned_chunks").exists()
