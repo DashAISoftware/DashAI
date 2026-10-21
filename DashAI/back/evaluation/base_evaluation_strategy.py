@@ -23,7 +23,7 @@ the same way, by the backend and by the frontend, and nothing calls them to do
 work.
 """
 
-from typing import Final
+from typing import Final, Optional
 
 from DashAI.back.core.enums.metrics import SplitEnum
 
@@ -36,10 +36,19 @@ class BaseEvaluationStrategy:
 
     TYPE: Final[str] = "EvaluationStrategy"
 
-    #: Whether this strategy splits the dataset once or into folds. It decides
-    #: which unit prepares the data, because the two publish different shapes,
-    #: and which controls the session wizard offers.
+    #: Whether this strategy splits the dataset once, into folds, or not at
+    #: all. It decides which unit fits the run and which controls the session
+    #: wizard offers. The unit that prepares the data is picked from the
+    #: splitter's ``PARTITIONING``, so the two have to agree; see below.
     KIND: str = "holdout"
+
+    #: The ``PARTITIONING`` of the splitters this strategy takes, or None when
+    #: it takes no splitter. The session API refuses any other splitter,
+    #: because the units that prepare a holdout and a fold run publish
+    #: different keys and the fitting unit only reads its own: a holdout
+    #: strategy with a fold splitter would fail every run with a missing
+    #: context key.
+    SPLITTER_PARTITIONING: Optional[str] = "holdout"
 
     #: The partitions a run records a score for. Not the same as which
     #: partitions have metrics configured: a forecaster has training metrics
