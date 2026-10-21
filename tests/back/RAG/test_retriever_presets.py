@@ -15,7 +15,7 @@ def test_keyword_preset(client: TestClient):
     keyword = data[0]
     assert keyword["component"] == "BM25Retriever"
     assert keyword["params"]["top_k"] == 10
-    assert keyword["params"]["BM25Vectorizer"]["component"] == "BM25VectorizerModel"
+    assert keyword["params"]["vectorizer"]["component"] == "BagOfWordsConverter"
     assert "k1" in keyword["params"]
 
 
@@ -25,10 +25,7 @@ def test_semantic_preset(client: TestClient):
     assert semantic["component"] == "DenseEmbeddingRetriever"
     assert semantic["params"]["top_k"] == 10
     emb = semantic["params"]["embedding_model"]
-    assert emb["component"] == "SentenceTransformerEmbedding"
-    assert emb["params"]["model_name"] == (
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    )
+    assert emb["component"] == "ParaphraseMultilingualMiniLML12V2Embedding"
 
 
 def test_hybrid_preset_splits_top_k(client: TestClient):

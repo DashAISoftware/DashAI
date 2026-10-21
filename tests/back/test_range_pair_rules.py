@@ -37,8 +37,6 @@ from DashAI.back.dependencies.config_builder import get_initial_components
 #: component -> (low field, high field, whether equal values are allowed)
 RANGE_PAIRS: Dict[str, Tuple[str, str, bool]] = {
     "MinMaxScaler": ("min_range", "max_range", False),
-    "TFIDFVectorizerModel": ("min_df", "max_df", True),
-    "BM25VectorizerModel": ("min_df", "max_df", True),
     "TFIDFConverter": ("lower_bound_ngrams", "upper_bound_ngrams", True),
     "BagOfWordsConverter": ("lower_bound_ngrams", "upper_bound_ngrams", True),
     "BagOfWordsTextClassificationModel": ("ngram_min_n", "ngram_max_n", True),

@@ -21,7 +21,6 @@ from DashAI.back.dependencies.downloads.nested import missing_downloads
 from DashAI.back.models.base_generative_model import BaseGenerativeModel
 from DashAI.back.models.RAG.exceptions.base import RAGWorkflowError
 from DashAI.back.services.RAG.cleanup_service import CleanupService
-from DashAI.back.services.RAG.document_service import DocumentService
 from DashAI.back.services.RAG.index_job_service import cancel_live_index_job
 from DashAI.back.services.RAG.session_validation_service import (
     SessionValidationService,
@@ -317,12 +316,9 @@ async def delete_generative_sessions(
                 if not session:
                     continue
 
-                # Documents belong to the session. The ORM cascade drops the
-                # rows, but only this removes their files and fitted artifacts
-                # from disk. Deferred so the whole batch stays one transaction:
-                # committing per session would leave earlier sessions' files
-                # gone if a later one failed.
-                DocumentService(db).delete_by_session(session_id, commit=False)
+                CleanupService(db).invalidate_session_artifacts(
+                    session_id, commit=False
+                )
 
                 # Delete all the processes associated with the session
                 processes = (
@@ -428,10 +424,7 @@ async def delete_generative_session(
             for process in processes:
                 db.delete(process)
 
-            # Documents belong to the session. The ORM cascade drops the rows,
-            # but only this removes their files and fitted artifacts from disk.
-            # Deferred so nothing is unlinked before the delete commits.
-            DocumentService(db).delete_by_session(session_id, commit=False)
+            CleanupService(db).invalidate_session_artifacts(session_id, commit=False)
 
             # Delete the session parameter history entries
             parameters_history = (
@@ -657,6 +650,16 @@ async def update_generative_session_params(
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
                     ) from e
+
+                nested_missing = missing_downloads(normalized, component_registry)
+                if nested_missing:
+                    names = ", ".join(m["name"] for m in nested_missing)
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            f"These components must be downloaded before use: {names}."
+                        ),
+                    )
 
                 # Merge validated new params into old params
                 updated_parameters = {**old_parameters, **normalized}

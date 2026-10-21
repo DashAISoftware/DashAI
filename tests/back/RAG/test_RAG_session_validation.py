@@ -20,7 +20,7 @@ Document existence is only enforced during POST (via
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.back.RAG.conftest import _create_test_document
+from tests.back.RAG.conftest import BOW_PARAMS, TFIDF_PARAMS, _create_test_document
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -46,16 +46,9 @@ def _base_session_params() -> dict:
             "retriever_model": {
                 "component": "BM25Retriever",
                 "params": {
-                    "BM25Vectorizer": {
-                        "component": "BM25VectorizerModel",
-                        "params": {
-                            "strip_accents": None,
-                            "lowercase": True,
-                            "stop_words": None,
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": None,
-                        },
+                    "vectorizer": {
+                        "component": "BagOfWordsConverter",
+                        "params": dict(BOW_PARAMS),
                     },
                     "k1": 1.5,
                     "b": 0.75,
@@ -499,22 +492,9 @@ class TestUpdateRAGSessionParams:
             "retriever_model": {
                 "component": "TFIDFRetriever",
                 "params": {
-                    "TFIDFVectorizer": {
-                        "component": "TFIDFVectorizerModel",
-                        "params": {
-                            "strip_accents": "None",
-                            "lowercase": True,
-                            "analyzer": "word",
-                            "stop_words": [],
-                            "ngram_range": [1, 1],
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": 1000,
-                            "norm": "l2",
-                            "use_idf": True,
-                            "smooth_idf": True,
-                            "sublinear_tf": False,
-                        },
+                    "vectorizer": {
+                        "component": "TFIDFConverter",
+                        "params": dict(TFIDF_PARAMS),
                     },
                     "similarity_function": "cosine",
                     "top_k": 10,
@@ -988,15 +968,12 @@ class TestRetrieverConfigRegression:
             "component": "DenseEmbeddingRetriever",
             "params": {
                 "embedding_model": {
-                    "component": "SentenceTransformerEmbedding",
+                    "component": "ParaphraseMultilingualMiniLML12V2Embedding",
                     "params": {
-                        "model_name": (
-                            "sentence-transformers/"
-                            "paraphrase-multilingual-MiniLM-L12-v2"
-                        ),
-                        "overflow_strategy": "truncate",
+                        "device": "CPU",
+                        "batch_size": 32,
                         "normalize": True,
-                        "device": "cpu",
+                        "overflow_strategy": "truncate",
                     },
                 },
                 "similarity_metric": "cosine",
@@ -1039,16 +1016,9 @@ class TestRetrieverConfigRegression:
                     {
                         "component": "BM25Retriever",
                         "params": {
-                            "BM25Vectorizer": {
-                                "component": "BM25VectorizerModel",
-                                "params": {
-                                    "strip_accents": None,
-                                    "lowercase": True,
-                                    "stop_words": None,
-                                    "max_df": 1.0,
-                                    "min_df": 0.0,
-                                    "max_features": None,
-                                },
+                            "vectorizer": {
+                                "component": "BagOfWordsConverter",
+                                "params": dict(BOW_PARAMS),
                             },
                             "k1": 1.5,
                             "b": 0.75,
@@ -1083,7 +1053,7 @@ class TestRetrieverConfigRegression:
     def test_bare_embedding_as_child_accepts_but_fails_at_runtime(
         self, client: TestClient
     ):
-        """Regression: a SentenceTransformerEmbedding used directly as a
+        """Regression: a ParaphraseMultilingualMiniLML12V2Embedding used directly as a
         child of a composite retriever IS accepted during session creation
         (the component exists in the registry), but the runtime RAG job
         will fail with ``Unsupported retriever type``.
@@ -1102,16 +1072,9 @@ class TestRetrieverConfigRegression:
                     {
                         "component": "BM25Retriever",
                         "params": {
-                            "BM25Vectorizer": {
-                                "component": "BM25VectorizerModel",
-                                "params": {
-                                    "strip_accents": None,
-                                    "lowercase": True,
-                                    "stop_words": None,
-                                    "max_df": 1.0,
-                                    "min_df": 0.0,
-                                    "max_features": None,
-                                },
+                            "vectorizer": {
+                                "component": "BagOfWordsConverter",
+                                "params": dict(BOW_PARAMS),
                             },
                             "k1": 1.5,
                             "b": 0.75,
@@ -1126,15 +1089,12 @@ class TestRetrieverConfigRegression:
                         # would fail with "Unsupported retriever type".
                         # The frontend prevents this by not offering bare
                         # embeddings as child options.
-                        "component": "SentenceTransformerEmbedding",
+                        "component": "ParaphraseMultilingualMiniLML12V2Embedding",
                         "params": {
-                            "model_name": (
-                                "sentence-transformers/"
-                                "paraphrase-multilingual-MiniLM-L12-v2"
-                            ),
-                            "overflow_strategy": "truncate",
+                            "device": "CPU",
+                            "batch_size": 32,
                             "normalize": True,
-                            "device": "cpu",
+                            "overflow_strategy": "truncate",
                         },
                     },
                 ],
@@ -1163,15 +1123,12 @@ class TestRetrieverConfigRegression:
             "component": "DenseEmbeddingRetriever",
             "params": {
                 "embedding_model": {
-                    "component": "SentenceTransformerEmbedding",
+                    "component": "ParaphraseMultilingualMiniLML12V2Embedding",
                     "params": {
-                        "model_name": (
-                            "sentence-transformers/"
-                            "paraphrase-multilingual-MiniLM-L12-v2"
-                        ),
-                        "overflow_strategy": "truncate",
+                        "device": "CPU",
+                        "batch_size": 32,
                         "normalize": True,
-                        "device": "cpu",
+                        "overflow_strategy": "truncate",
                     },
                 },
                 # NOTE: similarity_metric and top_k missing (auto-save bug)

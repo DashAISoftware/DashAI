@@ -1,15 +1,19 @@
 import logging
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from DashAI.back.dependencies.database.models import (
     RAGChunkingModel,
+    RAGChunkSet,
+    RAGChunkSetDocument,
     RAGDenseRetriever,
     RAGEmbeddingMatrix,
     RAGEmbeddingModel,
     RAGPipeline,
     RAGRetriever,
     RAGRetrieverChild,
+    RAGSparseRetriever,
 )
 from DashAI.back.models.RAG.RAG_constants import COMPOSITE_RETRIEVER_NAMES
 from DashAI.back.services.RAG.deferred_fs import remove_after_commit, remove_now
@@ -350,145 +354,147 @@ class CleanupService:
         self._delete_path(sparse_retriever.storage_folder)
         self.db.delete(sparse_retriever)
 
-    def invalidate_document_artifacts(
-        self,
-        document_id: int,
-        *,
-        commit: bool = True,
+    def invalidate_session_artifacts(
+        self, session_id: int, *, commit: bool = True
     ) -> None:
-        """Delete all RAG artifacts associated with a document.
+        """Delete every chunk set a session owns, with what was fitted on it.
 
-        When a document's extractor changes, all chunk sets, retrievers,
-        embedding matrices, and on-disk artifacts that depend on it are
-        deleted. The next pipeline run will recompute them automatically.
+        Chunk sets carry their owning ``session_id``, so this never reaches the
+        index of another session, even one using the same Data documents.
 
-        Also closes the orphaned-artifacts gap on document deletion.
-
-        The whole chunk set is deleted, including the chunks of sibling
-        documents in the same set. Documents belong to exactly one session, so
-        a chunk set does too: re-chunking the set is precisely what has to
-        happen when one of its documents changes.
-
-        Args:
-            document_id: Document ID whose artifacts should be removed.
-            commit: When ``False`` the caller owns the transaction and is
-                responsible for committing (or rolling back). Use it to make
-                the invalidation part of a larger unit of work.
-
-        The artifact directories are queued with
-        :func:`~DashAI.back.services.RAG.deferred_fs.remove_after_commit`, so
-        they are removed when the transaction commits and left alone if it does
-        not -- whoever owns that transaction.
+        Parameters
+        ----------
+        session_id : int
+            The generative session whose indexes are discarded.
+        commit : bool
+            When ``False`` the caller owns the transaction and commits it.
         """
-        from DashAI.back.dependencies.database.models import (
-            RAGChunkSet,
-            RAGChunkSetDocument,
-            RAGDenseRetriever,
-            RAGEmbeddingMatrix,
-            RAGEmbeddingModel,
-            RAGRetriever,
-            RAGRetrieverChild,
-            RAGSparseRetriever,
-        )
-
-        chunk_set_links = (
-            self.db.query(RAGChunkSetDocument).filter_by(document_id=document_id).all()
-        )
-        chunk_set_ids = list({link.chunk_set_id for link in chunk_set_links})
-
-        if not chunk_set_ids:
-            return
-
+        chunk_set_ids = [
+            row[0]
+            for row in self.db.query(RAGChunkSet.id)
+            .filter(RAGChunkSet.session_id == session_id)
+            .all()
+        ]
         for chunk_set_id in chunk_set_ids:
-            docs_in_chunk_set = (
-                self.db.query(RAGChunkSetDocument)
-                .filter_by(chunk_set_id=chunk_set_id)
-                .all()
-            )
-            doc_ids_in_set = [d.document_id for d in docs_in_chunk_set]
-
-            # 2. Sparse retrievers
-            sparse_detail_links = (
-                self.db.query(RAGSparseRetriever, RAGRetriever)
-                .join(RAGRetriever, RAGSparseRetriever.bridge_id == RAGRetriever.id)
-                .filter(RAGSparseRetriever.chunk_set_id == chunk_set_id)
-                .all()
-            )
-            for sparse_detail, bridge in sparse_detail_links:
-                remove_after_commit(self.db, sparse_detail.storage_folder)
-                self.db.delete(bridge)
-                self.db.delete(sparse_detail)
-
-            # 3. Dense retrievers
-            dense_detail_links = (
-                self.db.query(RAGDenseRetriever, RAGRetriever)
-                .join(RAGRetriever, RAGDenseRetriever.bridge_id == RAGRetriever.id)
-                .filter(RAGDenseRetriever.chunk_set_id == chunk_set_id)
-                .all()
-            )
-            for dense_detail, bridge in dense_detail_links:
-                embedding_model_id = dense_detail.embedding_model_id
-
-                for doc_id in doc_ids_in_set:
-                    matrices = (
-                        self.db.query(RAGEmbeddingMatrix)
-                        .filter(
-                            RAGEmbeddingMatrix.chunk_set_id == chunk_set_id,
-                            RAGEmbeddingMatrix.embedding_model_id == embedding_model_id,
-                            RAGEmbeddingMatrix.document_id == doc_id,
-                        )
-                        .all()
-                    )
-                    for matrix in matrices:
-                        remove_after_commit(self.db, matrix.storage_folder)
-                        self.db.delete(matrix)
-
-                remaining = (
-                    self.db.query(RAGDenseRetriever)
-                    .filter(
-                        RAGDenseRetriever.embedding_model_id == embedding_model_id,
-                        RAGDenseRetriever.id != dense_detail.id,
-                    )
-                    .first()
-                )
-                if remaining is None:
-                    emb_model = self.db.query(RAGEmbeddingModel).get(embedding_model_id)
-                    if emb_model is not None:
-                        self.db.delete(emb_model)
-
-                self.db.delete(bridge)
-                self.db.delete(dense_detail)
-
-            # 4. Composite retrievers — find parents whose children
-            # reference this chunk set via sparse/dense detail
-            sparse_child_ids = (
-                self.db.query(RAGSparseRetriever.bridge_id)
-                .filter(RAGSparseRetriever.chunk_set_id == chunk_set_id)
-                .all()
-            )
-            dense_child_ids = (
-                self.db.query(RAGDenseRetriever.bridge_id)
-                .filter(RAGDenseRetriever.chunk_set_id == chunk_set_id)
-                .all()
-            )
-            child_bridge_ids = {row[0] for row in sparse_child_ids + dense_child_ids}
-            if child_bridge_ids:
-                orphaned_children = (
-                    self.db.query(RAGRetrieverChild)
-                    .filter(RAGRetrieverChild.child_id.in_(child_bridge_ids))
-                    .all()
-                )
-                for child_link in orphaned_children:
-                    parent_bridge = self.db.query(RAGRetriever).get(
-                        child_link.parent_id
-                    )
-                    if parent_bridge is not None:
-                        self.db.delete(parent_bridge)
-
-            # 5. Delete chunk set
-            chunk_set = self.db.query(RAGChunkSet).get(chunk_set_id)
-            if chunk_set is not None:
-                self.db.delete(chunk_set)
-
+            self._invalidate_chunk_set(chunk_set_id)
         if commit:
             self.db.commit()
+
+    def invalidate_legacy_artifacts(self, *, commit: bool = True) -> int:
+        """Delete the chunk sets that have no owning session.
+
+        Migration d8f3a1c6e2b9 detaches every chunk set that existed before
+        chunks became Arrow documents, and older ones indexed rows of the
+        legacy ``document`` table. None of them can be used again, so this
+        removes their rows and folders at startup.
+
+        Parameters
+        ----------
+        commit : bool
+            When ``False`` the caller owns the transaction and commits it.
+
+        Returns
+        -------
+        int
+            Number of chunk sets deleted.
+        """
+        chunk_set_ids = [
+            row[0]
+            for row in self.db.query(RAGChunkSet.id)
+            .filter(RAGChunkSet.session_id.is_(None))
+            .all()
+        ]
+        for chunk_set_id in chunk_set_ids:
+            self._invalidate_chunk_set(chunk_set_id)
+        if commit:
+            self.db.commit()
+        return len(chunk_set_ids)
+
+    def _invalidate_chunk_set(self, chunk_set_id: int) -> None:
+        """Delete one chunk set and everything fitted on it.
+
+        Removes the composite retrievers built over its retrievers, its sparse
+        and dense retrievers, its embedding matrices (and their embedding model
+        once nothing else uses it) and the chunk set itself, whose chunks and
+        membership rows go with it. Storage folders are queued with
+        ``remove_after_commit``.
+
+        Parameters
+        ----------
+        chunk_set_id : int
+            The chunk set to delete.
+        """
+        document_ids = [
+            row[0]
+            for row in self.db.query(RAGChunkSetDocument.document_id)
+            .filter(RAGChunkSetDocument.chunk_set_id == chunk_set_id)
+            .all()
+        ]
+        sparse_links = (
+            self.db.query(RAGSparseRetriever, RAGRetriever)
+            .join(RAGRetriever, RAGSparseRetriever.bridge_id == RAGRetriever.id)
+            .filter(RAGSparseRetriever.chunk_set_id == chunk_set_id)
+            .all()
+        )
+        dense_links = (
+            self.db.query(RAGDenseRetriever, RAGRetriever)
+            .join(RAGRetriever, RAGDenseRetriever.bridge_id == RAGRetriever.id)
+            .filter(RAGDenseRetriever.chunk_set_id == chunk_set_id)
+            .all()
+        )
+
+        child_bridge_ids = {bridge.id for _, bridge in sparse_links + dense_links}
+        if child_bridge_ids:
+            parent_ids = {
+                link.parent_id
+                for link in self.db.query(RAGRetrieverChild)
+                .filter(RAGRetrieverChild.child_id.in_(child_bridge_ids))
+                .all()
+            }
+            for parent_id in parent_ids:
+                parent = self.db.get(RAGRetriever, parent_id)
+                if parent is not None:
+                    self.db.delete(parent)
+
+        for sparse_detail, bridge in sparse_links:
+            remove_after_commit(self.db, sparse_detail.storage_folder)
+            self.db.delete(sparse_detail)
+            self.db.delete(bridge)
+
+        for dense_detail, bridge in dense_links:
+            embedding_model_id = dense_detail.embedding_model_id
+            matrices = (
+                self.db.query(RAGEmbeddingMatrix)
+                .filter(
+                    RAGEmbeddingMatrix.chunk_set_id == chunk_set_id,
+                    RAGEmbeddingMatrix.embedding_model_id == embedding_model_id,
+                    RAGEmbeddingMatrix.document_id.in_(document_ids),
+                )
+                .all()
+            )
+            for matrix in matrices:
+                remove_after_commit(self.db, matrix.storage_folder)
+                self.db.delete(matrix)
+            if not self._embedding_model_in_use(
+                embedding_model_id, exclude_dense_retriever_id=dense_detail.id
+            ):
+                embedding_model = self.db.get(RAGEmbeddingModel, embedding_model_id)
+                if embedding_model is not None:
+                    self.db.delete(embedding_model)
+            self.db.delete(dense_detail)
+            self.db.delete(bridge)
+
+        chunk_folders = {
+            str(Path(row[0]).parent)
+            for row in self.db.query(RAGChunkSetDocument.path)
+            .filter(
+                RAGChunkSetDocument.chunk_set_id == chunk_set_id,
+                RAGChunkSetDocument.path.isnot(None),
+            )
+            .all()
+        }
+        for folder in chunk_folders:
+            remove_after_commit(self.db, folder)
+        chunk_set = self.db.get(RAGChunkSet, chunk_set_id)
+        if chunk_set is not None:
+            self.db.delete(chunk_set)

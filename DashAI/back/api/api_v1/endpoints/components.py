@@ -1,7 +1,7 @@
 """Component API module."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Union
 
 from fastapi import APIRouter, Depends, Header, Query, Response, status
 from fastapi.exceptions import HTTPException
@@ -46,6 +46,7 @@ async def get_components(
     related_component: Union[str, None] = None,
     component_parent: Union[str, None] = None,
     has_related_of_type: Union[str, None] = None,
+    data_kind: Annotated[Union[Literal["dataset", "document"], None], Query()] = None,
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ) -> List[Dict[str, Any]]:
     """Retrieve components from the register according to the provided parameters.
@@ -81,6 +82,10 @@ async def get_components(
         If specified, the function returns only components that have at least one
         related component of the specified type (e.g., "Model"). This is useful for
         filtering tasks that have associated models, by default None.
+    data_kind : Union[Literal["dataset", "document"], None], optional
+        If specified, the function returns only the components whose metadata
+        lists that data kind. Components without data kinds (models, tasks)
+        are left out, by default None.
     component_registry: ComponentRegistry
         Registry that provides metadata and class references for the
         components available in DashAI.
@@ -184,6 +189,14 @@ async def get_components(
             selected_components,
             components_with_related_type,
         )
+
+    if data_kind is not None:
+        selected_components = {
+            name: component_dict
+            for name, component_dict in selected_components.items()
+            if data_kind
+            in ((component_dict.get("metadata") or {}).get("data_kinds") or [])
+        }
 
     # Reconcile the download state of download required components against the
     # filesystem before returning. Downloads happen in the worker process, so
@@ -463,6 +476,7 @@ async def update_component() -> None:
 async def get_child_components(
     component_name: str,
     recursive: bool = False,
+    accept_language: str | None = Header(default=None),
     component_registry: "ComponentRegistry" = Depends(lambda: di["component_registry"]),
 ):
     """Get child components of a specific component.
@@ -470,6 +484,8 @@ async def get_child_components(
     Args:
         component_name (str): The name of the component to get children for.
         recursive (bool): Whether to get child components recursively.
+        accept_language (str | None): The 'Accept-Language' header used to
+            localize display names, descriptions and metadata.
 
     Returns:
         List[Dict[str, Any]]: A list of child component dictionaries.
@@ -477,7 +493,7 @@ async def get_child_components(
     children_list = component_registry.get_child_components(
         component_name, recursive=recursive
     )
-    return [_delete_class(child) for child in children_list]
+    return [localize(_delete_class(child), accept_language) for child in children_list]
 
 
 @router.get("/image/{component_name}/", status_code=status.HTTP_200_OK)

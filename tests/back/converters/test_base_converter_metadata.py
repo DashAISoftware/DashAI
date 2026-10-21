@@ -254,3 +254,33 @@ def test_stateful_and_stateless_converters_declare_learns_from_data():
 
     assert StandardScaler.get_metadata()["learns_from_data"] is True
     assert TypeCast.get_metadata()["learns_from_data"] is False
+
+
+class _SharedKindsConverter(BaseConverter):
+    SCHEMA = None
+    metadata = {"allowed_types": [Text], "data_kinds": ["dataset", "document"]}
+
+    def get_output_type(self, column_name=None):
+        return None
+
+    def fit(self, x, y=None):
+        return self
+
+    def transform(self, x, y=None):
+        return x
+
+
+def test_converter_metadata_defaults_data_kinds_to_datasets_only():
+    assert _EmptyMetaConverter.get_metadata()["data_kinds"] == ["dataset"]
+
+
+def test_converter_metadata_keeps_declared_data_kinds():
+    assert _SharedKindsConverter.get_metadata()["data_kinds"] == [
+        "dataset",
+        "document",
+    ]
+
+
+def test_converter_metadata_does_not_mutate_declared_data_kinds():
+    _SharedKindsConverter.get_metadata()["data_kinds"].append("document")
+    assert _SharedKindsConverter.metadata["data_kinds"] == ["dataset", "document"]

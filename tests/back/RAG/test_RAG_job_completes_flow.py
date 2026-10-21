@@ -38,7 +38,11 @@ from DashAI.back.models.RAG.prompts.generation.default_RAG_generation_prompt imp
 from DashAI.back.models.text_to_text_generation_model import (
     TextToTextGenerationTaskModel,
 )
-from tests.back.RAG.conftest import _create_test_document
+from tests.back.RAG.conftest import (
+    BOW_PARAMS,
+    TFIDF_PARAMS,
+    _create_test_document,
+)
 
 # ---------------------------------------------------------------------------
 # constants
@@ -95,19 +99,9 @@ def register_stub_llm(client: TestClient) -> None:
 def _frontend_session_parameters(doc_id: int, retriever: str, prompt: str) -> dict:
     """Build RAG session parameters for the given retriever/prompt pair."""
     if retriever == "BM25Retriever":
-        vectorizer = {
-            "component": "BM25VectorizerModel",
-            "params": {
-                "strip_accents": None,
-                "lowercase": True,
-                "stop_words": None,
-                "max_df": 1.0,
-                "min_df": 0.0,
-                "max_features": None,
-            },
-        }
+        vectorizer = {"component": "BagOfWordsConverter", "params": dict(BOW_PARAMS)}
         retriever_params = {
-            "BM25Vectorizer": vectorizer,
+            "vectorizer": vectorizer,
             "k1": 1.5,
             "b": 0.75,
             "delta": 0.0,
@@ -115,25 +109,9 @@ def _frontend_session_parameters(doc_id: int, retriever: str, prompt: str) -> di
             "top_k": 5,
         }
     else:
-        vectorizer = {
-            "component": "TFIDFVectorizerModel",
-            "params": {
-                "strip_accents": "None",
-                "lowercase": True,
-                "analyzer": "word",
-                "stop_words": [],
-                "ngram_range": [1, 1],
-                "max_df": 1.0,
-                "min_df": 0.0,
-                "max_features": 1000,
-                "norm": "l2",
-                "use_idf": True,
-                "smooth_idf": True,
-                "sublinear_tf": False,
-            },
-        }
+        vectorizer = {"component": "TFIDFConverter", "params": dict(TFIDF_PARAMS)}
         retriever_params = {
-            "TFIDFVectorizer": vectorizer,
+            "vectorizer": vectorizer,
             "similarity_function": "cosine",
             "top_k": 5,
         }
@@ -174,7 +152,7 @@ def test_rag_job_completes_full_flow(
     """Running ``RAGJob`` on a valid session finishes with the stub output."""
     run_tag = uuid.uuid4().hex[:8]
     suffix = f"_{run_tag}_{retriever}"
-    doc_id = _create_test_document(client, suffix=suffix)
+    doc_id = _create_test_document(client, suffix=suffix, text=DOC_TEXT)
     file_path = os.path.join(tempfile.gettempdir(), f"test_doc{suffix}.txt")
 
     try:

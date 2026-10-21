@@ -17,7 +17,7 @@ describe("ResponsiveAppBar", () => {
 
   it("renders nav links for main sections", () => {
     renderWithProviders(<ResponsiveAppBar />);
-    expect(screen.getByRole("link", { name: /datasets/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^data$/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /models/i })).toBeInTheDocument();
   });
 });

@@ -2,12 +2,25 @@ import logging
 
 from DashAI.back.converters.clustering.clustering import Clustering
 
+# Document converters
+from DashAI.back.converters.document.image_captioning import (
+    ImageCaptioningConverter,
+)
+from DashAI.back.converters.document.item_filter import DocumentItemFilter
+from DashAI.back.converters.document.language_filter import LanguageFilter
+from DashAI.back.converters.document.ocr import OCRConverter
+from DashAI.back.converters.document.text_splitter import TextSplitter
+
 # Hugging Face module
-from DashAI.back.converters.hugging_face.embedding import Embedding
 from DashAI.back.converters.hugging_face.image_embedding import (
     ImageEmbeddingConverter,
 )
+from DashAI.back.converters.hugging_face.summarizer import Summarizer
+from DashAI.back.converters.hugging_face.text_embedding import (
+    TEXT_EMBEDDING_CONVERTERS,
+)
 from DashAI.back.converters.hugging_face.tokenizer import TokenizerConverter
+from DashAI.back.converters.hugging_face.translation import TRANSLATION_CONVERTERS
 
 # Imbalanced_learn
 from DashAI.back.converters.imbalanced_learn.random_under_sampler_converter import (
@@ -74,6 +87,8 @@ from DashAI.back.converters.simple_converters.date_features import (
 )
 from DashAI.back.converters.simple_converters.nan_remover import NanRemover
 from DashAI.back.converters.simple_converters.numeric_expansion import NumericExpansion
+from DashAI.back.converters.simple_converters.regex_replacer import RegexReplacer
+from DashAI.back.converters.simple_converters.text_cleaner import TextCleaner
 from DashAI.back.converters.simple_converters.time_resampler import (
     TimeResamplerConverter,
 )
@@ -92,6 +107,18 @@ from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.excel_dataloader import ExcelDataLoader
 from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
+from DashAI.back.dataloaders.classes.pdfminer_document_dataloader import (
+    PdfMinerDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.pdfplumber_document_dataloader import (
+    PdfPlumberDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.plain_text_document_dataloader import (
+    PlainTextDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.pypdf_document_dataloader import (
+    PypdfDocumentDataLoader,
+)
 
 # Dataset Sources
 from DashAI.back.dataset_sources.huggingface_dataset_source import (
@@ -162,6 +189,9 @@ from DashAI.back.exploration.explorers.describe_explorer import DescribeExplorer
 from DashAI.back.exploration.explorers.ecdf_plot import ECDFPlotExplorer
 from DashAI.back.exploration.explorers.histogram_plot import HistogramPlotExplorer
 from DashAI.back.exploration.explorers.multibox_plot import MultiColumnBoxPlotExplorer
+from DashAI.back.exploration.explorers.named_entities import (
+    NamedEntitiesExplorer,
+)
 from DashAI.back.exploration.explorers.parallel_categories import (
     ParallelCategoriesExplorer,
 )
@@ -174,10 +204,14 @@ from DashAI.back.exploration.explorers.seasonal_decomposition import (
     SeasonalDecompositionExplorer,
 )
 from DashAI.back.exploration.explorers.silhouette_plot import SilhouettePlotExplorer
+from DashAI.back.exploration.explorers.text_statistics import (
+    TextStatisticsExplorer,
+)
 from DashAI.back.exploration.explorers.time_index_audit import TimeIndexAuditExplorer
 from DashAI.back.exploration.explorers.time_series_plot import (
     TimeSeriesPlotExplorer,
 )
+from DashAI.back.exploration.explorers.top_terms import TopTermsExplorer
 from DashAI.back.exploration.explorers.wordcloud import WordcloudExplorer
 
 # Jobs
@@ -185,6 +219,7 @@ from DashAI.back.job.component_download_job import ComponentDownloadJob
 from DashAI.back.job.converter_job import ConverterJob
 from DashAI.back.job.datafile_job import DatafileJob
 from DashAI.back.job.dataset_job import DatasetJob
+from DashAI.back.job.document_job import DocumentJob
 from DashAI.back.job.explainer_job import ExplainerJob
 from DashAI.back.job.explorer_job import ExplorerJob
 from DashAI.back.job.generative_job import GenerativeJob
@@ -335,21 +370,6 @@ from DashAI.back.models.RAG.chunking_models import (
     RecursiveCharacterChunkModel,
     TokenChunkModel,
 )
-from DashAI.back.models.RAG.embeddings.dense import (
-    BERTEmbedding,
-    DistilBERTEmbedding,
-    E5Embedding,
-    InstructorEmbedding,
-    LaBSEmbedding,
-    RoBERTaEmbedding,
-    SentenceTransformerEmbedding,
-)
-from DashAI.back.models.RAG.extractors import (
-    PdfMinerExtractor,
-    PdfPlumberExtractor,
-    PlainTextExtractor,
-    PypdfExtractor,
-)
 from DashAI.back.models.RAG.prompts import (
     CustomAugmentationPrompt,
     CustomRAGGenerationPrompt,
@@ -374,11 +394,9 @@ from DashAI.back.models.RAG.retrievers.dense.dense_embedding_retriever import (
 )
 from DashAI.back.models.RAG.retrievers.sparse.bm25_retriever import (
     BM25Retriever,
-    BM25VectorizerModel,
 )
 from DashAI.back.models.RAG.retrievers.sparse.tfidf_retriever import (
     TFIDFRetriever,
-    TFIDFVectorizerModel,
 )
 from DashAI.back.models.resnet18_image_classifier import ResNet18ImageClassifier
 from DashAI.back.models.resnet50_image_classifier import ResNet50ImageClassifier
@@ -562,6 +580,7 @@ from DashAI.back.units.load_run_model_unit import LoadRunModelUnit
 from DashAI.back.units.load_trained_model_unit import LoadTrainedModelUnit
 from DashAI.back.units.load_training_dataset_unit import LoadTrainingDatasetUnit
 from DashAI.back.units.load_uploaded_dataset_unit import LoadUploadedDatasetUnit
+from DashAI.back.units.parse_document_unit import ParseDocumentUnit
 from DashAI.back.units.predict_unit import PredictUnit
 from DashAI.back.units.prepare_and_fold_unit import PrepareAndFoldUnit
 from DashAI.back.units.prepare_and_split_unit import PrepareAndSplitUnit
@@ -570,10 +589,17 @@ from DashAI.back.units.prepare_without_target_unit import PrepareWithoutTargetUn
 from DashAI.back.units.run_exploration_unit import RunExplorationUnit
 from DashAI.back.units.save_dataset_to_path_unit import SaveDatasetToPathUnit
 from DashAI.back.units.save_dataset_unit import SaveDatasetUnit
+from DashAI.back.units.save_document_to_path_unit import SaveDocumentToPathUnit
 from DashAI.back.units.save_exploration_unit import SaveExplorationUnit
 from DashAI.back.units.save_model_unit import SaveModelUnit
 from DashAI.back.units.save_prediction_unit import SavePredictionUnit
 from DashAI.back.units.score_clusters_unit import ScoreClustersUnit
+from DashAI.back.units.store_datafile_document_source_unit import (
+    StoreDatafileDocumentSourceUnit,
+)
+from DashAI.back.units.store_uploaded_document_source_unit import (
+    StoreUploadedDocumentSourceUnit,
+)
 from DashAI.back.units.transform_dataset_unit import TransformDatasetUnit
 
 logging.basicConfig(level=logging.DEBUG)
@@ -711,6 +737,10 @@ def get_initial_components():
         ExcelDataLoader,
         ImageDataLoader,
         JSONDataLoader,
+        PypdfDocumentDataLoader,
+        PdfPlumberDocumentDataLoader,
+        PdfMinerDocumentDataLoader,
+        PlainTextDocumentDataLoader,
         # Dataset Sources
         HuggingFaceDatasetSource,
         KaggleDatasetSource,
@@ -755,6 +785,7 @@ def get_initial_components():
         PredictJob,
         ConverterJob,
         DatasetJob,
+        DocumentJob,
         GenerativeJob,
         PipelineJob,
         # Units
@@ -795,6 +826,10 @@ def get_initial_components():
         ApplyDatasetSchemaUnit,
         ComputeDatasetMetadataUnit,
         SaveDatasetToPathUnit,
+        StoreUploadedDocumentSourceUnit,
+        StoreDatafileDocumentSourceUnit,
+        ParseDocumentUnit,
+        SaveDocumentToPathUnit,
         RAGJob,
         # Reports
         ConfusionMatrix,
@@ -825,6 +860,9 @@ def get_initial_components():
         DescribeExplorer,
         ScatterPlotExplorer,
         WordcloudExplorer,
+        TextStatisticsExplorer,
+        TopTermsExplorer,
+        NamedEntitiesExplorer,
         BoxPlotExplorer,
         MultiColumnBoxPlotExplorer,
         CorrelationMatrixExplorer,
@@ -852,6 +890,14 @@ def get_initial_components():
         Clustering,
         NanRemover,
         CharacterReplacer,
+        TextCleaner,
+        RegexReplacer,
+        DocumentItemFilter,
+        TextSplitter,
+        LanguageFilter,
+        OCRConverter,
+        ImageCaptioningConverter,
+        Summarizer,
         ColumnArithmetic,
         ColumnConcat,
         NumericExpansion,
@@ -872,11 +918,12 @@ def get_initial_components():
         OrdinalEncoder,
         PolynomialFeatures,
         StandardScaler,
-        Embedding,
         ImageEmbeddingConverter,
+        *TEXT_EMBEDDING_CONVERTERS,
         SAM3SegmentConverter,
         TFIDFConverter,
         TokenizerConverter,
+        *TRANSLATION_CONVERTERS,
         BagOfWordsConverter,
         VarianceThreshold,
         SimpleImputer,
@@ -930,19 +977,7 @@ def get_initial_components():
         CharacterChunkModel,
         RecursiveCharacterChunkModel,
         TokenChunkModel,
-        # Extractors
-        PypdfExtractor,
-        PdfMinerExtractor,
-        PdfPlumberExtractor,
-        PlainTextExtractor,
         # Encodings
-        SentenceTransformerEmbedding,
-        BERTEmbedding,
-        DistilBERTEmbedding,
-        RoBERTaEmbedding,
-        E5Embedding,
-        InstructorEmbedding,
-        LaBSEmbedding,
         # Prompts
         DefaultRAGGenerationPrompt,
         CustomRAGGenerationPrompt,
@@ -951,9 +986,7 @@ def get_initial_components():
         CustomAugmentationPrompt,
         # Retrievers
         BM25Retriever,
-        BM25VectorizerModel,
         TFIDFRetriever,
-        TFIDFVectorizerModel,
         DenseEmbeddingRetriever,
         SentenceTransformerCrossEncoderRetriever,
         MMRRerankerRetriever,

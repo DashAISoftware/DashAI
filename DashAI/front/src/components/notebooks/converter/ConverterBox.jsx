@@ -20,14 +20,21 @@ import { getComponentById } from "../../../api/component";
 import { getConverterById } from "../../../api/converter";
 import { useTranslation } from "react-i18next";
 import { useTableLocalization } from "../../../utils/useTableLocalization";
+import { describeItemScope } from "../documentNotebook/documentItems";
 
-function ConverterParametersTable({ converter, t, localization }) {
-  const paramColumns = [
-    { accessorKey: "key", header: t("common:parameter"), grow: 1 },
-    { accessorKey: "value", header: t("common:value"), grow: 4 },
+function documentScopeRows(converter, t) {
+  return [
+    {
+      key: t("datasets:documentNotebook.items"),
+      value: (converter.parameters.scope?.columns ?? [])
+        .map((column) => describeItemScope(t, column))
+        .join("\n"),
+    },
   ];
+}
 
-  const paramRows = [
+function datasetScopeRows(converter, t) {
+  return [
     {
       key: t("datasets:label.targetColumn"),
       value: converter.parameters.target?.columnName,
@@ -49,6 +56,17 @@ function ConverterParametersTable({ converter, t, localization }) {
           : converter.parameters.scope.rows.join(", "),
     },
   ];
+}
+
+function ConverterParametersTable({ converter, isDocument, t, localization }) {
+  const paramColumns = [
+    { accessorKey: "key", header: t("common:parameter"), grow: 1 },
+    { accessorKey: "value", header: t("common:value"), grow: 4 },
+  ];
+
+  const paramRows = isDocument
+    ? documentScopeRows(converter, t)
+    : datasetScopeRows(converter, t);
 
   const table = useMaterialReactTable({
     columns: paramColumns,
@@ -70,6 +88,7 @@ function ConverterParametersTable({ converter, t, localization }) {
 
 export default function ConverterBox({
   converter,
+  isDocument = false,
   onStatusChange,
   handleConverterDeleteClick,
   isHighlighted = false,
@@ -221,6 +240,7 @@ export default function ConverterBox({
             {converter.parameters && (
               <ConverterParametersTable
                 converter={converter}
+                isDocument={isDocument}
                 t={t}
                 localization={localization}
               />

@@ -12,6 +12,8 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import CasinoIcon from "@mui/icons-material/Casino";
 import ExtensionIcon from "@mui/icons-material/Extension";
 import PsychologyIcon from "@mui/icons-material/Psychology";
+import DescriptionIcon from "@mui/icons-material/Description";
+import TextSnippetIcon from "@mui/icons-material/TextSnippet";
 
 const ICONS = {
   TableChart: TableChartIcon,
@@ -26,6 +28,8 @@ const ICONS = {
   FilterList: FilterListIcon,
   Casino: CasinoIcon,
   Psychology: PsychologyIcon,
+  Description: DescriptionIcon,
+  TextSnippet: TextSnippetIcon,
   Extension: ExtensionIcon,
 };
 

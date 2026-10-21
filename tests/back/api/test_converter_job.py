@@ -254,9 +254,11 @@ def test_an_unknown_converter_name_fails_with_the_wrapped_message(client, notebo
     Both halves matter: the import error names the culprit, the wrapper is what
     the jobs UI actually shows.
     """
-    converter_id = _create_converter(
-        client, notebook["id"], "ThisConverterDoesNotExist"
-    )
+    converter_id = _create_converter(client, notebook["id"], "ColumnRemover")
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        db.get(Converter, converter_id).converter = "ThisConverterDoesNotExist"
+        db.commit()
 
     with pytest.raises(JobError) as excinfo:
         ConverterJob(converter_id=converter_id).run()

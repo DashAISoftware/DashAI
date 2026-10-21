@@ -5,9 +5,9 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.dependencies.database.models import Dataset
 from DashAI.back.job.dataset_job import DatasetJob
-from DashAI.back.splitters.splits_payload import schema_placeholder_defaults
 
 RUN_PARAMS = {
     "model_name": "KNeighborsClassifier",

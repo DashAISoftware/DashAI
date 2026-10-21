@@ -77,32 +77,6 @@ def normalize_splits_payload(splits_data: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
-def schema_placeholder_defaults(splitter_cls: Type) -> Dict[str, Any]:
-    """Collect the placeholder value declared for each schema parameter.
-
-    The frontend seeds its form with these values, so filling them in makes a
-    partial payload (for example a manual split, which carries no
-    proportions) validate exactly as the form would have submitted it.
-
-    Parameters
-    ----------
-    splitter_cls : type
-        A splitter class exposing ``get_schema``.
-
-    Returns
-    -------
-    dict
-        Parameter name to placeholder value, skipping parameters that declare
-        no placeholder.
-    """
-    properties = splitter_cls.get_schema().get("properties", {})
-    return {
-        name: prop["placeholder"]
-        for name, prop in properties.items()
-        if "placeholder" in prop
-    }
-
-
 def splitter_class_for(session_splits: Dict[str, Any], component_registry) -> Type:
     """Resolve the splitter class that produced a run.
 

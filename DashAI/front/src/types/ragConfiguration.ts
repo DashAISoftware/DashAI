@@ -52,6 +52,7 @@ export interface IRAGConfiguration {
 /** Indexing state of one document within a session. */
 export interface IRAGDocumentIndexState {
   document_id: number;
+  name: string | null;
   file_name: string | null;
   chunks: number;
   indexed: boolean;
@@ -76,6 +77,7 @@ export interface IRAGIndexStatus {
   documents: IRAGDocumentIndexState[];
   /** Localized, ready to render as-is. */
   message: string;
+  needs_reindex: boolean;
   /** Null once the job is dismissed from the queue, or if none ever ran. */
   job_id: string | null;
   /** Kept after the job ends so a failure survives a page reload. */

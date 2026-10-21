@@ -6,36 +6,48 @@
   },
   "documentReferences": {
     "chunkLabel": "Fragmento {{position}}",
+    "chunkLabelWithPage": "Fragmento {{position}}, página {{page}}",
     "chunksCount_many": "Este documento forneceu {{count}} fragmentos para esta resposta:",
     "chunksCount_one": "Este documento forneceu {{count}} fragmento para esta resposta:",
     "chunksCount_other": "Este documento forneceu {{count}} fragmentos para esta resposta:",
     "close": "Fechar",
-    "fallbackTitle": "Documento {{id}}"
+    "fallbackTitle": "Documento {{id}}",
+    "openDocument": "Abrir documento"
   },
   "documentsBar": {
-    "addDocuments": "Adicionar documentos",
-    "alreadyInSession": "\"{{file}}\" já está nesta sessão",
-    "delete": "Remover da sessão",
-    "deleteWarning": "O texto extraído e os fragmentos também são removidos. A sessão será reindexada sem ele na sua próxima mensagem.",
-    "deleted": "\"{{file}}\" removido",
-    "documentCount_many": "{{count}} documentos",
-    "documentCount_one": "{{count}} documento",
-    "documentCount_other": "{{count}} documentos",
-    "failedDelete": "Não foi possível remover o documento",
+    "addFromData": "Adicionar de Dados",
+    "addFromDataTitle": "Adicionar documentos de Dados",
+    "addSelected_many": "Adicionar {{count}} documentos",
+    "addSelected_one": "Adicionar {{count}} documento",
+    "addSelected_other": "Adicionar {{count}} documentos",
+    "alreadyAttached": "Já está nesta sessão",
+    "attached_many": "{{count}} documentos adicionados a esta sessão",
+    "attached_one": "{{count}} documento adicionado a esta sessão",
+    "attached_other": "{{count}} documentos adicionados a esta sessão",
+    "detach": "Remover da sessão",
+    "detachWarning": "O documento continua em Dados. Esta sessão é reindexada sem ele.",
+    "detached": "\"{{file}}\" removido desta sessão",
+    "failedAttach": "Não foi possível adicionar os documentos",
+    "failedDetach": "Não foi possível remover o documento",
     "failedFetch": "Falha ao carregar documentos",
-    "failedPreview": "Não foi possível carregar o arquivo",
-    "failedUpload": "Falha ao enviar documento(s)",
-    "inCurrentSession": " na sessão atual",
-    "inspect": "Extração de texto",
     "noDocumentsFound": "Nenhum documento encontrado",
     "noDocumentsInSession": "Nenhum documento nesta sessão",
+    "noLibraryDocuments": "Ainda não há documentos em Dados. Envie um para começar.",
+    "noParsersFound": "Nenhum processador corresponde à sua pesquisa",
+    "parseFailed": "não foi possível processar o arquivo",
+    "parserLabel": "Processador",
+    "preview": "Visualizar",
+    "processingUpload": "\"{{file}}\" está sendo processado. Ele entra nesta sessão quando estiver pronto.",
+    "searchParsers": "Pesquisar processadores",
     "searchPlaceholder": "Pesquisar documentos",
-    "successUpload_many": "{{count}} documentos enviados com sucesso",
-    "successUpload_one": "{{count}} documento enviado com sucesso",
-    "successUpload_other": "{{count}} documentos enviados com sucesso",
+    "selectParser": "Selecione um processador para ver seus parâmetros",
+    "selectToSeeDetails": "Selecione um documento para ver seus detalhes",
+    "stillProcessing": "Ainda em processamento",
     "title": "Documentos",
-    "uploadDocuments": "Faça upload do(s) seu(s) documento(s)",
-    "uploadFailedReason": "Não foi possível enviar \"{{file}}\": {{reason}}"
+    "upload": "Enviar",
+    "uploadFailedReason": "Não foi possível enviar \"{{file}}\": {{reason}}",
+    "uploadTitle": "Enviar um documento para Dados",
+    "uploadToData": "Enviar novo"
   },
   "error": {
     "failedToCreateSession": "Erro ao criar a sessão",
@@ -136,11 +148,8 @@
       "addChild": "Adicionar nó recuperador",
       "allChunks": "Todos os fragmentos",
       "chunkFusion": "Fusão de chunks",
-      "compositeGroup": "Recuperadores compostos",
       "compositeInstructions": "Clique no botão + para adicionar um recuperador filho a este composto. Clique em um cartão para editar seus parâmetros ou escolher outro modelo.",
       "configureNode": "Configurar Nó",
-      "denseGroup": "Recuperadores densos",
-      "keywordGroup": "Recuperadores por palavras-chave",
       "mergeStrategyInterleave": "Intercalar",
       "mergeStrategyRoundRobin": "Round robin",
       "nestedCompositeNote": "Este é um recuperador composto. Seus filhos podem ser configurados na árvore abaixo.",
@@ -149,8 +158,7 @@
       "reranking": "Reordenação",
       "retrieverDescription": "Escolha um recuperador para configurar seus parâmetros. Os recuperadores por palavras-chave (BM25, TF-IDF) encontram documentos por frequência de termos. Os recuperadores por embeddings capturam o significado semântico com vetores densos. Os recuperadores compostos encadeiam vários recuperadores, de forma sequencial ou em paralelo.",
       "selectModel": "Selecionar modelo recuperador",
-      "selectedChunks": "Fragmentos selecionados",
-      "simpleGroup": "Recuperadores simples"
+      "selectedChunks": "Fragmentos selecionados"
     },
     "config": {
       "advanced": "Configuração avançada",
@@ -167,27 +175,8 @@
       "title": "Nova sessão RAG"
     },
     "documentPreview": {
-      "noPreview": "Não há visualização disponível para este tipo de arquivo.",
-      "pdfPreview": "Visualização de PDF não disponível.",
+      "openInData": "Abrir em Dados",
       "title": "Visualização do documento"
-    },
-    "documents": {
-      "extractorModal": {
-        "close": "Fechar",
-        "explanation": "Existem diferentes formas de processar texto de um PDF. Cada extrator pode produzir resultados diferentes dependendo da estrutura do documento. Experimente diferentes opções e compare o resultado. Importante: RAG usa apenas texto. Se o seu PDF contém imagens com texto (documentos digitalizados, diagramas), esse conteúdo é ignorado: não há nenhum extrator com OCR disponível.",
-        "extractText": "Extrair texto",
-        "extractedContentLabel": "Texto extraído",
-        "extracting": "Extraindo texto...",
-        "extractorLabel": "Extrator",
-        "noContent": "Selecione um extrator e o texto aparecerá aqui.",
-        "rawContentLabel": "Arquivo original",
-        "saveExtractor": "Salvar extrator",
-        "upToDate": "Pronto"
-      },
-      "table": {
-        "configureExtractor": "Configurar extrator",
-        "unknownType": "Desconhecido"
-      }
     },
     "generator": {
       "advancedButton": "Abrir configuração avançada",
@@ -264,6 +253,9 @@
     "chunk_one": "fragmento",
     "chunk_other": "fragmentos",
     "fallbackTitle": "Fonte {{id}}",
+    "pages_many": "páginas {{pages}}",
+    "pages_one": "página {{pages}}",
+    "pages_other": "páginas {{pages}}",
     "provided": "forneceu",
     "viewChunks": "Ver fragmentos",
     "viewSources": "Ver fontes da mensagem"

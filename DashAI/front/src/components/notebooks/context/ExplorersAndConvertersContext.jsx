@@ -11,6 +11,7 @@ export const ExplorersAndConvertersProvider = ({ children }) => {
   const [columnTypes, setColumnTypes] = useState({});
   const [lastAddedItemId, setLastAddedItemId] = useState(null);
   const [pendingDropTool, setPendingDropTool] = useState(null);
+  const [itemSelection, setItemSelection] = useState(null);
 
   const value = {
     explorersAndConverters,
@@ -23,6 +24,8 @@ export const ExplorersAndConvertersProvider = ({ children }) => {
     setLastAddedItemId,
     pendingDropTool,
     setPendingDropTool,
+    itemSelection,
+    setItemSelection,
   };
 
   return (

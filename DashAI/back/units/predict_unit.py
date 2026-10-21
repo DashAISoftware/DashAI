@@ -1,7 +1,7 @@
 """Unit that runs a trained model over a dataset and decodes its output."""
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, List
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -15,6 +15,7 @@ from DashAI.back.units.base_unit import BaseUnit
 from DashAI.back.units.context import ExecutionContext
 
 if TYPE_CHECKING:
+    from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
     from DashAI.back.tasks.base_task import BaseTask
 
 log = logging.getLogger(__name__)
@@ -78,6 +79,59 @@ class PredictSchema(BaseSchema):
     )  # type: ignore
 
 
+def predict_labels(
+    task: "BaseTask",
+    model: Any,
+    model_input: "DashAIDataset",
+    train_dataset: "DashAIDataset",
+    input_columns: List[str],
+    output_column: str,
+):
+    """Predict on prepared rows and turn the raw output into the task's labels.
+
+    Kept apart from ``PredictUnit`` so a caller that already holds the model,
+    the task and the training dataset (an exported model package, which has
+    no registry or database) predicts with the very same code the app does.
+
+    Parameters
+    ----------
+    task : BaseTask
+        Task instance whose ``process_predictions`` maps raw output to labels.
+    model : BaseModel
+        The trained model.
+    model_input : DashAIDataset
+        Rows already transformed by the session preprocessor, if any.
+    train_dataset : DashAIDataset
+        Dataset carrying the training column types (rows are not needed).
+    input_columns : list of str
+        Columns the model was trained on.
+    output_column : str
+        Target column whose type decodes the predictions.
+
+    Returns
+    -------
+    numpy.ndarray
+        One prediction per row.
+    """
+    import numpy as np
+
+    prepared_dataset = model_input.select_columns(input_columns)
+    try:
+        y_pred_proba = np.array(model.predict(prepared_dataset))
+    except Exception as e:
+        # Most models (KNN, SVM, logistic regression...) cannot predict rows
+        # with missing values, and scikit-learn only says "Input X contains
+        # NaN". Name the rows and columns instead; any other failure keeps
+        # its own error. Models that accept missing values never get here.
+        from DashAI.back.types.missing_values import missing_values_message
+
+        message = missing_values_message(prepared_dataset, list(input_columns))
+        if message is None:
+            raise
+        raise ValueError(message) from e
+    return task.process_predictions(train_dataset, y_pred_proba, output_column)
+
+
 class PredictUnit(BaseUnit):
     """Predict with a trained model and decode the result into labels.
 
@@ -138,31 +192,15 @@ class PredictUnit(BaseUnit):
         self._resolve_task()
 
     def execute(self, ctx: ExecutionContext) -> None:
-        import numpy as np
-
         task = self._resolve_task()
 
-        model_input = ctx.require("model_input")
-        model = ctx.require("model")
-        train_dataset = ctx.require("train_dataset")
-
-        input_columns = self.config["input_columns"]
-        prepared_dataset = model_input.select_columns(input_columns)
-        try:
-            y_pred_proba = np.array(model.predict(prepared_dataset))
-        except Exception as e:
-            # Most models (KNN, SVM, logistic regression...) cannot predict rows
-            # with missing values, and scikit-learn only says "Input X contains
-            # NaN". Name the rows and columns instead; any other failure keeps
-            # its own error. Models that accept missing values never get here.
-            from DashAI.back.types.missing_values import missing_values_message
-
-            message = missing_values_message(prepared_dataset, list(input_columns))
-            if message is None:
-                raise
-            raise ValueError(message) from e
-        y_pred = task.process_predictions(
-            train_dataset, y_pred_proba, self.config["output_columns"][0]
+        y_pred = predict_labels(
+            task,
+            model_input=ctx.require("model_input"),
+            model=ctx.require("model"),
+            train_dataset=ctx.require("train_dataset"),
+            input_columns=self.config["input_columns"],
+            output_column=self.config["output_columns"][0],
         )
 
         ctx.put("y_pred", y_pred)

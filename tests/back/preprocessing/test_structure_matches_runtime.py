@@ -14,6 +14,11 @@ from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.dataset_columns import (
     rebuild_dataset_with_transformed_columns,
 )
+from DashAI.back.converters.hugging_face.text_embedding import (
+    TEXT_EMBEDDING_CONVERTERS,
+)
+from DashAI.back.converters.hugging_face.translation import TRANSLATION_CONVERTERS
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     to_dashai_dataset,
     transform_dataset_with_schema,
@@ -26,7 +31,6 @@ from DashAI.back.preprocessing.structure_types import (
     RowsNotSupportedError,
     type_fields,
 )
-from DashAI.back.splitters.splits_payload import schema_placeholder_defaults
 
 N_ROWS = 30
 
@@ -47,10 +51,12 @@ SCHEMA = {
 # Converters that cannot run here: they download pretrained models. Their
 # overrides get direct unit tests instead.
 NEEDS_DOWNLOAD = {
-    "Embedding",
+    *(cls.__name__ for cls in TEXT_EMBEDDING_CONVERTERS),
+    *(cls.__name__ for cls in TRANSLATION_CONVERTERS),
     "TokenizerConverter",
     "ImageEmbeddingConverter",
     "SAM3SegmentConverter",
+    "Summarizer",
 }
 
 # (converter name, params on top of the schema placeholders, scope columns)
@@ -95,6 +101,8 @@ CASES = [
         {"char_to_replace": "-", "replacement_char": ""},
         ["code"],
     ),
+    ("TextCleaner", {}, ["text"]),
+    ("RegexReplacer", {"preset": "Numbers"}, ["text"]),
     ("ColumnArithmetic", {"operation": "add"}, ["i_full", "i2"]),
     ("ColumnArithmetic", {"operation": "multiply"}, ["i_null", "i2"]),
     ("ColumnArithmetic", {"operation": "divide"}, ["i_full", "f1"]),
@@ -136,6 +144,8 @@ EXACT = {
     "MaxAbsScaler",
     "Normalizer",
     "CharacterReplacer[char_to_replace=-,replacement_char=]",
+    "TextCleaner",
+    "RegexReplacer[preset=Numbers]",
     "ColumnArithmetic[operation=add]",
     "ColumnArithmetic[operation=multiply]",
     "ColumnArithmetic[operation=divide]",

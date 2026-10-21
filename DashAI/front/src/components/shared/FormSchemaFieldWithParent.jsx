@@ -17,6 +17,8 @@ import {
   formattedModel,
   formattedSubform,
   generateYupSchema,
+  getModelFromSubform,
+  getParamsFromSubform,
 } from "../../utils/schema";
 import useModelParents from "../../hooks/useModelParents";
 import { Settings } from "@mui/icons-material";
@@ -36,13 +38,13 @@ function FormSchemaFieldWithParent({
   name,
   label,
   field,
+  parent,
   description,
   errorMessage,
 }) {
   const { formValues, setFormValues, getModelFromCurrentProperty } =
     useFormSchemaStore();
-  const parentComponent =
-    field?.value?.properties?.component ?? field?.value?.component ?? null;
+  const parentComponent = parent ?? field?.value?.properties?.component ?? null;
   const { models, markDownloaded } = useModelParents({
     parent: parentComponent,
   });
@@ -53,7 +55,8 @@ function FormSchemaFieldWithParent({
   const formikRef = useRef(null);
 
   // Get the currently selected model name
-  const selectedModelName = getModelFromCurrentProperty(name);
+  const selectedModelName =
+    getModelFromSubform(field?.value) ?? getModelFromCurrentProperty(name);
 
   // Get default values for the sub-model
   const { defaultValues: subModelDefaultValues } = useSchema({
@@ -95,6 +98,10 @@ function FormSchemaFieldWithParent({
 
   // Function to get current values for the sub-model
   const getSubModelInitialValues = () => {
+    const fieldParams = getParamsFromSubform(field?.value);
+    if (fieldParams && Object.keys(fieldParams).length > 0) {
+      return fieldParams;
+    }
     if (!formValues || !formValues[name]) {
       return subModelDefaultValues || {};
     }
@@ -164,14 +171,14 @@ function FormSchemaFieldWithParent({
       >
         <Input
           select
-          value={getModelFromCurrentProperty(name)}
+          value={selectedModelName ?? ""}
           onChange={handleOnChange}
           size="small"
           sx={{ width: "100%" }}
         >
           {models?.map((model) => (
             <MenuItem key={model.name} value={model.name}>
-              {model.name}
+              {model.display_name || model.name}
             </MenuItem>
           ))}
         </Input>
@@ -253,6 +260,7 @@ FormSchemaFieldWithParent.propTypes = {
     onChange: PropTypes.func.isRequired,
     error: PropTypes.any,
   }).isRequired,
+  parent: PropTypes.string,
   description: PropTypes.string,
   errorMessage: PropTypes.string,
 };

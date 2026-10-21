@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Final, List, Optional, Type, Union
 
 from DashAI.back.config_object import ConfigObject
+from DashAI.back.core.data_kinds import normalize_data_kinds, type_names
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
 from DashAI.back.preprocessing.structure_types import (
     BlockItem,
@@ -38,6 +39,11 @@ class BaseConverter(ConfigObject, ABC):
     `CHANGES_ROW_COUNT` is True (e.g. samplers).
 
     All converters must implement `fit`, `transform`, and `get_output_type`.
+
+    On documents, a converter whose output type is the other document
+    content type (such as an OCR turning images into text) moves each item
+    to that type. `OUTPUT_KIND` names the element kind the moved items get;
+    when None they get the default kind of their new type.
     """
 
     TYPE: Final[str] = "Converter"
@@ -69,6 +75,7 @@ class BaseConverter(ConfigObject, ABC):
     # which — called on a bare unfitted instance — has no idea what column
     # it will actually run on.
     PRESERVES_INPUT_TYPE: bool = False
+    OUTPUT_KIND: Optional[str] = None
     # What the converter does to the columns in its scope, used to estimate
     # the dataset structure of a session's converter chain before any fit
     # (see infer_output_columns):
@@ -126,6 +133,9 @@ class BaseConverter(ConfigObject, ABC):
         meta["n_components_features_bounded"] = getattr(
             cls, "N_COMPONENTS_FEATURES_BOUNDED", False
         )
+        meta["data_kinds"] = normalize_data_kinds(meta.get("data_kinds"))
+        if meta.get("document_allowed_types"):
+            meta["document_allowed_types"] = type_names(meta["document_allowed_types"])
 
         # Serialize allowed_types to the names the frontend compares against.
         # A DashAI type reports its own name via display_name(), which is the

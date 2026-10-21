@@ -19,7 +19,9 @@ from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
 from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
-from DashAI.back.models.RAG.retrievers.dense.dense_retriever import DenseRetriever
+from DashAI.back.models.RAG.retrievers.dense.dense_embedding_retriever import (
+    DenseEmbeddingRetriever,
+)
 from DashAI.back.models.RAG.retrievers.persistence import (
     DensePersistence,
     SparsePersistence,
@@ -132,7 +134,7 @@ class RetrieverFactory:
         resolved = fill_objects(validated, self._registry)
         model = model_class(**resolved)
 
-        if issubclass(model_class, DenseRetriever):
+        if issubclass(model_class, DenseEmbeddingRetriever):
             if not isinstance(persistence, DensePersistence):
                 raise RAGRetrieverMissingParameterError(
                     "A DensePersistence is required for dense retrievers "

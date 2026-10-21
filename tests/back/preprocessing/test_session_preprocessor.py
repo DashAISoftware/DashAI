@@ -757,3 +757,28 @@ def test_transform_by_split_removes_rows_per_split_and_reindexes():
 
     assert dataset.to_pandas()["age"].tolist() == [1, 3, 4]
     assert (train_idx, test_idx, val_idx) == ([0, 1], [2], [])
+
+
+class _DocumentOnlyConverter(_DoublingConverter):
+    """A converter that declares documents only."""
+
+    metadata = {
+        "allowed_types": [Integer],
+        "allowed_dtypes": [],
+        "data_kinds": ["document"],
+    }
+
+
+def test_a_document_only_converter_cannot_preprocess_a_session():
+    registry = _FakeRegistry({"DocOnly": _DocumentOnlyConverter})
+    sequence = ConverterSequence(
+        steps=[
+            ConverterStep(
+                converter="DocOnly", params={}, scope=[RawColumnRef(name="age")]
+            )
+        ]
+    )
+    preprocessor = SessionPreprocessor(sequence, registry)
+
+    with pytest.raises(ValueError, match="only runs on documents"):
+        preprocessor.fit_transform(_split(train_ages=[1, 2]))

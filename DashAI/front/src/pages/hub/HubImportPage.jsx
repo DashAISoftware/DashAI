@@ -13,9 +13,11 @@ import HubImportPanel from "../../components/hub/HubImportPanel";
 import DatafileInfoPanel from "../../components/hub/DatafileInfoPanel";
 import ComponentDetailsPanel from "../../components/custom/ComponentDetailsPanel";
 import DataloaderConfigBar from "../../components/notebooks/datasetCreation/DataloaderConfigBar";
+import DocumentLoaderConfigBar from "../../components/notebooks/documentCreation/DocumentLoaderConfigBar";
 import { getComponents } from "../../api/component";
 import { getDatafile } from "../../api/hub";
 import { useDatasetsAndNotebooks } from "../../components/custom/contexts/DatasetsAndNotebooksContext";
+import { loadsDataKind } from "../../utils/dataKinds";
 import { TourProvider } from "../../components/tour/TourProvider";
 import { TOUR_KEYS } from "../../constants/tours";
 
@@ -24,8 +26,13 @@ export default function HubImportPage() {
   const navigate = useNavigate();
   const { t } = useTranslation(["hub", "common"]);
   const threePanelLayout = useThreePanelLayout({ storageKey: "datasets" });
-  const { addDatasetOptimistically, startDatasetPolling, downloads } =
-    useDatasetsAndNotebooks();
+  const {
+    addDatasetOptimistically,
+    startDatasetPolling,
+    addDocumentOptimistically,
+    startDocumentPolling,
+    downloads,
+  } = useDatasetsAndNotebooks();
 
   const previewMatch = useMatch(
     "/app/data/hub/import/:datafileId/loader/:loaderName/preview",
@@ -98,6 +105,7 @@ export default function HubImportPage() {
   const selectedLoader = loaderName
     ? (dataloaders.find((d) => d.name === loaderName) ?? null)
     : null;
+  const isDocumentLoader = loadsDataKind(selectedLoader, "document");
 
   const dataset = datafile
     ? { id: datafile.dataset_id, name: datafile.name }
@@ -138,6 +146,11 @@ export default function HubImportPage() {
     }
     navigate(`/app/data/datasets/${dataset.id}`);
   };
+  const handleDocumentImported = (document, job) => {
+    addDocumentOptimistically(document);
+    startDocumentPolling(document, job);
+    navigate(`/app/data/documents/${document.id}`);
+  };
 
   const handleDownloadDelete = (id) => {
     if (id === parseInt(datafileId)) {
@@ -149,6 +162,14 @@ export default function HubImportPage() {
     if (step < dataloaderStep) return <DatafileInfoPanel datafile={datafile} />;
     if (step === dataloaderStep)
       return <ComponentDetailsPanel component={selectedLoader} />;
+    if (isDocumentLoader)
+      return (
+        <DocumentLoaderConfigBar
+          loaderName={loaderName}
+          formSubmitRef={formSubmitRef}
+          setError={setFormHasErrors}
+        />
+      );
     return (
       <DataloaderConfigBar
         selectedDataloader={loaderName}
@@ -217,9 +238,11 @@ export default function HubImportPage() {
                 selectedLoader={selectedLoader}
                 onSelectedLoaderChange={handleLoaderChange}
                 formValues={formValues}
+                formSubmitRef={formSubmitRef}
                 formHasErrors={formHasErrors}
                 onCancel={handleCancel}
                 onImported={handleImported}
+                onDocumentImported={handleDocumentImported}
                 computeMetadata={computeMetadata}
               />
             </TourProvider>

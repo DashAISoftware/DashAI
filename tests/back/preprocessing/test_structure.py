@@ -11,6 +11,7 @@ from DashAI.back.converters.simple_converters.nan_remover import NanRemover
 from DashAI.back.converters.simple_converters.time_resampler import (
     TimeResamplerConverter,
 )
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     to_dashai_dataset,
     transform_dataset_with_schema,
@@ -24,7 +25,6 @@ from DashAI.back.preprocessing.column_ref import (
 from DashAI.back.preprocessing.session_preprocessor import SessionPreprocessor
 from DashAI.back.preprocessing.structure import infer_structure
 from DashAI.back.preprocessing.structure_types import BlockItem, ColumnItem
-from DashAI.back.splitters.splits_payload import schema_placeholder_defaults
 
 REGISTRY = {
     cls.__name__: {"class": cls}

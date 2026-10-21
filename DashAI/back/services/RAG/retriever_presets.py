@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional
 from DashAI.back.core.schema_fields.defaults import resolve_component_defaults
 from DashAI.back.core.utils import MultilingualString
 
-_SEMANTIC_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 _SEMANTIC_MODEL_SHORT = "paraphrase-multilingual-MiniLM-L12-v2"
 
 #: Preset a session gets when it does not choose one. Keyword retrieval is the
@@ -50,7 +49,6 @@ def _keyword_preset(top_k: int, registry) -> Dict[str, Any]:
 
 def _semantic_preset(top_k: int, registry) -> Dict[str, Any]:
     params = resolve_component_defaults("DenseEmbeddingRetriever", registry)
-    params["embedding_model"]["params"]["model_name"] = _SEMANTIC_MODEL_NAME
     params["top_k"] = top_k
     return {
         "key": "semantic",
@@ -69,7 +67,6 @@ def _hybrid_preset(top_k: int, registry) -> Dict[str, Any]:
     keyword_params["top_k"] = keyword_k
 
     semantic_params = resolve_component_defaults("DenseEmbeddingRetriever", registry)
-    semantic_params["embedding_model"]["params"]["model_name"] = _SEMANTIC_MODEL_NAME
     semantic_params["top_k"] = semantic_k
 
     return {

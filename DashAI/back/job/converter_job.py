@@ -5,6 +5,7 @@ from kink import inject
 from sqlalchemy import exc
 
 from DashAI.back.converters.converter_report import save_converter_report
+from DashAI.back.core.data_kinds import DOCUMENT
 from DashAI.back.dependencies.database.models import Converter
 from DashAI.back.dependencies.database.models import Dataset as DatasetModel
 from DashAI.back.job.base_job import BaseJob, JobError
@@ -83,8 +84,12 @@ class ConverterJob(BaseJob):
                     return f"Converter Job #{converter_id}"
                 converter_name = converter.converter
 
-                if hasattr(converter, "notebook") and converter.notebook:
-                    dataset = db.get(DatasetModel, converter.notebook.dataset_id)
+                notebook = converter.notebook
+                if notebook is not None and notebook.data_kind == DOCUMENT:
+                    if notebook.document is not None and notebook.document.name:
+                        return f"{converter_name}: {notebook.document.name}"
+                elif notebook is not None:
+                    dataset = db.get(DatasetModel, notebook.dataset_id)
                     if dataset and dataset.name:
                         return f"{converter_name}: {dataset.name}"
 
@@ -121,6 +126,16 @@ class ConverterJob(BaseJob):
             except exc.SQLAlchemyError as e:
                 log.exception(e)
                 raise JobError("Error loading converter info") from e
+
+            if converter.notebook.data_kind == DOCUMENT:
+                registry = di["component_registry"]
+                converter_params = (converter.parameters or {}).get("params") or {}
+                self._run_on_document(
+                    db,
+                    converter,
+                    lambda: registry[converter.converter]["class"](**converter_params),
+                )
+                return
 
             self.report_progress(0.1, "Loading dataset")
 
@@ -208,3 +223,53 @@ class ConverterJob(BaseJob):
                 ) from e
             finally:
                 ctx.clear_cache()
+
+    def _run_on_document(self, db, converter: Converter, make_converter) -> None:
+        """Apply a converter to the document items selected in its scope.
+
+        The working copy is saved only when every selected content type
+        converted cleanly, so a refused result leaves the document as it was.
+
+        Parameters
+        ----------
+        db : Session
+            The open session holding ``converter``.
+        converter : Converter
+            The converter record, already marked as started.
+        make_converter : Callable[[], object]
+            Returns a new configured converter instance.
+
+        Raises
+        ------
+        JobError
+            If the document cannot be loaded, converted or saved.
+        """
+        from DashAI.back.dataloaders.classes.dashai_document import (
+            load_document,
+            save_document,
+        )
+        from DashAI.back.dataloaders.classes.document_items import (
+            apply_converter_to_document,
+            selection_from_columns,
+        )
+        from DashAI.back.dataloaders.classes.notebook_data import notebook_data_path
+
+        document_path = notebook_data_path(converter.notebook)
+        try:
+            self.report_progress(0.1, "Loading document")
+            document = load_document(document_path)
+            scope = (converter.parameters or {}).get("scope") or {}
+            selection = selection_from_columns(scope.get("columns") or [])
+            self.report_progress(0.3, f"Applying {converter.converter}")
+            document = apply_converter_to_document(document, make_converter, selection)
+            self.report_progress(0.95, "Saving document")
+            save_document(document, document_path)
+            converter.set_status_as_finished()
+            db.commit()
+        except Exception as e:
+            log.exception(e)
+            converter.set_status_as_error()
+            db.commit()
+            raise JobError(
+                f"Error applying {converter.converter} to the document: {e}"
+            ) from e

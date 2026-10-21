@@ -7,6 +7,7 @@ from DashAI.back.dependencies.database.models import (
     GenerativeSession,
     GenerativeSessionParameterHistory,
 )
+from tests.back.RAG.conftest import TFIDF_PARAMS
 
 
 def _mark_download_required_components_present(app) -> None:
@@ -237,22 +238,9 @@ def test_update_generative_session_params_merges_and_logs_history(client: TestCl
             "retriever_model": {
                 "component": "TFIDFRetriever",
                 "params": {
-                    "TFIDFVectorizer": {
-                        "component": "TFIDFVectorizerModel",
-                        "params": {
-                            "strip_accents": "None",
-                            "lowercase": True,
-                            "analyzer": "word",
-                            "stop_words": [],
-                            "ngram_range": [1, 1],
-                            "max_df": 1.0,
-                            "min_df": 0.0,
-                            "max_features": 1000,
-                            "norm": "l2",
-                            "use_idf": True,
-                            "smooth_idf": True,
-                            "sublinear_tf": False,
-                        },
+                    "vectorizer": {
+                        "component": "TFIDFConverter",
+                        "params": dict(TFIDF_PARAMS),
                     },
                     "similarity_function": "cosine",
                     "top_k": 5,

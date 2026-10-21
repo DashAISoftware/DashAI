@@ -6,10 +6,11 @@ values or class-name-to-label mappings.
 """
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, NoReturn
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 from kink import di
+from pydantic import BaseModel, Field
 
 from DashAI.back.core.utils import localize
 from DashAI.back.dependencies.database.models import GenerativeSession
@@ -31,6 +32,13 @@ from DashAI.back.services.RAG.session_configuration_service import (
     SessionConfigurationService,
 )
 from DashAI.back.services.RAG.session_defaults_service import build_default_parameters
+from DashAI.back.services.RAG.session_document_service import (
+    DocumentNotReadyError,
+    SessionDocumentService,
+)
+from DashAI.back.services.RAG.session_validation_service import (
+    SessionValidationService,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -258,7 +266,8 @@ def start_session_indexing(
     ------
     HTTPException
         404 if the session does not exist, 409 if its parameters do not
-        describe a complete pipeline.
+        describe a complete pipeline, 422 if its stored retriever uses
+        components that no longer exist or changed.
     """
     with session_factory() as db:
         service = IndexStatusService(db, component_registry, job_queue)
@@ -285,6 +294,15 @@ def start_session_indexing(
                 ),
             )
 
+        try:
+            SessionValidationService(db, component_registry).validate_stored_retriever(
+                session.parameters or {}
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
+            ) from e
+
         # No set_status_as_delivered() here: that hook exists to move a job's
         # own DB entity into "delivered", and indexing has none — the queue
         # owns the lifecycle from here.
@@ -293,3 +311,175 @@ def start_session_indexing(
         db.commit()
 
         return localize(service.get_status(session_id), accept_language)
+
+
+class AttachDocumentsBody(BaseModel):
+    """Body of ``POST /rag/sessions/{session_id}/documents``."""
+
+    document_ids: List[int] = Field(min_length=1)
+
+
+def _session_document_row(document) -> Dict[str, Any]:
+    """Serialize a ``DataDocument`` as the documents panel lists it.
+
+    Parameters
+    ----------
+    document : DataDocument
+        The document.
+
+    Returns
+    -------
+    dict
+        ``{id, name, file_name, file_type, status, total_pages,
+        content_counts, created}``; ``status`` is the integer value.
+    """
+    return {
+        "id": document.id,
+        "name": document.name,
+        "file_name": document.file_name,
+        "file_type": document.file_type,
+        "status": document.status.value,
+        "total_pages": document.total_pages,
+        "content_counts": document.content_counts,
+        "created": document.created,
+    }
+
+
+def _raise_session_documents_error(error: Exception) -> NoReturn:
+    """Translate a ``SessionDocumentService`` error into an HTTP error.
+
+    Parameters
+    ----------
+    error : Exception
+        A ``LookupError``, ``DocumentNotReadyError`` or ``ValueError``.
+
+    Raises
+    ------
+    HTTPException
+        404, 409 or 400 respectively.
+    """
+    if isinstance(error, LookupError):
+        code = status.HTTP_404_NOT_FOUND
+    elif isinstance(error, DocumentNotReadyError):
+        code = status.HTTP_409_CONFLICT
+    else:
+        code = status.HTTP_400_BAD_REQUEST
+    raise HTTPException(status_code=code, detail=str(error)) from error
+
+
+@router.get("/sessions/{session_id}/documents")
+def list_session_documents(
+    session_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+):
+    """List the Data documents a RAG session uses.
+
+    Parameters
+    ----------
+    session_id : int
+        The RAG session.
+    session_factory : Callable[..., ContextManager[Session]]
+        Factory for the SQLAlchemy session.
+
+    Returns
+    -------
+    list of dict
+        One row per document, see ``_session_document_row``.
+
+    Raises
+    ------
+    HTTPException
+        404 for an unknown session, 400 for a non RAG session.
+    """
+    with session_factory() as db:
+        try:
+            documents = SessionDocumentService(db).list_documents(session_id)
+        except (LookupError, ValueError) as e:
+            _raise_session_documents_error(e)
+        return [_session_document_row(document) for document in documents]
+
+
+@router.post("/sessions/{session_id}/documents")
+def attach_session_documents(
+    session_id: int,
+    body: AttachDocumentsBody,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
+):
+    """Attach Data documents to a RAG session.
+
+    Idempotent: documents already attached are skipped. A change cancels the
+    session's live indexing job and discards its indexes; the caller then
+    starts indexing again.
+
+    Parameters
+    ----------
+    session_id : int
+        The RAG session.
+    body : AttachDocumentsBody
+        Ids of the documents to attach.
+    session_factory : Callable[..., ContextManager[Session]]
+        Factory for the SQLAlchemy session.
+    job_queue : BaseJobQueue
+        Queue holding the indexing jobs.
+
+    Returns
+    -------
+    list of dict
+        Every document the session uses afterwards.
+
+    Raises
+    ------
+    HTTPException
+        404 for an unknown session or document, 409 for a document still
+        being parsed, 400 for a non RAG session.
+    """
+    with session_factory() as db:
+        try:
+            documents = SessionDocumentService(db, job_queue).attach(
+                session_id, body.document_ids
+            )
+        except (LookupError, ValueError) as e:
+            _raise_session_documents_error(e)
+        return [_session_document_row(document) for document in documents]
+
+
+@router.delete(
+    "/sessions/{session_id}/documents/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def detach_session_document(
+    session_id: int,
+    document_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    job_queue: "BaseJobQueue" = Depends(lambda: di["job_queue"]),
+):
+    """Detach a document from a RAG session; it stays in the Data module.
+
+    Parameters
+    ----------
+    session_id : int
+        The RAG session.
+    document_id : int
+        The document to detach.
+    session_factory : Callable[..., ContextManager[Session]]
+        Factory for the SQLAlchemy session.
+    job_queue : BaseJobQueue
+        Queue holding the indexing jobs.
+
+    Returns
+    -------
+    Response
+        204 No Content.
+
+    Raises
+    ------
+    HTTPException
+        404 when the session does not exist or does not use the document.
+    """
+    with session_factory() as db:
+        try:
+            SessionDocumentService(db, job_queue).detach(session_id, document_id)
+        except (LookupError, ValueError) as e:
+            _raise_session_documents_error(e)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

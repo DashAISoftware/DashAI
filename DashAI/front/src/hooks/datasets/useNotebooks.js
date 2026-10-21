@@ -111,6 +111,19 @@ export function useNotebooks({ t }) {
     }
   };
 
+  const removeNotebooksByDocumentId = (documentId) => {
+    setNotebooks((prev) => prev.filter((n) => n.document_id !== documentId));
+
+    if (
+      selectedNotebookId &&
+      notebooks.find(
+        (n) => n.id === selectedNotebookId && n.document_id === documentId,
+      )
+    ) {
+      setSelectedNotebookId(null);
+    }
+  };
+
   return {
     notebooks,
     selectedNotebookId,
@@ -124,5 +137,6 @@ export function useNotebooks({ t }) {
 
     addNotebookOptimistically,
     removeNotebooksByDatasetId,
+    removeNotebooksByDocumentId,
   };
 }

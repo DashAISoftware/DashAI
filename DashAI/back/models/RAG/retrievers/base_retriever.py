@@ -32,6 +32,13 @@ class BaseRetriever(ConfigObject, ABC):
     )
     COLOR: str = "#9C27B0"
     ICON: str = "Search"
+    CATEGORY: MultilingualString = MultilingualString(
+        en="Other retrievers",
+        es="Otros recuperadores",
+        pt="Outros recuperadores",
+        de="Andere Retriever",
+        zh="其他检索器",
+    )
 
     env_RAG_path: str | os.PathLike | None  # noqa: N815
     chunks: Dict[int, Dict[int, Chunk]]
@@ -44,9 +51,10 @@ class BaseRetriever(ConfigObject, ABC):
         Returns
         -------
         Dict[str, Any]
-            Dictionary with the icon shown for the retriever in the frontend.
+            Dictionary with the icon shown for the retriever in the frontend
+            and the category the retriever pickers group it under.
         """
-        return {"icon": cls.ICON}
+        return {"icon": cls.ICON, "category": cls.CATEGORY}
 
     def __init__(self, **kwargs):
         """Initialize the retriever model.

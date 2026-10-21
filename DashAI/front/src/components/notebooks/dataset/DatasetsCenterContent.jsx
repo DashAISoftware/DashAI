@@ -2,18 +2,18 @@ import { useCallback, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Box } from "@mui/material";
 import NotebookVisualization from "../notebook/NotebookVisualization";
-import UploadDatasetSteps from "../datasetCreation/UploadDatasetSteps";
+import UploadDataSteps from "../dataCreation/UploadDataSteps";
 import UploadNotebookSteps from "../notebookCreation/UploadNotebookSteps";
 import DatasetVisualization from "../../DatasetVisualization";
+import DocumentView from "../../documents/DocumentView";
 import SelectOptionMenu from "../../threeSectionLayout/SelectOptionMenu";
 import DataBreadcrumbs from "../DataBreadcrumbs";
 import { useDatasetsAndNotebooks } from "../../custom/contexts/DatasetsAndNotebooksContext";
 import { useTourContext } from "../../tour/TourProvider";
 import { useTranslation } from "react-i18next";
 import {
-  CloudUpload as UploadDatasetIcon,
+  CloudUpload as UploadDataIcon,
   AutoStories as NotebookIcon,
-  Hub as HubIcon,
 } from "@mui/icons-material";
 
 export default function DatasetsCenterContent() {
@@ -26,6 +26,8 @@ export default function DatasetsCenterContent() {
     step,
     addNotebookOptimistically,
     selectedOption,
+    documents,
+    selectedDocumentId,
   } = useDatasetsAndNotebooks();
 
   const tourContext = useTourContext();
@@ -35,22 +37,25 @@ export default function DatasetsCenterContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectedDatasetIdFromState =
     location.state?.preselectedDatasetId ?? null;
+  const preselectedDocumentIdFromState =
+    location.state?.preselectedDocumentId ?? null;
 
   useEffect(() => {
     if (searchParams.get("action") === "upload") {
       searchParams.delete("action");
       setSearchParams(searchParams, { replace: true });
-      navigate("/app/data/datasets/new");
+      navigate("/app/data/new");
     }
   }, [searchParams]);
 
   const selectedDataset = datasets.find((n) => n.id === selectedDatasetId);
   const selectedNotebook = notebooks.find((n) => n.id === selectedNotebookId);
+  const selectedDocument = documents.find((d) => d.id === selectedDocumentId);
 
   const goToNextStep = useCallback(
     (option) => {
-      if (option === "dataset") {
-        navigate("/app/data/datasets/new");
+      if (option === "data") {
+        navigate("/app/data/new");
         const currentTarget =
           tourContext?.steps?.[tourContext?.stepIndex]?.target;
         if (
@@ -85,6 +90,12 @@ export default function DatasetsCenterContent() {
     });
   };
 
+  const handleNewNotebookFromDocument = () => {
+    navigate("/app/data/notebooks/new", {
+      state: { preselectedDocumentId: selectedDocumentId },
+    });
+  };
+
   if (selectedNotebookId && selectedOption === "notebook") {
     return (
       <NotebookVisualization
@@ -106,7 +117,17 @@ export default function DatasetsCenterContent() {
     );
   }
 
-  if (step === 1 && selectedOption === "dataset") {
+  if (selectedDocumentId && selectedOption === "document") {
+    return (
+      <DocumentView
+        key={selectedDocumentId}
+        dataDocument={selectedDocument}
+        onNewNotebook={handleNewNotebookFromDocument}
+      />
+    );
+  }
+
+  if (step === 1 && selectedOption === "data") {
     return (
       <Box
         sx={{
@@ -120,7 +141,7 @@ export default function DatasetsCenterContent() {
         }}
       >
         <DataBreadcrumbs />
-        <UploadDatasetSteps
+        <UploadDataSteps
           backHome={() => {
             setRightBarContent(null);
             navigate("/app/data");
@@ -129,6 +150,7 @@ export default function DatasetsCenterContent() {
       </Box>
     );
   }
+
   if (step === 1 && selectedOption === "notebook") {
     return (
       <Box
@@ -148,9 +170,11 @@ export default function DatasetsCenterContent() {
             navigate("/app/data");
           }}
           datasets={datasets}
+          documents={documents}
           handleNotebookCreated={handleNotebookCreated}
           existingNotebooks={notebooks}
           preselectedDatasetId={preselectedDatasetIdFromState}
+          preselectedDocumentId={preselectedDocumentIdFromState}
         />
       </Box>
     );
@@ -162,10 +186,10 @@ export default function DatasetsCenterContent() {
         subtitle={t("datasets:label.datasetModuleSubtitle")}
         options={[
           {
-            name: "dataset",
-            display_name: t("datasets:label.uploadDataset"),
-            description: t("datasets:label.uploadDatasetDescription"),
-            Icon: UploadDatasetIcon,
+            name: "data",
+            display_name: t("datasets:label.uploadData"),
+            description: t("datasets:label.uploadDataDescription"),
+            Icon: UploadDataIcon,
             "data-tour": "dataset-option",
           },
           {

@@ -24,6 +24,9 @@ from typing import Any, Dict, List, Tuple
 
 import pytest
 
+from DashAI.back.converters.hugging_face.text_embedding import (
+    TEXT_EMBEDDING_CONVERTERS,
+)
 from DashAI.back.dependencies.config_builder import get_initial_components
 
 #: Keys DashAI/front/src/utils/columnEligibility.js reads. Removing or renaming
@@ -34,6 +37,7 @@ KEYS_THE_FRONTEND_READS = (
     "allowed_dtypes",
     "non_allowed_dtypes",
     "input_cardinality",
+    "data_kinds",
 )
 
 #: Renamed keys. A component that resurrects one is talking to a consumer that
@@ -157,3 +161,83 @@ def test_the_declared_blacklists_are_the_ones_we_think_they_are():
         "ScatterMatrixExplorer",
         "ScatterPlotExplorer",
     ], with_blacklist
+
+
+TOOLS = [
+    (component.__name__, component.get_metadata())
+    for component in get_initial_components()
+    if getattr(component, "TYPE", None) in ("Converter", "Explorer")
+]
+
+
+@pytest.mark.parametrize(("name", "metadata"), TOOLS, ids=[n for n, _ in TOOLS])
+def test_data_kinds_are_known_kinds(name: str, metadata: Dict[str, Any]):
+    kinds = metadata["data_kinds"]
+    assert isinstance(kinds, list), (name, kinds)
+    assert kinds, (name, kinds)
+    assert set(kinds) <= {"dataset", "document"}, (name, kinds)
+
+
+def test_the_document_tools_are_the_ones_we_think_they_are():
+    """A named list, so offering a tool on documents is a decision."""
+    on_documents = sorted(
+        name for name, metadata in TOOLS if "document" in metadata["data_kinds"]
+    )
+    assert on_documents == [
+        "CharacterReplacer",
+        "DescribeExplorer",
+        "DocumentItemFilter",
+        "ImageCaptioningConverter",
+        "LanguageFilter",
+        "NamedEntitiesExplorer",
+        "OCRConverter",
+        "OpusMtDeEnTranslator",
+        "OpusMtEnDeTranslator",
+        "OpusMtEnEsTranslator",
+        "OpusMtEnFrTranslator",
+        "OpusMtEnRoaTranslator",
+        "OpusMtEnZhTranslator",
+        "OpusMtEsEnTranslator",
+        "OpusMtFrEnTranslator",
+        "OpusMtRoaEnTranslator",
+        "OpusMtZhEnTranslator",
+        "RegexReplacer",
+        "Summarizer",
+        "TextCleaner",
+        "TextSplitter",
+        "TextStatisticsExplorer",
+        "TopTermsExplorer",
+        "WordcloudExplorer",
+    ], on_documents
+
+
+def test_only_document_converters_change_the_row_count_of_a_document():
+    """A sampler cannot place its rows in a document; a DocumentConverter can."""
+    from DashAI.back.converters.document_converter import DocumentConverter
+
+    for component in get_initial_components():
+        if getattr(component, "TYPE", None) != "Converter":
+            continue
+        metadata = component.get_metadata()
+        if "document" in metadata["data_kinds"] and metadata["changes_row_count"]:
+            assert issubclass(component, DocumentConverter), component.__name__
+
+
+MULTI_COLUMN_CONVERTERS = (
+    "BagOfWordsConverter",
+    "ImageEmbeddingConverter",
+    "TFIDFConverter",
+    "TokenizerConverter",
+    *(component.__name__ for component in TEXT_EMBEDDING_CONVERTERS),
+)
+
+
+def test_multi_column_converters_stay_datasets_only():
+    """They turn one value into many columns, which a document cannot hold."""
+    kinds = {
+        name: metadata["data_kinds"]
+        for name, metadata in TOOLS
+        if name in MULTI_COLUMN_CONVERTERS
+    }
+    assert set(kinds) == set(MULTI_COLUMN_CONVERTERS), kinds
+    assert all(value == ["dataset"] for value in kinds.values()), kinds

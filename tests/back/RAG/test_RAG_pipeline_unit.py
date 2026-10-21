@@ -474,7 +474,7 @@ class TestChunkReferenceToDict:
     """Verify ChunkReference serialization."""
 
     def test_to_dict_returns_all_fields(self):
-        """to_dict() returns all four fields."""
+        """to_dict() returns every field, page included."""
         ref = ChunkReference(
             document_id=5,
             document_name="test.pdf",
@@ -487,4 +487,15 @@ class TestChunkReferenceToDict:
             "document_name": "test.pdf",
             "document_position": 3,
             "text": "some text",
+            "page": None,
         }
+
+    def test_page_is_carried_into_the_reference(self):
+        """A retrieved chunk's page reaches the stored reference."""
+        chunk = Chunk(id=1, document_id=1, document_position=0, text="t", page=3)
+        pipeline = _make_pipeline()
+        pipeline.retriever.retrieve.return_value = [chunk]
+
+        result = pipeline.generate(({"role": "user", "content": "q"},))
+
+        assert result.chunks["1_0"].page == 3

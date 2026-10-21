@@ -1,5 +1,6 @@
 {
   "button": {
+    "exportModel": "Modell exportieren",
     "addConverter": "Converter hinzufügen",
     "addNewPrediction": "Neue Vorhersage hinzufügen",
     "createExplainer": "Erklärungsmodell erstellen",
@@ -28,6 +29,7 @@
     "uploadNewDataset": "Neuen Datensatz hochladen"
   },
   "error": {
+    "exportModel": "Das Modell konnte nicht exportiert werden",
     "completeRequiredFields": "Bitte füllen Sie alle Pflichtfelder aus",
     "createRun": "Fehler beim Erstellen eines neuen Durchlaufs: {{name}}",
     "createRunReason": "Fehler beim Erstellen eines neuen Durchlaufs \"{{name}}\": {{reason}}",

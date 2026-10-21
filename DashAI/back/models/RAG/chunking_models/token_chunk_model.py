@@ -159,15 +159,12 @@ class TokenChunkModel(BaseChunkingModel):
 
         Args:
             **kwargs: Must include ``chunk_size``, ``chunk_overlap``, and
-                ``tokenizer_name``, plus a ``documents`` mapping passed to
-                the parent class.
+                ``tokenizer_name``.
         """
-        # Extract parameters before super().__init__() pops "documents"
         self.chunk_size = kwargs["chunk_size"]
         self.chunk_overlap = kwargs["chunk_overlap"]
         self.tokenizer_name = kwargs["tokenizer_name"]
         self._tokenizer: Optional["AutoTokenizer"] = None
-        # self.parameters is set by BaseChunkingModel.validate_and_transform()
         super().__init__(**kwargs)
 
     @property

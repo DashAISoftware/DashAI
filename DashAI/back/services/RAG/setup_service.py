@@ -4,6 +4,7 @@ from typing import Callable, Dict, Optional
 
 from sqlalchemy.orm import Session
 
+from DashAI.back.dependencies.database.models import GenerativeSession
 from DashAI.back.dependencies.database.models import RAGPipeline as PipelineDBModel
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.RAG.chunking_models.base_chunking_model import (
@@ -12,7 +13,7 @@ from DashAI.back.models.RAG.chunking_models.base_chunking_model import (
 from DashAI.back.models.RAG.chunking_models.chunking_model_factory import (
     ChunkingFactoryResult,
 )
-from DashAI.back.models.RAG.documents import BaseDocument, Chunk
+from DashAI.back.models.RAG.documents import Chunk, SourceDocument
 from DashAI.back.models.RAG.prompts.base_prompt import BasePrompt
 from DashAI.back.models.RAG.RAG_models_factory import RAGModelsFactory
 from DashAI.back.models.RAG.RAG_pipeline import RAGPipeline, RAGPipelineConfig
@@ -46,7 +47,7 @@ class IndexResult:
 
     pipeline_id: int
     chunk_set_id: int
-    documents: Dict[int, BaseDocument]
+    documents: Dict[int, SourceDocument]
     chunking_model_id: int
     chunking: ChunkingFactoryResult
     retriever: RetrieverSetupResult
@@ -81,8 +82,8 @@ class SetupService:
         self._registry = registry
         self._RAG_path = RAG_path
 
-        self._documents = DocumentService(db, registry)
-        self._chunking = ChunkingService(db, registry)
+        self._documents = DocumentService(db)
+        self._chunking = ChunkingService(db, registry, RAG_path)
         self._prompts = PromptService(db, registry)
         self._llm = LLMService(db, registry)
 
@@ -137,6 +138,7 @@ class SetupService:
         documents = self._documents.load(config.documents)
 
         chunk_set = self._chunking.get_or_create_chunk_set(
+            config.session_id,
             config.documents,
             {
                 "chunking_model": {
@@ -168,6 +170,7 @@ class SetupService:
             config.retriever_model.params,
         )
 
+        self._clear_reindex_flag(config.session_id)
         report(1.0, "Index ready")
         return IndexResult(
             pipeline_id=pipeline_id,
@@ -323,7 +326,7 @@ class SetupService:
         self,
         config: RAGPipelineConfig,
         pipeline_id: int,
-        documents: Dict[int, BaseDocument],
+        documents: Dict[int, SourceDocument],
         prompt_model: BasePrompt,
         chunking_model_id: int,
         chunking_model: BaseChunkingModel,
@@ -337,7 +340,7 @@ class SetupService:
         ----------
         config : RAGPipelineConfig
         pipeline_id : int
-        documents : Dict[int, BaseDocument]
+        documents : Dict[int, SourceDocument]
         prompt_model : BasePrompt
         chunking_model_id : int
         chunking_model : BaseChunkingModel
@@ -360,3 +363,16 @@ class SetupService:
             retriever=retriever,
             llm_model=llm_model,
         )
+
+    def _clear_reindex_flag(self, session_id: int) -> None:
+        """Clear the session's reindex mark once its index is built.
+
+        Parameters
+        ----------
+        session_id : int
+            Generative session identifier.
+        """
+        session = self._db.get(GenerativeSession, session_id)
+        if session is not None and session.needs_reindex:
+            session.needs_reindex = False
+            self._db.commit()

@@ -26,6 +26,7 @@ from DashAI.back.api.api_v1.schemas.datasets_params import (
     DatasetRenameColumnParams,
     DatasetUpdateParams,
 )
+from DashAI.back.dataloaders.classes.dataloader import require_data_kind
 from DashAI.back.dependencies.database.models import Dataset, Folder, ModelSession
 
 if TYPE_CHECKING:
@@ -1955,6 +1956,7 @@ async def preview_with_types(
                 )
 
             dataloader_cls = component_registry[dataloader_name]["class"]
+            require_data_kind(dataloader_cls, "dataset")
             dataloader = dataloader_cls()
 
             native_types = None
@@ -2151,7 +2153,9 @@ async def validate_type_changes(
                     detail=f"Dataloader {dataloader_name} not found",
                 )
 
-            dataloader = component_registry[dataloader_name]["class"]()
+            dataloader_cls = component_registry[dataloader_name]["class"]
+            require_data_kind(dataloader_cls, "dataset")
+            dataloader = dataloader_cls()
 
             sample_df = dataloader.load_preview(
                 filepath_or_buffer=tmp_file_path, params=parsed_params, n_rows=1000

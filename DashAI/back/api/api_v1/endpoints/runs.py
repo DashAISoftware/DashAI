@@ -202,6 +202,70 @@ async def get_run_by_id(
         return run
 
 
+@router.get("/{run_id}/export")
+@inject
+async def export_run_model(
+    run_id: int,
+    session_factory: "sessionmaker" = Depends(lambda: di["session_factory"]),
+    component_registry=Depends(lambda: di["component_registry"]),
+):
+    """Download a finished run as a ``.dashai-model`` package.
+
+    The package holds the trained model, the session's fitted preprocessor and
+    the training column types, so it predicts outside the app with
+    ``DashAI.load_model``.
+
+    Raises
+    ------
+    HTTPException
+        404 if the run does not exist, 409 if it has no usable trained model,
+        500 on any other failure.
+    """
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    from fastapi.concurrency import run_in_threadpool
+    from fastapi.responses import FileResponse
+    from starlette.background import BackgroundTask
+
+    from DashAI.back.model_package.export import (
+        RunNotExportableError,
+        RunNotFoundError,
+        build_package,
+        package_filename,
+    )
+
+    workdir = Path(tempfile.mkdtemp(prefix="dashai-export-"))
+    destination = workdir / "package.dashai-model"
+    try:
+        manifest = await run_in_threadpool(
+            build_package, run_id, destination, session_factory, component_registry
+        )
+    except RunNotFoundError as e:
+        shutil.rmtree(workdir, ignore_errors=True)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+        ) from e
+    except RunNotExportableError as e:
+        shutil.rmtree(workdir, ignore_errors=True)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+    except Exception as e:
+        shutil.rmtree(workdir, ignore_errors=True)
+        log.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error exporting the model",
+        ) from e
+
+    return FileResponse(
+        destination,
+        media_type="application/zip",
+        filename=package_filename(manifest["info"]["run_name"]),
+        background=BackgroundTask(shutil.rmtree, workdir, ignore_errors=True),
+    )
+
+
 @router.get("/plot/{run_id}/{plot_type}")
 @inject
 async def get_hyperparameter_optimization_plot(

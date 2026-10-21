@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List
 
 from DashAI.back.core.artifacts import Artifact, TableArtifact, TablePayload
+from DashAI.back.core.data_kinds import DATASET, DOCUMENT
 from DashAI.back.core.schema_fields import (
     enum_field,
     none_type,
@@ -13,6 +14,7 @@ from DashAI.back.exploration.base_explorer import BaseExplorerSchema
 from DashAI.back.exploration.preview_inspection_explorer import (
     PreviewInspectionExplorer,
 )
+from DashAI.back.types.value_types import Text
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -175,6 +177,8 @@ class DescribeExplorer(PreviewInspectionExplorer):
         "allowed_types": [],
         "allowed_dtypes": [],
         "input_cardinality": {"min": 1},
+        "data_kinds": [DATASET, DOCUMENT],
+        "document_allowed_types": [Text],
     }
 
     def __init__(self, **kwargs) -> None:

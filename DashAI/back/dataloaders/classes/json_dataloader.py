@@ -124,11 +124,11 @@ class JSONDataLoader(BaseDataLoader):
         ),
     )
     DISPLAY_NAME: str = MultilingualString(
-        en="JSON Data Loader",
-        es="Cargador de Datos JSON",
-        pt="Carregador de Dados JSON",
-        de="JSON Datenlader",
-        zh="JSON数据加载器",
+        en="JSON",
+        es="JSON",
+        pt="JSON",
+        de="JSON",
+        zh="JSON",
     )
 
     def _check_params(self, params: Dict[str, Any]) -> None:

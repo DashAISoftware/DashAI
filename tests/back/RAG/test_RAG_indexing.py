@@ -311,6 +311,51 @@ def test_index_endpoint_short_circuits_when_already_indexed(
         assert db.get(GenerativeSession, session_id).index_job_id == first_job
 
 
+def _store_pre_branch_retriever(client: TestClient, session_id: int) -> None:
+    """Overwrite a session's retriever with the shape older versions stored."""
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        session = db.get(GenerativeSession, session_id)
+        parameters = dict(session.parameters)
+        parameters["retriever_model"] = {
+            "component": "BM25Retriever",
+            "params": {
+                "BM25Vectorizer": {"component": "BM25VectorizerModel", "params": {}},
+                "top_k": 5,
+            },
+        }
+        session.parameters = parameters
+        db.commit()
+
+
+def test_index_endpoint_rejects_a_stale_retriever_configuration(
+    client: TestClient, written_documents: list
+):
+    session_id, _ = _create_session_with_document(
+        client, "index_stale_retriever", written_documents
+    )
+    _store_pre_branch_retriever(client, session_id)
+    before = len(_queue_rows(client))
+
+    response = client.post(f"/api/v1/rag/sessions/{session_id}/index")
+
+    assert response.status_code == 422, response.text
+    assert "Choose a retriever again" in response.json()["detail"]
+    assert len(_queue_rows(client)) == before
+
+
+def test_index_job_names_a_stale_retriever_configuration(
+    client: TestClient, written_documents: list
+):
+    session_id, _ = _create_session_with_document(
+        client, "index_job_stale_retriever", written_documents
+    )
+    _store_pre_branch_retriever(client, session_id)
+
+    with pytest.raises(JobError, match="Choose a retriever again"):
+        RAGIndexJob(session_id=session_id).run()
+
+
 def test_index_endpoint_404s_for_an_unknown_session(client: TestClient):
     assert client.post("/api/v1/rag/sessions/999999/index").status_code == 404
 
@@ -461,18 +506,37 @@ def test_changing_parameters_cancels_a_live_index(
         assert db.get(GenerativeSession, session_id).index_job_id is None
 
 
-def test_deleting_a_document_cancels_a_live_index(
+def test_detaching_a_document_cancels_a_live_index(
     client: TestClient, written_documents: list
 ):
     session_id, document_id = _create_session_with_document(
-        client, "index_cancel_delete", written_documents
+        client, "index_cancel_detach", written_documents
     )
-    job_id = f"live-del-{uuid.uuid4().hex[:8]}"
+    job_id = f"live-det-{uuid.uuid4().hex[:8]}"
     _write_queue_row(client, job_id, "started")
     _point_session_at_job(client, session_id, job_id)
 
-    assert client.delete(f"/api/v1/document/{document_id}").status_code == 204
+    response = client.delete(
+        f"/api/v1/rag/sessions/{session_id}/documents/{document_id}"
+    )
 
+    assert response.status_code == 204
     session_factory = client.app.container["session_factory"]
     with session_factory() as db:
         assert db.get(GenerativeSession, session_id).index_job_id is None
+
+
+def test_indexing_clears_the_reindex_mark(client: TestClient, written_documents: list):
+    session_id, _ = _create_session_with_document(
+        client, "index_reindex_mark", written_documents
+    )
+    session_factory = client.app.container["session_factory"]
+    with session_factory() as db:
+        db.get(GenerativeSession, session_id).needs_reindex = True
+        db.commit()
+    status_url = f"/api/v1/rag/sessions/{session_id}/index-status"
+    assert client.get(status_url).json()["needs_reindex"] is True
+
+    RAGIndexJob(session_id=session_id).run()
+
+    assert client.get(status_url).json()["needs_reindex"] is False

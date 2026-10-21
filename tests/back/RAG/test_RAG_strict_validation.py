@@ -2,20 +2,20 @@
 
 ``SessionValidationService`` (used by ``POST /api/v1/generative-session/`` and
 ``PUT /api/v1/generative-session/{id}/parameters``) recursively validates every
-``{component, params}`` reference — including nested sub-components such as
-the ``BM25VectorizerModel`` inside a ``BM25Retriever`` — against the
+``{component, params}`` reference, including nested sub-components such as
+the ``BagOfWordsConverter`` inside a ``BM25Retriever``, against the
 component's own schema (``SCHEMA.model_validate(params)``).  A failing
 sub-component rejects the whole request with HTTP 400.
 
 The ``generation_model`` is the one component picked by name alone, so the
 backend fills its missing parameters from its schema placeholders; explicit
-values always win.  Every other component — including any nested
-sub-component such as the vectorizer inside a retriever — must arrive complete,
+values always win.  Every other component, including any nested
+sub-component such as the vectorizer inside a retriever, must arrive complete,
 so a caller sending a half-built configuration is told about it instead of
 having the gaps silently papered over.
 
 The default prompts (``DefaultRAGGenerationPrompt`` and
-``DefaultQARAGenerationPrompt`` — the QA class name contains a double ``GG``)
+``DefaultQARAGenerationPrompt``, the QA class name contains a double ``GG``)
 accept a language-only ``{"language": ...}`` body: the backend injects
 ``template = TEMPLATES[language]`` and persists the resolved template.  Empty,
 whitespace-only or ``None`` templates are normalised the same way.  Truly
@@ -25,14 +25,9 @@ placeholders) are rejected with HTTP 400.
 
 from fastapi.testclient import TestClient
 
-COMPLETE_BM25_VECTORIZER_PARAMS = {
-    "strip_accents": None,
-    "lowercase": True,
-    "stop_words": None,
-    "max_df": 1.0,
-    "min_df": 0.0,
-    "max_features": None,
-}
+from tests.back.RAG.conftest import BOW_PARAMS
+
+COMPLETE_BM25_VECTORIZER_PARAMS = dict(BOW_PARAMS)
 
 
 # ---------------------------------------------------------------------------
@@ -55,9 +50,9 @@ def _complete_params(name="strict_valid"):
             "retriever_model": {
                 "component": "BM25Retriever",
                 "params": {
-                    "BM25Vectorizer": {
-                        "component": "BM25VectorizerModel",
-                        "params": COMPLETE_BM25_VECTORIZER_PARAMS,
+                    "vectorizer": {
+                        "component": "BagOfWordsConverter",
+                        "params": dict(BOW_PARAMS),
                     },
                     "k1": 1.5,
                     "b": 0.75,
@@ -89,8 +84,8 @@ def _bm25_retriever_ref(vectorizer_params: dict) -> dict:
     return {
         "component": "BM25Retriever",
         "params": {
-            "BM25Vectorizer": {
-                "component": "BM25VectorizerModel",
+            "vectorizer": {
+                "component": "BagOfWordsConverter",
                 "params": vectorizer_params,
             },
             "k1": 1.5,
@@ -112,7 +107,7 @@ def test_create_session_with_empty_vectorizer_params_rejected(
 ) -> None:
     """Empty vectorizer ``params`` are rejected — backend must not fill gaps."""
     params = _complete_params(name="strict_incomplete_vectorizer")
-    params["parameters"]["retriever_model"]["params"]["BM25Vectorizer"]["params"] = {}
+    params["parameters"]["retriever_model"]["params"]["vectorizer"]["params"] = {}
 
     response = client.post("/api/v1/generative-session/", json=params)
     assert response.status_code == 400, (
@@ -358,7 +353,7 @@ class TestUpdateStrictValidation:
             f"got {response.status_code}: {response.text}"
         )
         saved = response.json()["parameters"]["retriever_model"]["params"][
-            "BM25Vectorizer"
+            "vectorizer"
         ]["params"]
         assert saved == COMPLETE_BM25_VECTORIZER_PARAMS
 
@@ -369,14 +364,7 @@ class TestUpdateStrictValidation:
         session = self._create_session(
             client, "strict_update_vectorizer_type_normalization"
         )
-        vectorizer_params = {
-            "strip_accents": None,
-            "lowercase": True,
-            "stop_words": None,
-            "max_df": 1,
-            "min_df": 0,
-            "max_features": None,
-        }
+        vectorizer_params = {**BOW_PARAMS, "max_df": 1, "min_df": 0}
 
         response = client.put(
             f"/api/v1/generative-session/{session['id']}/parameters",
@@ -387,7 +375,7 @@ class TestUpdateStrictValidation:
             f"got {response.status_code}: {response.text}"
         )
         saved = response.json()["parameters"]["retriever_model"]["params"][
-            "BM25Vectorizer"
+            "vectorizer"
         ]["params"]
         assert isinstance(saved["max_df"], float)
         assert saved["max_df"] == 1.0

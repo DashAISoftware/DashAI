@@ -392,7 +392,7 @@ class BaseTask:
         Returns
         -------
         Any
-            Normalized value
+            Normalized value, or None for a missing cell (None or NaN).
 
         Raises
         ------
@@ -402,6 +402,12 @@ class BaseTask:
             If value doesn't match expected type
         """
         import numpy as np
+
+        # A missing cell is not a wrong type: a session may impute it, and a
+        # model that cannot handle it is reported by the prediction step,
+        # which names the rows and columns.
+        if value is None or (isinstance(value, float) and np.isnan(value)):
+            return None
 
         col_type = column_spec.get("type")
         dtype = column_spec.get("dtype")

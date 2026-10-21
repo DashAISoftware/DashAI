@@ -18,7 +18,7 @@
     "translation": "Übersetzung"
   },
   "description": {
-    "datasets": "Datensätze der Anwendung erstellen und verwalten.",
+    "datasets": "Datensätze und Dokumente der Anwendung hochladen und verwalten.",
     "generative": "Mit KI-Modellen interagieren, um neue Inhalte zu erzeugen.",
     "models": "Aufgaben konfigurieren, Modelle trainieren und in organisierten Sitzungen vergleichen.",
     "plugins": "Plugins durchsuchen und verwalten, um die Funktionalität von dashAI zu erweitern."

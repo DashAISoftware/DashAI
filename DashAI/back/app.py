@@ -16,6 +16,8 @@ from DashAI.back.dependencies.config_builder import build_config_dict
 from DashAI.back.dependencies.database.backfill import (
     backfill_dataset_counts,
     backfill_explorer_artifacts,
+    backfill_rag_documents,
+    backfill_rag_retrievers,
 )
 from DashAI.back.dependencies.database.migrate import migrate_on_startup
 from DashAI.back.plugins.environment import activate_plugins_directory
@@ -112,6 +114,14 @@ def create_app(
     # explorations can only be upgraded while their explorer is installed.
     logger.debug("4b-bis. Backfilling explorer render artifacts.")
     backfill_explorer_artifacts(di["session_factory"])
+
+    logger.debug("4b-ter. Converting legacy RAG documents into Data documents.")
+    backfill_rag_documents(
+        di["session_factory"], di["component_registry"], config["DOCUMENTS_PATH"]
+    )
+
+    logger.debug("4b-quater. Converting legacy RAG retriever configurations.")
+    backfill_rag_retrievers(di["session_factory"], di["component_registry"])
 
     if enable_seeding:
         logger.debug("4c. Seeding initial datasets if first run.")

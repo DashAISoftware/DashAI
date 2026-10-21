@@ -11,9 +11,11 @@ from DashAI.back.core.schema_fields import (
     string_field,
 )
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dataloaders.classes.dataloader import require_data_kind
 from DashAI.back.job.base_job import JobError
 from DashAI.back.units.base_unit import BaseUnit
 from DashAI.back.units.context import ExecutionContext
+from DashAI.back.units.datafile_source import datafile_source_file
 
 log = logging.getLogger(__name__)
 
@@ -114,25 +116,12 @@ class LoadDatafileDatasetUnit(BaseUnit):
     def execute(self, ctx: ExecutionContext) -> None:
         from kink import di
 
-        from DashAI.back.core.enums.status import DatafileStatus
-        from DashAI.back.dependencies.database.models import Datafile
-
         component_registry = di["component_registry"]
-        session_factory = di["session_factory"]
 
-        datafile_id = self.config["datafile_id"]
-        selected_file = self.config.get("selected_file")
         dataloader_config = self.config["dataloader"]
-
-        with session_factory() as db:
-            datafile = db.get(Datafile, datafile_id)
-            # A missing row and an unfinished download are the same problem from
-            # here: there are no files to read either way.
-            if datafile is None or datafile.status != DatafileStatus.READY:
-                raise JobError(f"Datafile {datafile_id} is not ready.")
-            work_dir = datafile.local_path
-
-        source = _resolve_source_file(work_dir, selected_file)
+        source = datafile_source_file(
+            self.config["datafile_id"], self.config.get("selected_file")
+        )
 
         # Looked up among the readers specifically, not with the registry's
         # global ``registry[name]``: that one walks every component type, so a
@@ -142,7 +131,9 @@ class LoadDatafileDatasetUnit(BaseUnit):
         readers = component_registry.registry.get("DataLoader", {})
         if dataloader_name not in readers:
             raise JobError(f"DataLoader '{dataloader_name}' not found in registry.")
-        dataloader = readers[dataloader_name]["class"]()
+        dataloader_class = readers[dataloader_name]["class"]
+        require_data_kind(dataloader_class, "dataset")
+        dataloader = dataloader_class()
 
         log.debug("Loading hub dataset from %s using %s", source, dataloader_name)
         ctx.put(
@@ -159,30 +150,3 @@ class LoadDatafileDatasetUnit(BaseUnit):
                 n_sample=None,
             ),
         )
-
-
-def _resolve_source_file(work_dir: str, selected_file) -> str:
-    """Pick the file to read inside a completed download.
-
-    A plain helper: takes and returns values, never touches the context.
-
-    With no explicit choice it walks the tree and takes the first file in sorted
-    order, skipping anything under a dot-prefixed path component — download tools
-    leave metadata directories (``.cache``, ``.git``) behind that sort before the
-    real data and would otherwise win.
-    """
-    from pathlib import Path
-
-    if selected_file:
-        return str(Path(work_dir) / selected_file)
-
-    base = Path(work_dir)
-    files = sorted(
-        str(path)
-        for path in base.rglob("*")
-        if path.is_file()
-        and not any(part.startswith(".") for part in path.relative_to(base).parts)
-    )
-    if not files:
-        raise JobError("Hub download directory is empty.")
-    return files[0]

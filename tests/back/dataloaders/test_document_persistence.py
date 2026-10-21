@@ -69,7 +69,7 @@ def test_files_on_disk(tmp_path):
         "text.arrow",
     ]
     sidecar = json.loads((tmp_path / "doc" / "document.json").read_text("utf-8"))
-    assert sidecar["version"] == 1
+    assert sidecar["version"] == 2
     assert sidecar["content_counts"] == {"Text": 2, "Image": 1}
 
 
@@ -141,3 +141,70 @@ def test_load_rejects_unknown_version(tmp_path):
 
     with pytest.raises(ValueError, match="version"):
         load_document(tmp_path / "doc")
+
+
+def test_kinds_and_attrs_survive_a_round_trip(tmp_path):
+    items = [
+        DocumentItem(Text, "Title", kind="title"),
+        DocumentItem(Text, "Step one", kind="list_item", attrs={"ordered": True}),
+        DocumentItem(DashAIImage, DashAIImage(bytes=PNG_BYTES, path="f.png")),
+        DocumentItem(Text, "x = 1", kind="code", attrs={"language": "python"}),
+    ]
+    save_document(DashAIDocument.from_items(items), tmp_path / "doc")
+
+    loaded = load_document(tmp_path / "doc").items()
+
+    assert [(item.kind, item.attrs) for item in loaded] == [
+        ("title", {}),
+        ("list_item", {"ordered": True, "depth": 0}),
+        ("image", {}),
+        ("code", {"language": "python"}),
+    ]
+
+
+def test_version_1_documents_load_as_paragraphs_and_images(tmp_path):
+    import pyarrow as pa
+
+    save_document(_document(), tmp_path / "doc")
+    directory = tmp_path / "doc"
+    for name in ("text.arrow", "image.arrow"):
+        path = directory / name
+        with pa.OSFile(str(path), "rb") as source:
+            table = pa.ipc.open_file(source).read_all()
+        old = table.drop_columns(["kind", "attrs"])
+        with pa.OSFile(str(path), "wb") as sink:
+            writer = pa.ipc.new_file(sink, old.schema)
+            writer.write_table(old)
+            writer.close()
+    sidecar_path = directory / "document.json"
+    sidecar = json.loads(sidecar_path.read_text("utf-8"))
+    sidecar["version"] = 1
+    sidecar_path.write_text(json.dumps(sidecar), "utf-8")
+
+    loaded = load_document(directory)
+
+    assert [(item.type, item.kind, item.attrs) for item in loaded.items()] == [
+        (Text, "paragraph", {}),
+        (DashAIImage, "image", {}),
+        (Text, "paragraph", {}),
+    ]
+    assert loaded[Text] == ["Résumé del capítulo 1", "第二页"]
+
+
+def test_read_content_columns_include_kind_and_attrs(tmp_path):
+    from DashAI.back.dataloaders.classes.dashai_document import read_content_columns
+
+    items = [
+        DocumentItem(Text, "H", kind="heading", attrs={"level": 1}),
+        DocumentItem(DashAIImage, DashAIImage(bytes=PNG_BYTES, path="f.png")),
+    ]
+    save_document(DashAIDocument.from_items(items), tmp_path / "doc")
+
+    texts = read_content_columns(tmp_path / "doc", Text)
+    images = read_content_columns(tmp_path / "doc", DashAIImage, with_content=False)
+
+    assert texts["kind"] == ["heading"]
+    assert texts["attrs"] == [{"level": 1}]
+    assert images["kind"] == ["image"]
+    assert images["attrs"] == [{}]
+    assert "content" not in images

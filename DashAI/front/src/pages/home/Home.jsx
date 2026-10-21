@@ -131,7 +131,7 @@ function Home() {
 
   const modules = [
     {
-      title: t("common:datasets"),
+      title: t("common:data"),
       description: t("home:description.datasets"),
       to: "/app/data",
       Icon: FileUploadIcon,

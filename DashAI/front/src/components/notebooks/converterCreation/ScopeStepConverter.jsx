@@ -10,6 +10,8 @@ import { getDatasetInfoByFilePath } from "../../../api/datasets";
 import { useTourContext } from "../../tour/TourProvider";
 import { useTranslation } from "react-i18next";
 import { useExplorersAndConverters } from "../context/ExplorersAndConvertersContext";
+import DocumentItemScope from "../documentNotebook/DocumentItemScope";
+import { isDocumentNotebook } from "../notebookColumns";
 
 export default function ScopeStepConverter({
   supervised,
@@ -27,12 +29,16 @@ export default function ScopeStepConverter({
   const theme = useTheme();
   const [datasetInfo, setDatasetInfo] = useState(0);
   const tourContext = useTourContext();
-  const allowedTypes = tool?.metadata?.allowed_types || [];
   const allowedDtypes = tool?.metadata?.allowed_dtypes || [];
   const nonAllowedDtypes = tool?.metadata?.non_allowed_dtypes || [];
   const inputCardinality = tool?.metadata?.input_cardinality || {};
   const { t } = useTranslation(["common", "datasets"]);
-  const { columnTypes } = useExplorersAndConverters();
+  const { columnTypes, itemSelection } = useExplorersAndConverters();
+  const isDocument = isDocumentNotebook(notebook);
+  const allowedTypes =
+    (isDocument && tool?.metadata?.document_allowed_types) ||
+    tool?.metadata?.allowed_types ||
+    [];
   const excludedColumnIds = useMemo(
     () => (targetColumn ? [targetColumn.idx - 1] : []),
     [targetColumn],
@@ -49,6 +55,7 @@ export default function ScopeStepConverter({
   const [isColumnSelectionValid, setIsColumnSelectionValid] = useState(false);
 
   useEffect(() => {
+    if (isDocument) return undefined;
     let isMounted = true;
 
     const fetchAllData = async () => {
@@ -66,7 +73,7 @@ export default function ScopeStepConverter({
     return () => {
       isMounted = false;
     };
-  }, [notebook.file_path]);
+  }, [notebook.file_path, isDocument]);
 
   return (
     <Box
@@ -91,46 +98,82 @@ export default function ScopeStepConverter({
           gap: 2,
         }}
       >
-        <Typography
-          variant="body2"
-          sx={{ color: theme.palette.text.primary, mb: 1 }}
-        >
-          {t("datasets:label.selectScopeDescriptionColumns")}
-        </Typography>
-        {/* Scope selection UI */}
-        <ColumnSelector
-          file_path={notebook.file_path}
-          tool={tool}
-          allowedTypes={allowedTypes}
-          allowedDtypes={allowedDtypes}
-          nonAllowedDtypes={nonAllowedDtypes}
-          excludedColumnIds={excludedColumnIds}
-          inputCardinality={inputCardinality}
-          columnTypes={columnTypes}
-          onSelectionChange={(columnsInfo) => {
-            const processedColumns = columnsInfo.map((col) => ({
-              idx: col.id + 1,
-              columnName: col.columnName,
-              valueType: col.valueType,
-              dataType: col.dataType,
-            }));
-            setColumns(processedColumns);
-          }}
-          onValidationChange={(isValid) => setIsColumnSelectionValid(isValid)}
-        />
-        <Typography
-          variant="body2"
-          sx={{ color: theme.palette.text.secondary }}
-        >
-          {t("datasets:label.selectScopeDescriptionRows")}
-        </Typography>
-        <RowSelector
-          totalRows={datasetInfo?.total_rows || 0}
-          initialRows={rows}
-          onSelectionChange={(selectedRows) => {
-            setRows(selectedRows);
-          }}
-        />
+        {isDocument ? (
+          <>
+            <Typography
+              variant="body2"
+              sx={{ color: theme.palette.text.primary, mb: 1 }}
+            >
+              {t("datasets:documentNotebook.scopeConverterDescription")}
+            </Typography>
+            <DocumentItemScope
+              notebookId={notebook.id}
+              columnTypes={columnTypes}
+              metadata={tool?.metadata}
+              initialSelection={itemSelection}
+              onSelectionChange={(columnsInfo) =>
+                setColumns(
+                  columnsInfo.map((col) => ({
+                    idx: col.id + 1,
+                    columnName: col.columnName,
+                    valueType: col.valueType,
+                    dataType: col.dataType,
+                    ...(col.kinds ? { kinds: col.kinds } : {}),
+                    ...(col.positions ? { positions: col.positions } : {}),
+                  })),
+                )
+              }
+              onValidationChange={(isValid) =>
+                setIsColumnSelectionValid(isValid)
+              }
+            />
+          </>
+        ) : (
+          <>
+            <Typography
+              variant="body2"
+              sx={{ color: theme.palette.text.primary, mb: 1 }}
+            >
+              {t("datasets:label.selectScopeDescriptionColumns")}
+            </Typography>
+            {/* Scope selection UI */}
+            <ColumnSelector
+              file_path={notebook.file_path}
+              tool={tool}
+              allowedTypes={allowedTypes}
+              allowedDtypes={allowedDtypes}
+              nonAllowedDtypes={nonAllowedDtypes}
+              excludedColumnIds={excludedColumnIds}
+              inputCardinality={inputCardinality}
+              columnTypes={columnTypes}
+              onSelectionChange={(columnsInfo) => {
+                const processedColumns = columnsInfo.map((col) => ({
+                  idx: col.id + 1,
+                  columnName: col.columnName,
+                  valueType: col.valueType,
+                  dataType: col.dataType,
+                }));
+                setColumns(processedColumns);
+              }}
+              onValidationChange={(isValid) =>
+                setIsColumnSelectionValid(isValid)
+              }
+            />
+            <Typography
+              variant="body2"
+              sx={{ color: theme.palette.text.secondary }}
+            >
+              {t("datasets:label.selectScopeDescriptionRows")}
+            </Typography>
+            <RowSelector
+              totalRows={datasetInfo?.total_rows || 0}
+              initialRows={rows}
+              onSelectionChange={(selectedRows) => {
+                setRows(selectedRows);
+              }}
+            />
+          </>
+        )}
       </Box>
 
       {/* Buttons */}
@@ -146,7 +189,7 @@ export default function ScopeStepConverter({
           borderColor: "divider",
         }}
       >
-        {supervised && (
+        {supervised && !isDocument && (
           <ConverterClassColumnModal
             updateClassColumn={(column) => {
               const processedColumn = {
@@ -161,7 +204,7 @@ export default function ScopeStepConverter({
             notebook={notebook}
           />
         )}
-        {supervised && (
+        {supervised && !isDocument && (
           <Tooltip
             title={t("datasets:label.helpSelectClassColumn")}
             placement="top"
@@ -176,7 +219,8 @@ export default function ScopeStepConverter({
           <FormSchemaButtonGroup
             onFormSubmit={handleSubmit}
             error={
-              !isColumnSelectionValid || (supervised ? !targetColumn : false)
+              !isColumnSelectionValid ||
+              (supervised && !isDocument ? !targetColumn : false)
             }
             saveButtonText={
               Object.values(tool.schema.properties).length > 0

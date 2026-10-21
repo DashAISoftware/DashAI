@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Box, CircularProgress, Divider, Typography } from "@mui/material";
@@ -115,6 +115,19 @@ export default function RAGSessionPage() {
       });
   }, [sessionId, isValidId, refreshIndexStatus]);
 
+  const reindexRequested = useRef(false);
+
+  useEffect(() => {
+    reindexRequested.current = false;
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!indexStatus?.needs_reindex || reindexRequested.current) return;
+    if (["indexing", "no_documents"].includes(indexStatus.status)) return;
+    reindexRequested.current = true;
+    startIndexing();
+  }, [indexStatus, startIndexing]);
+
   // Poll only while a job is actually running, so this stops on its own. The
   // status is recomputed against the queue on every call, which is what lets
   // it recover from a job that was cancelled or killed.
@@ -194,7 +207,7 @@ export default function RAGSessionPage() {
                 showHubButton
                 onHubClick={() => navigate("/app/generative")}
               />
-              <Divider />
+              <Divider sx={{ width: "90%", bgcolor: "divider", mx: "auto" }} />
               {/* Both halves may shrink, and each scrolls its own content:
                   a fixed basis with an outer scroll pushed the header out of
                   view as the lists grew. */}
@@ -206,7 +219,6 @@ export default function RAGSessionPage() {
                   showSearch
                 />
               </Box>
-              <Divider />
               <Box sx={{ flex: "1 1 45%", minHeight: 0, display: "flex" }}>
                 <SessionBar
                   sessions={sessions}

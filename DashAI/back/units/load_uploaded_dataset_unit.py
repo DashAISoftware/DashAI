@@ -11,6 +11,7 @@ from DashAI.back.core.schema_fields import (
     string_field,
 )
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dataloaders.classes.dataloader import require_data_kind
 from DashAI.back.units.base_unit import BaseUnit
 from DashAI.back.units.context import ExecutionContext
 
@@ -115,7 +116,9 @@ class LoadUploadedDatasetUnit(BaseUnit):
 
         # Raises KeyError with the registry's own wording when the reader does
         # not exist. That message reaches the user, so it is not reworded here.
-        dataloader = component_registry[dataloader_config["component"]]["class"]()
+        dataloader_class = component_registry[dataloader_config["component"]]["class"]
+        require_data_kind(dataloader_class, "dataset")
+        dataloader = dataloader_class()
 
         log.debug(
             "Loading dataset from %s using %s",

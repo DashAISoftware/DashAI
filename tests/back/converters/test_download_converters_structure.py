@@ -7,16 +7,18 @@ building them is cheap because the model is only loaded on fit, so their
 
 import pytest
 
-from DashAI.back.converters.hugging_face.embedding import Embedding
 from DashAI.back.converters.hugging_face.image_embedding import (
     ImageEmbeddingConverter,
+)
+from DashAI.back.converters.hugging_face.text_embedding import (
+    AllMiniLML6V2Embedding,
 )
 from DashAI.back.converters.hugging_face.tokenizer import TokenizerConverter
 from DashAI.back.converters.segmentation.sam3_segment_converter import (
     SAM3SegmentConverter,
 )
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.preprocessing.structure_types import BlockItem, ColumnItem
-from DashAI.back.splitters.splits_payload import schema_placeholder_defaults
 
 
 def _build(cls, **params):
@@ -25,7 +27,7 @@ def _build(cls, **params):
 
 @pytest.mark.parametrize(
     ("cls", "type_name"),
-    [(Embedding, "Float"), (TokenizerConverter, "Integer")],
+    [(AllMiniLML6V2Embedding, "Float"), (TokenizerConverter, "Integer")],
 )
 def test_text_encoders_replace_the_text_with_one_block(cls, type_name):
     inputs = [ColumnItem(name="review", type="Text", dtype="string")]

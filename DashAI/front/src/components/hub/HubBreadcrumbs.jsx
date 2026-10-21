@@ -20,7 +20,7 @@ export default function HubBreadcrumbs({ sourceDisplayName, crumbs, onBack }) {
   const { t } = useTranslation(["hub", "common"]);
 
   const datasetsRootCrumb = {
-    label: t("common:datasets"),
+    label: t("common:data"),
     onClick: () => navigate("/app/data"),
   };
   const hubLinkCrumb = {
