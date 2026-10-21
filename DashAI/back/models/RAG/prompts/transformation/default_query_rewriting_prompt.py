@@ -30,11 +30,15 @@ TEMPLATES = {
         "{input}\n"
         "\n"
         "Write a single, clear, self-contained search query. Use the history "
-        "only when needed to resolve references. Do not add explanations.\n"
+        "only when needed to resolve references. Also write a short user-facing "
+        "message describing what you did and a short justification explaining "
+        "why. Do not add any other explanation.\n"
         "\n"
         "Respond with ONLY one JSON object in this exact OpenAI-style function "
         "call format, with no markdown fences and no extra text:\n"
-        '{"name": "rewrite_query", "arguments": {"query": "<the rewritten query>"}}'
+        '{"name": "rewrite_query", "arguments": {"query": "<the rewritten query>", '
+        '"message": "<one short sentence for the user describing what you did>", '
+        '"justification": "<one short sentence explaining why>"}}'
     ),
     "es": (
         "Eres un asistente de reescritura de consultas. Reescribe el mensaje "
@@ -50,12 +54,16 @@ TEMPLATES = {
         "{input}\n"
         "\n"
         "Escribe una sola consulta de búsqueda clara y autocontenida. Usa el "
-        "historial solo cuando sea necesario para resolver referencias. No "
-        "añadas explicaciones.\n"
+        "historial solo cuando sea necesario para resolver referencias. Escribe "
+        "también un mensaje breve para el usuario describiendo lo que hiciste y "
+        "una justificación breve de por qué. No añadas ninguna otra "
+        "explicación.\n"
         "\n"
         "Responde ÚNICAMENTE con un objeto JSON en este formato exacto de "
         "llamada a función, sin bloques de código ni texto adicional:\n"
-        '{"name": "rewrite_query", "arguments": {"query": "<la consulta reescrita>"}}'
+        '{"name": "rewrite_query", "arguments": {"query": "<la consulta reescrita>", '
+        '"message": "<una frase breve para el usuario describiendo lo que hiciste>", '
+        '"justification": "<una frase breve explicando por qué>"}}'
     ),
     "pt": (
         "Você é um assistente de reescrita de consultas. Reescreva a mensagem "
@@ -72,11 +80,15 @@ TEMPLATES = {
         "\n"
         "Escreva uma única consulta de busca clara e autocontida. Use o "
         "histórico somente quando for necessário para resolver referências. "
-        "Não adicione explicações.\n"
+        "Escreva também uma mensagem breve para o usuário descrevendo o que "
+        "você fez e uma justificativa breve de por quê. Não adicione nenhuma "
+        "outra explicação.\n"
         "\n"
         "Responda APENAS com um objeto JSON neste formato exato de chamada de "
         "função, sem blocos de código e sem texto adicional:\n"
-        '{"name": "rewrite_query", "arguments": {"query": "<a consulta reescrita>"}}'
+        '{"name": "rewrite_query", "arguments": {"query": "<a consulta reescrita>", '
+        '"message": "<uma frase breve para o usuário descrevendo o que você fez>", '
+        '"justification": "<uma frase breve explicando por quê>"}}'
     ),
 }
 

@@ -32,12 +32,16 @@ TEMPLATES = {
         "possible.\n"
         "Do not produce more than {n_max} sub-queries.\n"
         "Each sub-query must be simple, self-contained and independently "
-        "retrievable. Do not add explanations.\n"
+        "retrievable. Also write a short user-facing message describing what "
+        "you did and a short justification explaining why. Do not add any other "
+        "explanation.\n"
         "\n"
         "Respond with ONLY one JSON object in this exact OpenAI-style function "
         "call format, with no markdown fences and no extra text:\n"
         '{"name": "decompose_query", "arguments": '
-        '{"queries": ["<sub-query 1>", "<sub-query 2>"]}}'
+        '{"queries": ["<sub-query 1>", "<sub-query 2>"], '
+        '"message": "<one short sentence for the user describing what you did>", '
+        '"justification": "<one short sentence explaining why>"}}'
     ),
     "es": (
         "Eres un asistente de descomposición de consultas. Divide la pregunta "
@@ -54,13 +58,17 @@ TEMPLATES = {
         "Decide por ti mismo cuántas subconsultas hacen falta y usa las "
         "mínimas posibles.\n"
         "No generes más de {n_max} subconsultas.\n"
-        "Cada subconsulta debe ser simple, autocontenida e independiente. No "
-        "añadas explicaciones.\n"
+        "Cada subconsulta debe ser simple, autocontenida e independiente. "
+        "Escribe también un mensaje breve para el usuario describiendo lo que "
+        "hiciste y una justificación breve de por qué. No añadas ninguna otra "
+        "explicación.\n"
         "\n"
         "Responde ÚNICAMENTE con un objeto JSON en este formato exacto de "
         "llamada a función, sin bloques de código ni texto adicional:\n"
         '{"name": "decompose_query", "arguments": '
-        '{"queries": ["<subconsulta 1>", "<subconsulta 2>"]}}'
+        '{"queries": ["<subconsulta 1>", "<subconsulta 2>"], '
+        '"message": "<una frase breve para el usuario describiendo lo que hiciste>", '
+        '"justification": "<una frase breve explicando por qué>"}}'
     ),
     "pt": (
         "Você é um assistente de decomposição de consultas. Divida a pergunta "
@@ -77,13 +85,17 @@ TEMPLATES = {
         "Decida por conta própria quantas subconsultas são necessárias e use "
         "o mínimo possível.\n"
         "Não gere mais de {n_max} subconsultas.\n"
-        "Cada subconsulta deve ser simples, autocontida e independente. Não "
-        "adicione explicações.\n"
+        "Cada subconsulta deve ser simples, autocontida e independente. "
+        "Escreva também uma mensagem breve para o usuário descrevendo o que "
+        "você fez e uma justificativa breve de por quê. Não adicione nenhuma "
+        "outra explicação.\n"
         "\n"
         "Responda APENAS com um objeto JSON neste formato exato de chamada de "
         "função, sem blocos de código e sem texto adicional:\n"
         '{"name": "decompose_query", "arguments": '
-        '{"queries": ["<subconsulta 1>", "<subconsulta 2>"]}}'
+        '{"queries": ["<subconsulta 1>", "<subconsulta 2>"], '
+        '"message": "<uma frase breve para o usuário descrevendo o que você fez>", '
+        '"justification": "<uma frase breve explicando por quê>"}}'
     ),
 }
 

@@ -16,6 +16,11 @@ import pytest
 
 from DashAI.back.models.RAG.documents import Chunk, RAGDocument, TextSegment
 from DashAI.back.models.RAG.exceptions.retriever import RAGRetrieverEvaluationError
+from DashAI.back.models.RAG.progress_utils import progress_scope
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_PROGRESS_JUSTIFICATION_KEY,
+    RAG_PROGRESS_MESSAGE_KEY,
+)
 from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
 from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
     CALL_RETRIEVERS_KEY,
@@ -642,6 +647,8 @@ def test_depth_function_calling_sufficient_stops_after_one_delegation():
         CALL_RETRIEVERS_KEY,
         REQUEST_CHUNKS_KEY,
         DISCARD_KEY,
+        RAG_PROGRESS_MESSAGE_KEY,
+        RAG_PROGRESS_JUSTIFICATION_KEY,
     }
     assert parameters["properties"][SUFFICIENT_KEY]["type"] == "boolean"
     assert parameters["properties"][CALL_RETRIEVERS_KEY]["additionalProperties"] == {
@@ -960,6 +967,8 @@ def test_ensemble_function_calling_planning_selects_child():
         CALL_RETRIEVERS_KEY,
         REQUEST_CHUNKS_KEY,
         DISCARD_KEY,
+        RAG_PROGRESS_MESSAGE_KEY,
+        RAG_PROGRESS_JUSTIFICATION_KEY,
     }
     assert parameters["properties"][CALL_RETRIEVERS_KEY]["type"] == "object"
     assert parameters["properties"][REQUEST_CHUNKS_KEY]["type"] == "object"
@@ -1368,3 +1377,289 @@ def test_parse_arguments_rejects_invalid_type():
     """A payload that is neither a mapping nor a string fails loudly."""
     with pytest.raises(RAGRetrieverEvaluationError, match="list"):
         parse_evaluation_arguments([1, 2])
+
+
+# ---------------------------------------------------------------------------
+# Narrative progress
+# ---------------------------------------------------------------------------
+
+
+def test_parse_accepts_narrative_fields():
+    """message/justification are stripped and carried on the verdict."""
+    verdict = parse_evaluation_output(
+        '{"sufficient": true, "message": "  Todo listo  ", '
+        '"justification": " Hay evidencia "}'
+    )
+
+    assert verdict.message == "Todo listo"
+    assert verdict.justification == "Hay evidencia"
+
+
+def test_parse_defaults_missing_narrative_to_empty():
+    """A verdict without narrative keeps empty-string fields."""
+    verdict = parse_evaluation_output('{"sufficient": true}')
+
+    assert verdict.message == ""
+    assert verdict.justification == ""
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '{"sufficient": true, "message": 123}',
+        '{"sufficient": true, "justification": ["x"]}',
+        '{"sufficient": true, "message": null}',
+        '{"sufficient": true, "justification": {"x": 1}}',
+    ],
+)
+def test_parse_ignores_non_string_narrative(payload: str):
+    """Ancillary narrative drift degrades to empty instead of failing retrieval."""
+    verdict = parse_evaluation_output(payload)
+
+    assert verdict.message == ""
+    assert verdict.justification == ""
+
+
+def test_parse_arguments_accepts_narrative_fields():
+    """The function-calling mapping route accepts the same narrative fields."""
+    verdict = parse_evaluation_arguments(
+        {
+            "sufficient": False,
+            "call_retrievers": {1: 2},
+            "message": "Buscando más información",
+            "justification": "Faltan datos del diagnóstico",
+        }
+    )
+
+    assert verdict.message == "Buscando más información"
+    assert verdict.justification == "Faltan datos del diagnóstico"
+
+
+def test_depth_emits_and_records_narrative():
+    """A depth verdict's narrative reaches progress and the round trace."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": true, "message": "Descartando fragmentos", '
+            '"justification": "No eran relevantes"}'
+        ]
+    )
+    retriever = _depth(child, llm, _RecordingPrompt(), max_iters=2, max_chunks=10)
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append):
+        _, trace = retriever.retrieve("q")
+
+    assert events == [
+        {
+            "stage": "retrieving",
+            "message": "Descartando fragmentos",
+            "justification": "No eran relevantes",
+        }
+    ]
+    assert trace["rounds"][0]["message"] == "Descartando fragmentos"
+    assert trace["rounds"][0]["justification"] == "No eran relevantes"
+
+
+def test_depth_empty_narrative_emits_no_extra_event():
+    """A verdict without narrative leaves the progress channel untouched."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _ScriptedLLM(['{"sufficient": true}'])
+    retriever = _depth(child, llm, _RecordingPrompt(), max_iters=2, max_chunks=10)
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append):
+        _, trace = retriever.retrieve("q")
+
+    assert events == []
+    assert "message" not in trace["rounds"][0]
+    assert "justification" not in trace["rounds"][0]
+
+
+def test_ensemble_planning_emits_and_records_narrative():
+    """The planning verdict's narrative is reported and stored in round one."""
+    child0 = _FakeChild(_chunks(5, document_id=1), top_k=2)
+    child1 = _FakeChild(_chunks(5, document_id=2), top_k=3)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "call_retrievers": {"2": 3}, '
+            '"message": "Explorando dos fuentes", '
+            '"justification": "Pueden aportar contexto"}',
+            '{"sufficient": true}',
+        ]
+    )
+    retriever = _ensemble(
+        [child0, child1], llm, _RecordingPrompt(), max_iters=2, max_chunks=10
+    )
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append):
+        _, trace = retriever.retrieve("q")
+
+    assert events == [
+        {
+            "stage": "retrieving",
+            "message": "Explorando dos fuentes",
+            "justification": "Pueden aportar contexto",
+        }
+    ]
+    assert trace["rounds"][0]["planning_message"] == "Explorando dos fuentes"
+    assert trace["rounds"][0]["planning_justification"] == "Pueden aportar contexto"
+    assert "message" not in trace["rounds"][0]
+    assert "justification" not in trace["rounds"][0]
+
+
+def test_ensemble_post_round_narrative_is_reported():
+    """A post-round verdict's narrative is reported too."""
+    child0 = _FakeChild(_chunks(5, document_id=1), top_k=2)
+    child1 = _FakeChild(_chunks(5, document_id=2), top_k=2)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "call_retrievers": {"1": 2}}',
+            '{"sufficient": true, "message": "Ya alcanza", '
+            '"justification": "Hay suficiente evidencia"}',
+        ]
+    )
+    retriever = _ensemble(
+        [child0, child1], llm, _RecordingPrompt(), max_iters=2, max_chunks=10
+    )
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append):
+        _, trace = retriever.retrieve("q")
+
+    assert events == [
+        {
+            "stage": "retrieving",
+            "message": "Ya alcanza",
+            "justification": "Hay suficiente evidencia",
+        }
+    ]
+    assert trace["rounds"][0]["message"] == "Ya alcanza"
+    assert trace["rounds"][0]["justification"] == "Hay suficiente evidencia"
+
+
+def test_ensemble_invalid_planning_verdict_reports_nothing():
+    """An invalid planning verdict must not emit narrative progress."""
+    child0 = _FakeChild(_chunks(5, document_id=1), top_k=2)
+    child1 = _FakeChild(_chunks(5, document_id=2), top_k=2)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "message": "Plan inválido", '
+            '"justification": "Sin recuperadores"}'
+        ]
+    )
+    retriever = _ensemble(
+        [child0, child1], llm, _RecordingPrompt(), max_iters=2, max_chunks=10
+    )
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append), pytest.raises(RAGRetrieverEvaluationError):
+        retriever.retrieve("q")
+
+    assert events == []
+
+
+def test_depth_justification_only_emits_a_detail_event():
+    """A justification without a message still reaches the progress channel."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _ScriptedLLM(
+        ['{"sufficient": true, "justification": "La evidencia alcanza"}']
+    )
+    retriever = _depth(child, llm, _RecordingPrompt(), max_iters=2, max_chunks=10)
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append):
+        retriever.retrieve("q")
+
+    assert events == [
+        {
+            "stage": "retrieving",
+            "justification": "La evidencia alcanza",
+        }
+    ]
+
+
+def test_ensemble_empty_narrative_emits_no_extra_event():
+    """An ensemble verdict without narrative leaves the channel untouched."""
+    child0 = _FakeChild(_chunks(5, document_id=1), top_k=2)
+    child1 = _FakeChild(_chunks(5, document_id=2), top_k=2)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "call_retrievers": {"1": 2}}',
+            '{"sufficient": true}',
+        ]
+    )
+    retriever = _ensemble(
+        [child0, child1], llm, _RecordingPrompt(), max_iters=2, max_chunks=10
+    )
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append):
+        _, trace = retriever.retrieve("q")
+
+    assert events == []
+    assert "planning_message" not in trace["rounds"][0]
+    assert "message" not in trace["rounds"][0]
+
+
+def test_ensemble_max_iters_one_records_planning_narrative():
+    """A single-round ensemble still records the planning narrative."""
+    child0 = _FakeChild(_chunks(5, document_id=1), top_k=2)
+    child1 = _FakeChild(_chunks(5, document_id=2), top_k=2)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "call_retrievers": {"1": 2}, '
+            '"message": "Consultando una fuente"}'
+        ]
+    )
+    retriever = _ensemble(
+        [child0, child1], llm, _RecordingPrompt(), max_iters=1, max_chunks=10
+    )
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append):
+        _, trace = retriever.retrieve("q")
+
+    assert events == [{"stage": "retrieving", "message": "Consultando una fuente"}]
+    assert trace["rounds"][0]["planning_message"] == "Consultando una fuente"
+    assert "message" not in trace["rounds"][0]
+
+
+def test_ensemble_planning_and_post_round_narratives_are_both_recorded():
+    """Planning and post-round narratives use separate trace keys."""
+    child0 = _FakeChild(_chunks(5, document_id=1), top_k=2)
+    child1 = _FakeChild(_chunks(5, document_id=2), top_k=2)
+    llm = _ScriptedLLM(
+        [
+            '{"sufficient": false, "call_retrievers": {"1": 2}, '
+            '"message": "Planificando", "justification": "Falta contexto"}',
+            '{"sufficient": true, "message": "Listo", '
+            '"justification": "Ya hay evidencia"}',
+        ]
+    )
+    retriever = _ensemble(
+        [child0, child1], llm, _RecordingPrompt(), max_iters=2, max_chunks=10
+    )
+    events: List[Dict[str, Any]] = []
+
+    with progress_scope(events.append):
+        _, trace = retriever.retrieve("q")
+
+    assert [event["message"] for event in events] == ["Planificando", "Listo"]
+    round_entry = trace["rounds"][0]
+    assert round_entry["planning_message"] == "Planificando"
+    assert round_entry["planning_justification"] == "Falta contexto"
+    assert round_entry["message"] == "Listo"
+    assert round_entry["justification"] == "Ya hay evidencia"
+
+
+def test_function_schemas_expose_optional_narrative():
+    """Both retrievers declare message/justification as optional properties."""
+    for retriever in (LLMEvaluatedDepthRetriever, LLMEvaluatedEnsembleRetriever):
+        parameters = retriever.FUNCTION_PARAMETERS
+        properties = parameters["properties"]
+        assert properties[RAG_PROGRESS_MESSAGE_KEY]["type"] == "string"
+        assert properties[RAG_PROGRESS_JUSTIFICATION_KEY]["type"] == "string"
+        assert RAG_PROGRESS_MESSAGE_KEY not in parameters["required"]
+        assert RAG_PROGRESS_JUSTIFICATION_KEY not in parameters["required"]

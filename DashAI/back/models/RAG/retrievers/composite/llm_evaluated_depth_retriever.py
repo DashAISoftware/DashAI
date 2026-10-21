@@ -25,6 +25,10 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_PROGRESS_JUSTIFICATION_KEY,
+    RAG_PROGRESS_MESSAGE_KEY,
+)
 from DashAI.back.models.RAG.RAG_defaults import (
     DEFAULT_MAX_CHUNKS,
     DEFAULT_MAX_ITERS,
@@ -240,6 +244,20 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
                     "pool even if a retriever returns them."
                 ),
             },
+            RAG_PROGRESS_MESSAGE_KEY: {
+                "type": "string",
+                "description": (
+                    "Optional one short user-facing sentence in the prompt "
+                    "language describing what you did."
+                ),
+            },
+            RAG_PROGRESS_JUSTIFICATION_KEY: {
+                "type": "string",
+                "description": (
+                    "Optional one short sentence in the prompt language "
+                    "explaining why you did it."
+                ),
+            },
         },
         "required": [SUFFICIENT_KEY],
     }
@@ -333,10 +351,15 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
             entry["discard"] = dict(verdict.discard)
             if verdict.sufficient:
                 # A sufficient verdict is terminal: chunk actions are not
-                # applied and unknown positions are never resolved.
+                # applied and unknown positions are never resolved. Report the
+                # verdict's narrative before leaving the loop.
+                self._report_verdict_progress(verdict)
+                self._record_round_narrative(entry, verdict)
                 break
 
             self._apply_verdict_actions(pool, verdict)
+            self._report_verdict_progress(verdict)
+            self._record_round_narrative(entry, verdict)
             if 1 in calls:
                 requested_top_k = self._next_delegation_size(
                     calls, max_requested, pool.discarded_count()

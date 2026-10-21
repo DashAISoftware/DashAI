@@ -33,7 +33,11 @@ from DashAI.back.dependencies.database.models import (
     ProcessData,
 )
 from DashAI.back.job.base_job import JobError
-from DashAI.back.job.RAG_job import RAGJob
+from DashAI.back.job.generative_job import GenerativeJob
+from DashAI.back.job.RAG_job import RAGJob, _make_progress_reporter
+from DashAI.back.models.RAG.prompts.evaluation.default_retrieval_sufficiency_prompt import (  # noqa: E501
+    TEMPLATES as SUFFICIENCY_TEMPLATES,
+)
 from DashAI.back.models.RAG.prompts.generation.default_RAG_generation_prompt import (
     TEMPLATES as GEN_TEMPLATES,
 )
@@ -52,6 +56,10 @@ from tests.back.RAG.conftest import (
 
 STUB_ANSWER = "stub progress answer"
 SUB_QUERIES = ["progress sub one", "progress sub two"]
+NARRATIVE_MESSAGE = "Dividiendo la consulta por tema"
+NARRATIVE_JUSTIFICATION = "La pregunta cubre dos temas"
+RETRIEVAL_MESSAGE = "La evidencia recuperada es suficiente"
+RETRIEVAL_JUSTIFICATION = "Cubre el contenido del documento"
 
 #: One entry per LLM ``generate()`` call while a process is being captured.
 _PROGRESS_CAPTURE: list = []
@@ -99,6 +107,47 @@ class ProgressDecompositionLLM(TextToTextGenerationTaskModel):
         ]
 
 
+class NarrativeDecompositionLLM(ProgressDecompositionLLM):
+    """Decomposition stub that also returns a user-facing narrative."""
+
+    SCHEMA = _EmptySchema
+
+    def generate(self, prompt):
+        _record_progress()
+        return [
+            json.dumps(
+                {
+                    "name": "decompose_query",
+                    "arguments": {
+                        "queries": SUB_QUERIES,
+                        "message": NARRATIVE_MESSAGE,
+                        "justification": NARRATIVE_JUSTIFICATION,
+                    },
+                }
+            )
+        ]
+
+
+class NarrativeVerdictLLM(TextToTextGenerationTaskModel):
+    """Retrieval-sufficiency stub that returns a sufficient narrative verdict."""
+
+    SCHEMA = _EmptySchema
+
+    def __init__(self, **kwargs):
+        self.parameters = dict(kwargs)
+
+    def generate(self, prompt):
+        return [
+            json.dumps(
+                {
+                    "sufficient": True,
+                    "message": RETRIEVAL_MESSAGE,
+                    "justification": RETRIEVAL_JUSTIFICATION,
+                }
+            )
+        ]
+
+
 class ProgressGenerationLLM(TextToTextGenerationTaskModel):
     """Generation stub that records progress, then returns a fixed answer."""
 
@@ -133,6 +182,8 @@ class FailingProgressGenerationLLM(TextToTextGenerationTaskModel):
 def register_stub_llms(client: TestClient) -> None:
     registry = client.app.container["component_registry"]
     registry.register_component(ProgressDecompositionLLM)
+    registry.register_component(NarrativeDecompositionLLM)
+    registry.register_component(NarrativeVerdictLLM)
     registry.register_component(ProgressGenerationLLM)
     registry.register_component(FailingProgressGenerationLLM)
 
@@ -280,6 +331,121 @@ class TestProgressWithTransformation:
             with contextlib.suppress(OSError):
                 os.remove(path)
 
+    def test_captures_llm_narrative_in_the_retrieving_payload(
+        self, client, monkeypatch
+    ):
+        """The transformer's narrative reaches the persisted retrieving payload."""
+        tag = uuid.uuid4().hex[:8]
+        suffix = f"_progress_narrative_{tag}"
+        doc_id = _create_test_document(client, suffix=suffix)
+        path = write_test_doc_file(suffix, RAG_E2E_DOC_TEXT)
+        try:
+            params = _session_params([doc_id], True)
+            params["query_transformation"]["params"]["llm_model"]["component"] = (
+                "NarrativeDecompositionLLM"
+            )
+            _session_id, process_id = _create_session_process(
+                client, params, "Decompose this"
+            )
+            _run_with_capture(client, process_id, monkeypatch)
+
+            assert _PROGRESS_CAPTURE == [
+                {"stage": "transforming"},
+                {
+                    "stage": "retrieving",
+                    "queries": SUB_QUERIES,
+                    "message": NARRATIVE_MESSAGE,
+                    "justification": NARRATIVE_JUSTIFICATION,
+                },
+                {"stage": "generating"},
+            ]
+
+            session_factory = client.app.container["session_factory"]
+            with session_factory() as db:
+                process = db.get(GenerativeProcess, process_id)
+                assert process.status == RunStatus.FINISHED, process.status
+                assert process.progress is None
+        finally:
+            with contextlib.suppress(OSError):
+                os.remove(path)
+
+
+# ===================================================================
+# LLM-evaluated retriever narrative
+# ===================================================================
+
+
+class TestRetrieverNarrativeProgress:
+    def test_retriever_narrative_reaches_persisted_progress(self, client, monkeypatch):
+        """An LLM retriever verdict's narrative reaches the persisted column."""
+        tag = uuid.uuid4().hex[:8]
+        suffix = f"_progress_retriever_{tag}"
+        doc_id = _create_test_document(client, suffix=suffix)
+        path = write_test_doc_file(suffix, RAG_E2E_DOC_TEXT)
+        try:
+            params = _session_params([doc_id], False)
+            params["retriever_model"] = {
+                "component": "LLMEvaluatedDepthRetriever",
+                "params": {
+                    "children": [
+                        {
+                            "component": "BM25Retriever",
+                            "params": bm25_retriever_params(),
+                        }
+                    ],
+                    "max_iters": 2,
+                    "max_chunks": 5,
+                    "prompt": {
+                        "component": "DefaultRetrievalSufficiencyPrompt",
+                        "params": {
+                            "language": "en",
+                            "template": SUFFICIENCY_TEMPLATES["en"],
+                        },
+                    },
+                    "llm_model": {
+                        "component": "NarrativeVerdictLLM",
+                        "params": {"stub_marker": "retriever_narrative"},
+                    },
+                },
+            }
+            _session_id, process_id = _create_session_process(
+                client, params, "Retriever narrative"
+            )
+
+            from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_retriever import (  # noqa: E501
+                LLMEvaluatedRetriever,
+            )
+
+            original = LLMEvaluatedRetriever._report_verdict_progress
+
+            def wrapped(self, verdict):
+                original(self, verdict)
+                _record_progress()
+
+            monkeypatch.setattr(
+                LLMEvaluatedRetriever, "_report_verdict_progress", wrapped
+            )
+            _run_with_capture(client, process_id, monkeypatch)
+
+            assert _PROGRESS_CAPTURE == [
+                {"stage": "retrieving", "queries": ["Retriever narrative"]},
+                {
+                    "stage": "retrieving",
+                    "message": RETRIEVAL_MESSAGE,
+                    "justification": RETRIEVAL_JUSTIFICATION,
+                },
+                {"stage": "generating"},
+            ]
+
+            session_factory = client.app.container["session_factory"]
+            with session_factory() as db:
+                process = db.get(GenerativeProcess, process_id)
+                assert process.status == RunStatus.FINISHED, process.status
+                assert process.progress is None
+        finally:
+            with contextlib.suppress(OSError):
+                os.remove(path)
+
 
 # ===================================================================
 # transformation disabled
@@ -309,6 +475,68 @@ class TestProgressWithoutTransformation:
             with session_factory() as db:
                 process = db.get(GenerativeProcess, process_id)
                 assert process.status == RunStatus.FINISHED, process.status
+                assert process.progress is None
+        finally:
+            with contextlib.suppress(OSError):
+                os.remove(path)
+
+
+# ===================================================================
+# terminal-state progress cleanup
+# ===================================================================
+
+
+class TestTerminalProgressCleanup:
+    def test_generative_job_error_clears_progress(self, client: TestClient):
+        """The enqueued GenerativeJob wrapper clears progress on error."""
+        tag = uuid.uuid4().hex[:8]
+        suffix = f"_progress_terminal_{tag}"
+        doc_id = _create_test_document(client, suffix=suffix)
+        path = write_test_doc_file(suffix, RAG_E2E_DOC_TEXT)
+        try:
+            _session_id, process_id = _create_session_process(
+                client, _session_params([doc_id], False), "Terminal message"
+            )
+            session_factory = client.app.container["session_factory"]
+            with session_factory() as db:
+                process = db.get(GenerativeProcess, process_id)
+                process.set_status_as_started()
+                process.set_progress({"stage": "retrieving", "queries": ["q"]})
+                db.commit()
+
+            GenerativeJob(generative_process_id=process_id).set_status_as_error()
+
+            with session_factory() as db:
+                process = db.get(GenerativeProcess, process_id)
+                assert process.status == RunStatus.ERROR
+                assert process.progress is None
+        finally:
+            with contextlib.suppress(OSError):
+                os.remove(path)
+
+    def test_reporter_ignores_a_terminal_process(self, client: TestClient):
+        """A late progress write cannot revive progress on a terminal process."""
+        tag = uuid.uuid4().hex[:8]
+        suffix = f"_progress_late_{tag}"
+        doc_id = _create_test_document(client, suffix=suffix)
+        path = write_test_doc_file(suffix, RAG_E2E_DOC_TEXT)
+        try:
+            _session_id, process_id = _create_session_process(
+                client, _session_params([doc_id], False), "Late message"
+            )
+            session_factory = client.app.container["session_factory"]
+            with session_factory() as db:
+                process = db.get(GenerativeProcess, process_id)
+                process.set_status_as_error()
+                process.set_progress(None)
+                db.commit()
+
+            reporter = _make_progress_reporter(session_factory, process_id)
+            reporter({"stage": "generating"})
+
+            with session_factory() as db:
+                process = db.get(GenerativeProcess, process_id)
+                assert process.status == RunStatus.ERROR
                 assert process.progress is None
         finally:
             with contextlib.suppress(OSError):

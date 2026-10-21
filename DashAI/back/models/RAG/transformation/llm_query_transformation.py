@@ -24,8 +24,18 @@ from DashAI.back.models.RAG.exceptions import (
     RAGTransformationConfigError,
     RAGTransformationOutputError,
 )
+from DashAI.back.models.RAG.progress_utils import (
+    normalize_progress_text,
+    report_progress,
+    sanitize_text,
+)
 from DashAI.back.models.RAG.prompts.transformation.transformation_prompt import (
     QueryTransformationPrompt,
+)
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_PROGRESS_JUSTIFICATION_KEY,
+    RAG_PROGRESS_MESSAGE_KEY,
+    RAG_PROGRESS_STAGE_TRANSFORMING,
 )
 from DashAI.back.models.RAG.transformation.base_query_transformation import (
     BaseQueryTransformation,
@@ -247,7 +257,8 @@ class LLMQueryTransformation(BaseQueryTransformation):
         Returns
         -------
         QueryTransformationResult
-            The cleaned, deduplicated queries.
+            The cleaned, deduplicated queries plus the optional user-facing
+            narrative the model supplied alongside them.
 
         Raises
         ------
@@ -259,9 +270,27 @@ class LLMQueryTransformation(BaseQueryTransformation):
             backend failed to emit a call.
         """
         history_block = format_history(history, self.history_window)
-        parsed = self._parse_arguments(self._obtain_arguments(message, history_block))
+        arguments = self._obtain_arguments(message, history_block)
+        parsed = self._parse_arguments(arguments)
         cleaned = self._clean_queries(parsed)
-        return QueryTransformationResult(queries=self._finalize_queries(cleaned))
+        progress_message = normalize_progress_text(
+            arguments.get(RAG_PROGRESS_MESSAGE_KEY)
+        )
+        progress_justification = normalize_progress_text(
+            arguments.get(RAG_PROGRESS_JUSTIFICATION_KEY)
+        )
+        final_queries = self._finalize_queries(cleaned)
+        if progress_message or progress_justification:
+            report_progress(
+                RAG_PROGRESS_STAGE_TRANSFORMING,
+                message=progress_message,
+                justification=progress_justification,
+            )
+        return QueryTransformationResult(
+            queries=final_queries,
+            message=progress_message,
+            justification=progress_justification,
+        )
 
     def _obtain_arguments(self, message: str, history_block: str) -> Dict[str, Any]:
         """Get the technique's raw arguments mapping from the model.
@@ -484,7 +513,7 @@ class LLMQueryTransformation(BaseQueryTransformation):
         for entry in entries:
             if entry is None:
                 continue
-            text = str(entry).strip()
+            text = sanitize_text(str(entry)).strip()
             if text and text not in cleaned:
                 cleaned.append(text)
         return cleaned

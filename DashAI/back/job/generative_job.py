@@ -63,6 +63,7 @@ class GenerativeJob(BaseJob):
                 )
             try:
                 process.set_status_as_delivered()
+                process.set_progress(None)
                 db.commit()
             except exc.SQLAlchemyError as e:
                 log.exception(e)
@@ -88,6 +89,7 @@ class GenerativeJob(BaseJob):
 
             try:
                 process.set_status_as_error()
+                process.set_progress(None)
                 db.commit()
             except exc.SQLAlchemyError as e:
                 log.exception(e)

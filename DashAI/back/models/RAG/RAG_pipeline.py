@@ -33,6 +33,11 @@ from DashAI.back.models.RAG.exceptions import (
     RAGPipelineRuntimeError,
     RAGRetrieverError,
 )
+from DashAI.back.models.RAG.progress_utils import (
+    normalize_progress_text,
+    progress_scope,
+    report_progress,
+)
 from DashAI.back.models.RAG.RAG_constants import (
     RAG_INFRA_KEYS,
     RAG_MODEL_KEYS,
@@ -41,7 +46,6 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PARAM_QUERY_TRANSFORMATION,
     RAG_PROGRESS_QUERIES_KEY,
     RAG_PROGRESS_STAGE_GENERATING,
-    RAG_PROGRESS_STAGE_KEY,
     RAG_PROGRESS_STAGE_RETRIEVING,
     RAG_PROGRESS_STAGE_TRANSFORMING,
 )
@@ -157,7 +161,10 @@ class PipelineStageTimings:
     """Per-stage wall-clock durations of a single pipeline run.
 
     Every value is a non-negative number of milliseconds measured with
-    ``time.perf_counter()`` inside ``RAGPipeline.generate()``.
+    ``time.perf_counter()`` inside ``RAGPipeline.generate()``. Progress events
+    emitted by nested LLM components (the transformer and LLM-evaluated
+    retrievers) run inside their stage timer, so the transformation/retrieval
+    durations include any reporter overhead they incur.
 
     Attributes
     ----------
@@ -193,6 +200,30 @@ class PipelineStageTimings:
             "generation_ms": self.generation_ms,
             "total_ms": self.total_ms,
         }
+
+
+@dataclass(frozen=True)
+class ResolvedQueries:
+    """Queries resolved by the optional transformation stage.
+
+    Attributes
+    ----------
+    queries : List[str]
+        The queries actually retrieved. Always non-empty: the transformed
+        queries when the stage ran, or ``[input_message]`` when it is disabled.
+    transformed_queries : List[str] or None
+        The transformed queries, or ``None`` when no transformation ran.
+    message : str
+        Optional user-facing sentence the transformer produced. Empty when the
+        transformer (or a legacy/plugin one) supplied none.
+    justification : str
+        Optional short rationale the transformer produced. Empty when absent.
+    """
+
+    queries: List[str]
+    transformed_queries: Optional[List[str]]
+    message: str = ""
+    justification: str = ""
 
 
 @dataclass(frozen=True)
@@ -674,7 +705,7 @@ class RAGPipeline(BaseGenerativeModel):
         self,
         input_message: str,
         history: Tuple[Dict[str, str], ...],
-    ) -> Tuple[List[str], Optional[List[str]]]:
+    ) -> ResolvedQueries:
         """Resolve the retrieval queries from the optional transformation stage.
 
         Parameters
@@ -686,11 +717,12 @@ class RAGPipeline(BaseGenerativeModel):
 
         Returns
         -------
-        Tuple[List[str], Optional[List[str]]]
-            ``(queries, transformed_queries)``. ``queries`` is always a
-            non-empty list — the transformed queries when the stage ran, or the
-            one-element ``[input_message]`` when it is disabled.
-            ``transformed_queries`` is ``None`` when no transformation ran.
+        ResolvedQueries
+            The resolved queries plus the optional narrative the transformer
+            produced. ``queries`` is always a non-empty list — the transformed
+            queries when the stage ran, or the one-element ``[input_message]``
+            when it is disabled. ``transformed_queries`` is ``None`` when no
+            transformation ran.
 
         Raises
         ------
@@ -698,7 +730,7 @@ class RAGPipeline(BaseGenerativeModel):
             If the transformation fails or returns no queries.
         """
         if self.query_transformation is None:
-            return [input_message], None
+            return ResolvedQueries(queries=[input_message], transformed_queries=None)
         try:
             transformation_result = self.query_transformation.transform(
                 message=input_message, history=list(history)
@@ -713,7 +745,16 @@ class RAGPipeline(BaseGenerativeModel):
         if not isinstance(raw_queries, list) or not raw_queries:
             raise RAGPipelineRuntimeError("Query transformation returned no queries.")
         transformed_queries = list(raw_queries)
-        return transformed_queries, transformed_queries
+        return ResolvedQueries(
+            queries=transformed_queries,
+            transformed_queries=transformed_queries,
+            message=normalize_progress_text(
+                getattr(transformation_result, "message", "")
+            ),
+            justification=normalize_progress_text(
+                getattr(transformation_result, "justification", "")
+            ),
+        )
 
     def _retrieve(self, queries: List[str]) -> Tuple[List[Chunk], List[Dict[str, Any]]]:
         """Retrieve chunks through the pipeline's single retrieval path.
@@ -866,71 +907,50 @@ class RAGPipeline(BaseGenerativeModel):
             RAGPipelineInputError: If input_data is empty or malformed.
             RAGPipelineRuntimeError: If any pipeline stage fails.
         """
-        started_at = time.perf_counter()
-        input_message, history = self._extract_input(input_data)
-        if self.query_transformation is not None:
-            self._report_progress(
-                progress_callback,
-                {RAG_PROGRESS_STAGE_KEY: RAG_PROGRESS_STAGE_TRANSFORMING},
+        with progress_scope(progress_callback):
+            started_at = time.perf_counter()
+            input_message, history = self._extract_input(input_data)
+            if self.query_transformation is not None:
+                report_progress(RAG_PROGRESS_STAGE_TRANSFORMING)
+            transformation_started_at = time.perf_counter()
+            resolved = self._resolve_queries(input_message, history)
+            transformation_ms = (
+                time.perf_counter() - transformation_started_at
+            ) * 1000.0
+            report_progress(
+                RAG_PROGRESS_STAGE_RETRIEVING,
+                message=resolved.message,
+                justification=resolved.justification,
+                **{RAG_PROGRESS_QUERIES_KEY: list(resolved.queries)},
             )
-        transformation_started_at = time.perf_counter()
-        queries, transformed_queries = self._resolve_queries(input_message, history)
-        transformation_ms = (time.perf_counter() - transformation_started_at) * 1000.0
-        self._report_progress(
-            progress_callback,
-            {
-                RAG_PROGRESS_STAGE_KEY: RAG_PROGRESS_STAGE_RETRIEVING,
-                RAG_PROGRESS_QUERIES_KEY: list(queries),
-            },
-        )
-        retrieval_started_at = time.perf_counter()
-        chunks, trace = self._retrieve(queries)
-        retrieval_ms = (time.perf_counter() - retrieval_started_at) * 1000.0
-        # Report BEFORE taking the generation start timestamp: the reporter may
-        # open a DB session and commit, and that overhead must not be charged to
-        # generation_ms (which measures only prompt build + LLM, matching how
-        # the retrieving/transforming reports sit outside their stage timers).
-        self._report_progress(
-            progress_callback,
-            {RAG_PROGRESS_STAGE_KEY: RAG_PROGRESS_STAGE_GENERATING},
-        )
-        generation_started_at = time.perf_counter()
-        prompt, chunk_dict = self._build_prompt(
-            input_message, chunks, transformed_queries
-        )
-        raw_message = self._generate_answer(history, prompt)
-        generation_ms = (time.perf_counter() - generation_started_at) * 1000.0
-        total_ms = (time.perf_counter() - started_at) * 1000.0
-        timings = PipelineStageTimings(
-            transformation_ms=(
-                0.0 if self.query_transformation is None else transformation_ms
-            ),
-            retrieval_ms=retrieval_ms,
-            generation_ms=generation_ms,
-            total_ms=total_ms,
-        )
-        return RAGGenerationOutput(
-            message=raw_message,
-            chunks=chunk_dict,
-            queries=queries,
-            trace=trace,
-            timings=timings,
-        )
-
-    @staticmethod
-    def _report_progress(
-        progress_callback: Optional[Callable[[Dict[str, Any]], None]],
-        payload: Dict[str, Any],
-    ) -> None:
-        """Emit a stage-progress payload, if a reporter is attached.
-
-        Args:
-            progress_callback: Reporter receiving the payload; None disables
-                reporting entirely. Its exceptions are deliberately not caught.
-            payload: The stage payload to report.
-
-        Returns:
-            None
-        """
-        if progress_callback is not None:
-            progress_callback(payload)
+            retrieval_started_at = time.perf_counter()
+            chunks, trace = self._retrieve(resolved.queries)
+            retrieval_ms = (time.perf_counter() - retrieval_started_at) * 1000.0
+            # Report BEFORE taking the generation start timestamp: the reporter
+            # may open a DB session and commit, and that overhead must not be
+            # charged to generation_ms (which measures only prompt build + LLM).
+            # Progress events emitted by nested LLM components do run inside
+            # their own stage timer; see PipelineStageTimings.
+            report_progress(RAG_PROGRESS_STAGE_GENERATING)
+            generation_started_at = time.perf_counter()
+            prompt, chunk_dict = self._build_prompt(
+                input_message, chunks, resolved.transformed_queries
+            )
+            raw_message = self._generate_answer(history, prompt)
+            generation_ms = (time.perf_counter() - generation_started_at) * 1000.0
+            total_ms = (time.perf_counter() - started_at) * 1000.0
+            timings = PipelineStageTimings(
+                transformation_ms=(
+                    0.0 if self.query_transformation is None else transformation_ms
+                ),
+                retrieval_ms=retrieval_ms,
+                generation_ms=generation_ms,
+                total_ms=total_ms,
+            )
+            return RAGGenerationOutput(
+                message=raw_message,
+                chunks=chunk_dict,
+                queries=resolved.queries,
+                trace=trace,
+                timings=timings,
+            )

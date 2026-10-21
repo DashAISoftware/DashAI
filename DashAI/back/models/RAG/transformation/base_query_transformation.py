@@ -25,9 +25,17 @@ class QueryTransformationResult:
     queries : List[str]
         The transformed search queries. A single-query technique (rewriting)
         is represented as a one-element list.
+    message : str
+        Optional short, user-facing sentence describing what the transformer
+        did. Empty when the model did not supply one.
+    justification : str
+        Optional short rationale for the transformation. Empty when the model
+        did not supply one.
     """
 
     queries: List[str]
+    message: str = ""
+    justification: str = ""
 
     def to_list(self) -> List[str]:
         """Return a copy of the queries as a plain list.

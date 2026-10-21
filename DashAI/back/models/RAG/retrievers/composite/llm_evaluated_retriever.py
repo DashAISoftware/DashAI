@@ -28,6 +28,12 @@ from DashAI.back.models.RAG.exceptions import (
     RAGRetrieverCompositeValidationError,
     RAGRetrieverMissingParameterError,
 )
+from DashAI.back.models.RAG.progress_utils import report_progress
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_PROGRESS_JUSTIFICATION_KEY,
+    RAG_PROGRESS_MESSAGE_KEY,
+    RAG_PROGRESS_STAGE_RETRIEVING,
+)
 from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
@@ -221,6 +227,67 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
         """Apply a verdict's discard then request actions to the pool."""
         pool.discard(verdict.discard)
         pool.request(verdict.request_chunks)
+
+    def _report_verdict_progress(self, verdict: RetrievalVerdict) -> None:
+        """Report a verdict's optional narrative on the retrieving channel.
+
+        The event deliberately omits ``queries``: the pipeline's own
+        ``retrieving`` payload already carries the full resolved query list,
+        and a retriever only knows the single query it is working on. The
+        frontend renders the narrative (or a justification-only detail) without
+        needing the query list.
+
+        Parameters
+        ----------
+        verdict : RetrievalVerdict
+            The validated verdict, possibly carrying ``message`` and/or
+            ``justification``.
+
+        Returns
+        -------
+        None
+            Nothing is emitted when the verdict has no narrative, so the
+            pipeline's own retrieving payload is left untouched.
+        """
+        if not verdict.message and not verdict.justification:
+            return
+        report_progress(
+            RAG_PROGRESS_STAGE_RETRIEVING,
+            message=verdict.message,
+            justification=verdict.justification,
+        )
+
+    @staticmethod
+    def _record_round_narrative(
+        entry: Dict[str, Any],
+        verdict: RetrievalVerdict,
+        *,
+        key_prefix: str = "",
+    ) -> None:
+        """Attach a verdict's optional narrative to a trace round entry.
+
+        Parameters
+        ----------
+        entry : Dict[str, Any]
+            The JSON-serializable round summary.
+        verdict : RetrievalVerdict
+            The validated verdict whose narrative is recorded.
+        key_prefix : str, optional
+            Prefix applied to the recorded keys. The ensemble uses
+            ``"planning_"`` for its pre-round planning verdict so a later
+            post-round verdict cannot overwrite it.
+
+        Returns
+        -------
+        None
+            ``message``/``justification`` are added only when non-empty.
+        """
+        if verdict.message:
+            entry[f"{key_prefix}{RAG_PROGRESS_MESSAGE_KEY}"] = verdict.message
+        if verdict.justification:
+            entry[f"{key_prefix}{RAG_PROGRESS_JUSTIFICATION_KEY}"] = (
+                verdict.justification
+            )
 
     def _evaluate(
         self, query: str, pool: RetrievalPool, context: RetrievalContext

@@ -108,6 +108,13 @@ class TestDefaultTemplates:
             for template in module.TEMPLATES.values():
                 assert "```" not in template
 
+    def test_templates_request_progress_narrative(self):
+        """Every default template asks for a user message and a justification."""
+        for module in (rw_mod, exp_mod, dec_mod):
+            for template in module.TEMPLATES.values():
+                assert '"message"' in template
+                assert '"justification"' in template
+
 
 # ===================================================================
 # format rendering

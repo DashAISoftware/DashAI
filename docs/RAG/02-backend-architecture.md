@@ -442,6 +442,16 @@ The optional `progress_callback` receives one small payload per stage:
 does not catch reporter exceptions; the job layer's reporter is the one that
 swallows failures (see [RAGJob](#ragjob)).
 
+LLM-backed stages may add two optional, LLM-authored keys to any payload:
+`message` (a short user-facing sentence) and `justification` (a short
+rationale). `LLMQueryTransformation` emits a `transforming` update when the
+model supplies them; the pipeline forwards the transformation narrative in the
+initial `retrieving` payload; and the LLM-evaluated retrievers emit additional
+`retrieving` updates after each valid verdict. Those retriever updates omit
+`queries` because a retriever only knows the single query it is working on.
+When the model supplies no narrative, no extra keys or events are emitted, so
+the stage-only payloads above remain unchanged.
+
 ## RAGJob
 
 Uses `SetupService.build_pipeline()` instead of manual wiring:
@@ -471,8 +481,9 @@ held open during LLM inference, which may take minutes:
    process finished.
 
 The progress reporter (`_make_progress_reporter`) opens a short-lived session
-per stage, stores the payload on `GenerativeProcess.progress` and commits, so a
-polling frontend sees the current stage. Reporting is best-effort: any failure
+per progress event (pipeline stage or LLM narrative update), stores the payload
+on `GenerativeProcess.progress` and commits, so a polling frontend sees the
+current stage. Reporting is best-effort: any failure
 is logged as a warning and swallowed, because a transient DB error must never
 fail the chat turn (the pipeline itself does not catch reporter exceptions).
 The process's `progress` is cleared on finish and on error.
@@ -569,7 +580,10 @@ format that also keys the pipeline's `Dict` row. `children` is always a list
 (even for single-child composites) and is omitted for unit retrievers;
 techniques may add extras (the cross-encoder adds `scores` when it re-ranks).
 Composites capture their children's nodes while keeping their merge/rerank
-mathematics unchanged.
+mathematics unchanged. The LLM-evaluated retrievers add a `rounds` list; each
+entry may carry the verdict's `message`/`justification`. The ensemble's
+planning verdict uses `planning_message`/`planning_justification` so a later
+post-round verdict cannot overwrite it.
 
 ### Dense Retriever Two-Layer Design
 

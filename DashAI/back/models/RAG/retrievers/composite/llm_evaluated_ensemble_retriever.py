@@ -27,6 +27,10 @@ from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.exceptions.retriever import (
     RAGRetrieverEvaluationError,
 )
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_PROGRESS_JUSTIFICATION_KEY,
+    RAG_PROGRESS_MESSAGE_KEY,
+)
 from DashAI.back.models.RAG.RAG_defaults import (
     DEFAULT_MAX_CHUNKS,
     DEFAULT_MAX_ITERS,
@@ -50,6 +54,9 @@ from DashAI.back.models.RAG.retrievers.composite.retrieval_context import (
     RetrievalContext,
 )
 from DashAI.back.models.RAG.retrievers.composite.retrieval_pool import RetrievalPool
+
+#: Prefix of the planning verdict's narrative keys in the trace round entry.
+_PLANNING_NARRATIVE_PREFIX = "planning_"
 
 
 class LLMEvaluatedEnsembleRetrieverSchema(BaseSchema):
@@ -244,6 +251,20 @@ class LLMEvaluatedEnsembleRetriever(LLMEvaluatedRetriever):
                     "pool even if a retriever returns them."
                 ),
             },
+            RAG_PROGRESS_MESSAGE_KEY: {
+                "type": "string",
+                "description": (
+                    "Optional one short user-facing sentence in the prompt "
+                    "language describing what you did."
+                ),
+            },
+            RAG_PROGRESS_JUSTIFICATION_KEY: {
+                "type": "string",
+                "description": (
+                    "Optional one short sentence in the prompt language "
+                    "explaining why you did it."
+                ),
+            },
         },
         "required": [SUFFICIENT_KEY],
     }
@@ -285,6 +306,7 @@ class LLMEvaluatedEnsembleRetriever(LLMEvaluatedRetriever):
                 f"requested retrievers: the pool already holds {pool.size()} "
                 f"of {self.max_chunks} chunks."
             )
+        self._report_verdict_progress(planning)
 
         for round_index in range(self.max_iters):
             call_entries: List[Dict[str, Any]] = []
@@ -300,6 +322,10 @@ class LLMEvaluatedEnsembleRetriever(LLMEvaluatedRetriever):
                 "request_chunks": {},
                 "discard": {},
             }
+            if round_index == 0:
+                self._record_round_narrative(
+                    entry, planning, key_prefix=_PLANNING_NARRATIVE_PREFIX
+                )
             rounds.append(entry)
 
             if round_index == self.max_iters - 1:
@@ -313,9 +339,14 @@ class LLMEvaluatedEnsembleRetriever(LLMEvaluatedRetriever):
             entry["discard"] = dict(verdict.discard)
             if verdict.sufficient:
                 # A sufficient verdict is terminal: chunk actions are not
-                # applied and unknown positions are never resolved.
+                # applied and unknown positions are never resolved. Report the
+                # verdict's narrative before leaving the loop.
+                self._report_verdict_progress(verdict)
+                self._record_round_narrative(entry, verdict)
                 break
             self._apply_verdict_actions(pool, verdict)
+            self._report_verdict_progress(verdict)
+            self._record_round_narrative(entry, verdict)
 
         pool_chunks = pool.materialize()
         return pool_chunks, self._build_trace(pool_chunks, child_nodes, rounds)

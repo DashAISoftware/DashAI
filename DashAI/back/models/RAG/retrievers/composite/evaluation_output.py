@@ -22,6 +22,16 @@ Requested and discarded chunks persist across rounds and can override each
 other (the last action wins). An insufficient verdict that performs no action at
 all is rejected: it cannot make progress.
 
+A verdict may also carry two optional narrative fields:
+
+* ``message`` — a short, one-sentence user-facing status;
+* ``justification`` — a short rationale for the decision.
+
+Both default to ``""`` when omitted. They are ancillary: a non-string value
+(including JSON ``null``) is ignored rather than rejected, because model drift
+in a cosmetic field must never abort retrieval. Strict validation applies only
+to the verdict-driving fields (``sufficient`` and the action maps).
+
 Unknown keys are tolerated; the contract fields are not.
 """
 
@@ -35,6 +45,11 @@ from typing import Any, Dict, List
 
 from DashAI.back.models.RAG.exceptions.retriever import (
     RAGRetrieverEvaluationError,
+)
+from DashAI.back.models.RAG.progress_utils import normalize_progress_text
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_PROGRESS_JUSTIFICATION_KEY,
+    RAG_PROGRESS_MESSAGE_KEY,
 )
 
 #: Maximum number of characters of raw model output echoed in error messages.
@@ -67,12 +82,20 @@ class RetrievalVerdict:
     discard : Dict[int, List[int]]
         Mapping of document id to chunk positions to exclude from the pool.
         Empty when no chunk is discarded.
+    message : str
+        Optional short, user-facing status sentence. Empty when the model did
+        not supply one.
+    justification : str
+        Optional short rationale for the verdict. Empty when the model did not
+        supply one.
     """
 
     sufficient: bool
     call_retrievers: Dict[int, int] = field(default_factory=dict)
     request_chunks: Dict[int, List[int]] = field(default_factory=dict)
     discard: Dict[int, List[int]] = field(default_factory=dict)
+    message: str = ""
+    justification: str = ""
 
 
 def _preview(raw: Any) -> str:
@@ -274,6 +297,32 @@ def _validate_chunk_map(value: Any, key: str, raw: Any) -> Dict[int, List[int]]:
     return chunks
 
 
+def _validate_optional_text(parsed: Mapping[str, Any], key: str) -> str:
+    """Read one optional narrative field leniently.
+
+    Narrative fields are cosmetic: a missing key, ``None`` or any other
+    non-string value degrades to ``""`` instead of failing the retrieval. This
+    keeps model drift in an ancillary field from aborting a chat turn.
+
+    Parameters
+    ----------
+    parsed : Mapping[str, Any]
+        The decoded verdict payload.
+    key : str
+        Contract field name (``message`` or ``justification``).
+
+    Returns
+    -------
+    str
+        The normalized text (whitespace collapsed and capped), or ``""`` when
+        the key is absent or not a string.
+    """
+    value = parsed.get(key)
+    if not isinstance(value, str):
+        return ""
+    return normalize_progress_text(value)
+
+
 def _validate_verdict(parsed: Any, raw: Any) -> RetrievalVerdict:
     """Validate a parsed verdict against the retrieval-sufficiency contract.
 
@@ -296,6 +345,7 @@ def _validate_verdict(parsed: Any, raw: Any) -> RetrievalVerdict:
         If the payload is not a mapping, ``sufficient`` is missing or not a
         boolean, an action map has the wrong type/shape, a chunk is both
         requested and discarded, or an insufficient verdict performs no action.
+        Optional narrative fields never raise; non-string values are ignored.
     """
     if not isinstance(parsed, Mapping):
         raise RAGRetrieverEvaluationError(
@@ -351,11 +401,16 @@ def _validate_verdict(parsed: Any, raw: Any) -> RetrievalVerdict:
                 f"Preview: {_preview(raw)}"
             )
 
+    message = _validate_optional_text(parsed, RAG_PROGRESS_MESSAGE_KEY)
+    justification = _validate_optional_text(parsed, RAG_PROGRESS_JUSTIFICATION_KEY)
+
     return RetrievalVerdict(
         sufficient=sufficient,
         call_retrievers=calls,
         request_chunks=requests,
         discard=discards,
+        message=message,
+        justification=justification,
     )
 
 

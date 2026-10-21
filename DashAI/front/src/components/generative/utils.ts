@@ -180,46 +180,37 @@ export function parseRAGTraceRow(
   }
 }
 
-/**
- * Maps a live RAG process `progress` payload to a localized status line.
- *
- * The backend reports `process.progress` as null (or omits it on older
- * payloads) until a RAG run starts, then advances it through the stages
- * `{"stage":"transforming"}`, `{"stage":"retrieving","queries":[...]}` (a
- * non-empty list of strings), and `{"stage":"generating"}`, finally resetting
- * it to null when the answer or an error arrives.
- *
- * Anything unrecognized (null/undefined, a non-object, a missing or unknown
- * stage, or a retrieving payload without a non-empty string array) resolves to
- * null so the caller can fall back to the generic waiting bubble instead of
- * rendering an empty or broken status. Note the payload is deliberately
- * defensive: it may be absent on older responses, so undefined is treated
- * exactly like null.
- *
- * @param progress - The process progress payload, possibly null or undefined.
- * @returns The i18n key and interpolation values for the status line, or null
- *   when no status should be shown.
- */
-export function resolveRAGProgressText(
-  progress: RAGProgressPayload | null | undefined,
-): { key: string; values?: Record<string, string> } | null {
-  if (!progress || typeof progress !== "object") return null;
+export type RAGProgressText = {
+  key?: string;
+  values?: Record<string, string>;
+  text?: string;
+  detail?: string;
+};
 
+/**
+ * Resolves a known RAG stage to its localized fallback status.
+ *
+ * @param progress - The process progress payload.
+ * @returns The i18n key and interpolation values, or null for an unknown or
+ *   incomplete stage payload.
+ */
+function resolveRAGStageText(
+  progress: RAGProgressPayload,
+): RAGProgressText | null {
   switch (progress.stage) {
     case RAG_PROGRESS_STAGE_TRANSFORMING:
       return { key: "generative:rag.chatProgress.transformingQuery" };
     case RAG_PROGRESS_STAGE_RETRIEVING: {
       const queries = progress.queries;
-      if (
-        !Array.isArray(queries) ||
-        queries.length === 0 ||
-        !queries.every((query) => typeof query === "string" && query.length > 0)
-      ) {
-        return null;
-      }
+      if (!Array.isArray(queries)) return null;
+      const normalized = queries
+        .filter((query) => typeof query === "string")
+        .map((query) => query.trim())
+        .filter((query) => query.length > 0);
+      if (normalized.length === 0) return null;
       return {
         key: "generative:rag.chatProgress.searchingSources",
-        values: { queries: queries.join("; ") },
+        values: { queries: normalized.join("; ") },
       };
     }
     case RAG_PROGRESS_STAGE_GENERATING:
@@ -227,4 +218,56 @@ export function resolveRAGProgressText(
     default:
       return null;
   }
+}
+
+/**
+ * Maps a live RAG process `progress` payload to a status line.
+ *
+ * The backend reports `process.progress` as null (or omits it on older
+ * payloads) until a RAG run starts, then advances it through the stages
+ * `{"stage":"transforming"}`, `{"stage":"retrieving","queries":[...]}` (a
+ * non-empty list of strings), and `{"stage":"generating"}`, finally resetting
+ * it to null when the answer or an error arrives.
+ *
+ * LLM-backed stages may add `message` (a short user-facing sentence) and
+ * `justification` (a short rationale). A non-empty `message` replaces the
+ * localized fallback and the justification becomes the secondary `detail` line.
+ * Without a message, a non-empty justification is appended as `detail` to the
+ * stage fallback. Empty/whitespace-only narrative is ignored.
+ *
+ * Anything unrecognized (null/undefined, a non-object, a missing or unknown
+ * stage with no message/detail, or a retrieving payload without a non-empty
+ * string array and no narrative) resolves to null so the caller can fall back
+ * to the generic waiting bubble instead of rendering an empty or broken status.
+ * A retriever narrative update may omit `queries`; a justification-only update
+ * still renders the justification as the primary line.
+ * Note the payload is deliberately defensive: it may be absent on older
+ * responses, so undefined is treated exactly like null.
+ *
+ * @param progress - The process progress payload, possibly null or undefined.
+ * @returns The message/fallback text, the i18n key and interpolation values,
+ *   and an optional detail line; or null when no status should be shown.
+ */
+export function resolveRAGProgressText(
+  progress: RAGProgressPayload | null | undefined,
+): RAGProgressText | null {
+  if (!progress || typeof progress !== "object") return null;
+
+  const message =
+    typeof progress.message === "string" ? progress.message.trim() : "";
+  const justification =
+    typeof progress.justification === "string"
+      ? progress.justification.trim()
+      : "";
+  const detail = justification || undefined;
+
+  if (message) {
+    return detail ? { text: message, detail } : { text: message };
+  }
+
+  const stageText = resolveRAGStageText(progress);
+  if (!stageText) {
+    return detail ? { text: detail } : null;
+  }
+  return detail ? { ...stageText, detail } : stageText;
 }

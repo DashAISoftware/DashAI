@@ -43,10 +43,16 @@ TEMPLATES = {
         '{"sufficient": <true or false>, "call_retrievers": '
         '{"<retriever index>": <top_k>}, "request_chunks": '
         '{"<document id>": [<chunk positions>]}, "discard": '
-        '{"<document id>": [<chunk positions>]}}\n'
+        '{"<document id>": [<chunk positions>]}, '
+        '"message": "<one short user-facing sentence>", '
+        '"justification": "<one short rationale>"}\n'
         "\n"
         '- "sufficient" is required and says whether the retrieved chunks '
         "answer the user message.\n"
+        '- "message" is optional: one short user-facing sentence in the same '
+        "language as this prompt describing what you decided to do.\n"
+        '- "justification" is optional: one short sentence in the same '
+        "language as this prompt explaining why.\n"
         '- "call_retrievers" maps 1-based retriever indices from the retriever '
         "catalog to the number of chunks to retrieve from that retriever next. "
         "Indices must be at least 1.\n"
@@ -91,10 +97,16 @@ TEMPLATES = {
         '{"sufficient": <true o false>, "call_retrievers": '
         '{"<índice del recuperador>": <top_k>}, "request_chunks": '
         '{"<id del documento>": [<posiciones de fragmentos>]}, "discard": '
-        '{"<id del documento>": [<posiciones de fragmentos>]}}\n'
+        '{"<id del documento>": [<posiciones de fragmentos>]}, '
+        '"message": "<una frase breve para el usuario>", '
+        '"justification": "<una justificación breve>"}\n'
         "\n"
         '- "sufficient" es obligatorio e indica si los fragmentos recuperados '
         "responden al mensaje del usuario.\n"
+        '- "message" es opcional: una frase breve para el usuario, en el mismo '
+        "idioma de este prompt, describiendo lo que decidiste hacer.\n"
+        '- "justification" es opcional: una frase breve, en el mismo idioma de '
+        "este prompt, explicando por qué.\n"
         '- "call_retrievers" asigna índices de recuperador basados en 1 del '
         "catálogo al número de fragmentos a recuperar de ese recuperador en la "
         "siguiente ronda. Los índices deben ser al menos 1.\n"
@@ -140,10 +152,16 @@ TEMPLATES = {
         '{"sufficient": <true ou false>, "call_retrievers": '
         '{"<índice do recuperador>": <top_k>}, "request_chunks": '
         '{"<id do documento>": [<posições de trechos>]}, "discard": '
-        '{"<id do documento>": [<posições de trechos>]}}\n'
+        '{"<id do documento>": [<posições de trechos>]}, '
+        '"message": "<uma frase breve para o usuário>", '
+        '"justification": "<uma justificativa breve>"}\n'
         "\n"
         '- "sufficient" é obrigatório e indica se os trechos recuperados '
         "respondem à mensagem do usuário.\n"
+        '- "message" é opcional: uma frase breve para o usuário, no mesmo '
+        "idioma deste prompt, descrevendo o que você decidiu fazer.\n"
+        '- "justification" é opcional: uma frase breve, no mesmo idioma deste '
+        "prompt, explicando por quê.\n"
         '- "call_retrievers" mapeia índices de recuperador baseados em 1 do '
         "catálogo para o número de trechos a recuperar desse recuperador na "
         "próxima rodada. Os índices devem ser pelo menos 1.\n"

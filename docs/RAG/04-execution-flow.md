@@ -121,6 +121,13 @@ delegates to `RAGJob`, which:
    `(document_id, document_position)`, builds the prompt (the optional
    `{queries}` placeholder receives the joined queries, or no transformed
    queries when the stage is off), reports `generating`, and calls the LLM.
+   LLM-backed stages may decorate these payloads with an LLM-authored
+   `message` and `justification`. The transformer can emit a `transforming`
+   update, the pipeline forwards that narrative in the initial `retrieving`
+   payload, and LLM-evaluated retrievers emit further `retrieving` updates
+   after each valid verdict. Those retriever updates omit `queries`; they are
+   status updates, not a new query list. When the model supplies no narrative,
+   the stage-only payloads are unchanged.
    `process_output()` serializes five typed rows in pipeline-chronological order
    — the `Queries` list, the chunk map (`Dict`), the retrieval `Trace` (per-query
    retriever node trees whose chunk refs join the `Dict` keys), the `Timings`
@@ -132,8 +139,11 @@ delegates to `RAGJob`, which:
 The frontend polls the process while the turn runs. `RAGChatProgress` renders
 the current stage from `process.progress`: `transforming` (query rewriting),
 `retrieving` with the resolved queries (which are shown in the status line), or
-`generating`. A null or unrecognized payload falls back to the generic waiting
-bubble. When the job is delivered, the chat renders the answer plus its
+`generating`. When the payload carries an LLM-authored `message`, it replaces
+the localized stage line, and `justification` renders as a smaller secondary
+line. A justification-only retriever update (which omits `queries`) renders the
+justification itself. A null or unrecognized payload with no narrative falls
+back to the generic waiting bubble. When the job is delivered, the chat renders the answer plus its
 `referenceOutput` (the chunk map) and `traceOutput` (the retrieval trace), and
 `SourcesDisplay` shows the referenced-document count with **Chunks** and
 **Pipeline** toggles. They expand an inline `TraceChunksPanel`: the Chunks view

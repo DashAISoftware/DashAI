@@ -8,6 +8,10 @@ export type RAGProgressStage = "transforming" | "retrieving" | "generating";
 export type RAGProgressPayload = {
   stage?: RAGProgressStage;
   queries?: string[];
+  /** Optional short, one-sentence user-facing status authored by the LLM. */
+  message?: string;
+  /** Optional short rationale for the LLM decision. */
+  justification?: string;
 };
 
 export interface IProcess {

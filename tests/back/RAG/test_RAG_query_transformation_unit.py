@@ -8,6 +8,7 @@ parser, and the three LLM-backed transformers.
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import pytest
 
@@ -20,6 +21,7 @@ from DashAI.back.models.RAG.exceptions import (
     RAGTransformationConfigError,
     RAGTransformationOutputError,
 )
+from DashAI.back.models.RAG.progress_utils import progress_scope
 from DashAI.back.models.RAG.prompts.transformation import (
     DefaultQueryDecompositionPrompt,
     DefaultQueryExpansionPrompt,
@@ -927,6 +929,109 @@ class TestLLMQueryDecomposer:
     def test_bare_array_drift_parses(self):
         result = _decomposer(['["s1", "s2"]'], cap=None).transform("hi", [])
         assert result.queries == ["s1", "s2"]
+
+
+# ===================================================================
+# LLM-authored progress narrative
+# ===================================================================
+
+
+class TestTransformationProgressNarrative:
+    """The optional message/justification are parsed and reported when present."""
+
+    def test_text_route_parses_message_and_justification(self):
+        raw = json.dumps(
+            {
+                "name": "rewrite_query",
+                "arguments": {
+                    "query": "rewritten",
+                    "message": "  Reescribí   la consulta ",
+                    "justification": " Faltaba contexto ",
+                },
+            }
+        )
+
+        result = _rewriter([raw]).transform("hi", [])
+
+        assert result.message == "Reescribí la consulta"
+        assert result.justification == "Faltaba contexto"
+
+    def test_function_calling_route_parses_message_and_justification(self):
+        stub = FunctionCallingStubLLM(
+            result=FunctionCallResult(
+                name="expand_query",
+                arguments={
+                    "queries": ["a"],
+                    "message": "Amplié la búsqueda",
+                    "justification": "Para cubrir sinónimos",
+                },
+            )
+        )
+
+        result = _expander(None, llm_model=stub).transform("hi", [])
+
+        assert result.queries == ["a"]
+        assert result.message == "Amplié la búsqueda"
+        assert result.justification == "Para cubrir sinónimos"
+
+    def test_result_defaults_to_empty_narrative(self):
+        result = _rewriter([REWRITE_JSON]).transform("hi", [])
+
+        assert result.message == ""
+        assert result.justification == ""
+
+    def test_progress_scope_receives_transforming_event(self):
+        raw = json.dumps(
+            {
+                "name": "rewrite_query",
+                "arguments": {
+                    "query": "rewritten",
+                    "message": "Reescribí la consulta",
+                    "justification": "Faltaba contexto",
+                },
+            }
+        )
+        events: list[dict[str, Any]] = []
+
+        with progress_scope(events.append):
+            result = _rewriter([raw]).transform("hi", [])
+
+        assert result.message == "Reescribí la consulta"
+        assert events == [
+            {
+                "stage": "transforming",
+                "message": "Reescribí la consulta",
+                "justification": "Faltaba contexto",
+            }
+        ]
+
+    def test_no_narrative_emits_no_progress_event(self):
+        events: list[dict[str, Any]] = []
+
+        with progress_scope(events.append):
+            _rewriter([REWRITE_JSON]).transform("hi", [])
+
+        assert events == []
+
+    def test_malformed_narrative_types_are_ignored(self):
+        raw = json.dumps(
+            {
+                "name": "rewrite_query",
+                "arguments": {
+                    "query": "rewritten",
+                    "message": 123,
+                    "justification": ["not", "text"],
+                },
+            }
+        )
+        events: list[dict[str, Any]] = []
+
+        with progress_scope(events.append):
+            result = _rewriter([raw]).transform("hi", [])
+
+        assert result.message == ""
+        assert result.justification == ""
+        assert events == []
 
 
 # ===================================================================

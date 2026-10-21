@@ -9,6 +9,10 @@ from DashAI.back.models.RAG.exceptions import RAGTransformationOutputError
 from DashAI.back.models.RAG.prompts.transformation.transformation_prompt import (
     QueryRewritingPrompt,
 )
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_PROGRESS_JUSTIFICATION_KEY,
+    RAG_PROGRESS_MESSAGE_KEY,
+)
 from DashAI.back.models.RAG.transformation.llm_query_transformation import (
     LLMQueryTransformation,
 )
@@ -53,7 +57,21 @@ class LLMQueryRewriter(LLMQueryTransformation):
             "query": {
                 "type": "string",
                 "description": "The self-contained search query.",
-            }
+            },
+            RAG_PROGRESS_MESSAGE_KEY: {
+                "type": "string",
+                "description": (
+                    "Optional one short user-facing sentence in the prompt "
+                    "language describing what you did."
+                ),
+            },
+            RAG_PROGRESS_JUSTIFICATION_KEY: {
+                "type": "string",
+                "description": (
+                    "Optional one short sentence in the prompt language "
+                    "explaining why you did it."
+                ),
+            },
         },
         "required": ["query"],
     }

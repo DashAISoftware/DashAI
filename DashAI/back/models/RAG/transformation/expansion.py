@@ -14,6 +14,10 @@ from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.prompts.transformation.transformation_prompt import (
     QueryExpansionPrompt,
 )
+from DashAI.back.models.RAG.RAG_constants import (
+    RAG_PROGRESS_JUSTIFICATION_KEY,
+    RAG_PROGRESS_MESSAGE_KEY,
+)
 from DashAI.back.models.RAG.transformation.llm_query_transformation import (
     LLMQueryTransformation,
     LLMQueryTransformationSchema,
@@ -99,7 +103,21 @@ class LLMQueryExpander(LLMQueryTransformation):
                 "items": {"type": "string"},
                 "description": "The list of expanded search queries.",
                 "minItems": 1,
-            }
+            },
+            RAG_PROGRESS_MESSAGE_KEY: {
+                "type": "string",
+                "description": (
+                    "Optional one short user-facing sentence in the prompt "
+                    "language describing what you did."
+                ),
+            },
+            RAG_PROGRESS_JUSTIFICATION_KEY: {
+                "type": "string",
+                "description": (
+                    "Optional one short sentence in the prompt language "
+                    "explaining why you did it."
+                ),
+            },
         },
         "required": ["queries"],
     }

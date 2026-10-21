@@ -60,13 +60,17 @@ Two things about this shape are deliberate:
   screen. Reading a document happens in a modal for the same reason.
 
 While a turn is in flight, `GenerativeChat` chooses between two status rows:
-`RAGChatProgress` when `process.progress` resolves to a known stage, and the
-generic waiting bubble otherwise. `RAGChatProgress` maps `transforming`,
-`retrieving` (queries joined by `"; "`) and `generating` through
-`resolveRAGProgressText`; a null, unknown or malformed payload resolves to null,
-so an unrecognized stage can never leave the row blank. The backend resets
-`progress` to null when the answer arrives, and the finished branch replaces the
-status row.
+`RAGChatProgress` when `process.progress` resolves to a known stage or carries
+an LLM narrative, and the generic waiting bubble otherwise. `RAGChatProgress`
+maps `transforming`, `retrieving` (queries joined by `"; "`) and `generating`
+through `resolveRAGProgressText`. LLM-backed stages may add `message` and
+`justification`; a message replaces the localized stage fallback, and the
+justification renders as a smaller secondary line. A justification-only
+retriever update (which may omit `queries`) renders the justification itself.
+A null, unknown or malformed payload with no narrative resolves to null, so an
+unrecognized stage can never leave the row blank. The backend resets `progress`
+to null when the answer arrives, and the finished branch replaces the status
+row.
 
 `RAGBreadcrumbs` is rendered by the page. It used to be rendered by
 `GenerativeChat`, which is shared with every generative task and so carried a
@@ -256,8 +260,8 @@ real theme, needed because `PillTabs` reads `theme.palette.ui.box` and a bare
 - `SourcesDisplay.test.jsx` — the document count, the Chunks/Pipeline toggles,
   the inline panel props, switching views, closing, and the disabled Pipeline
   state.
-- `RAGChatProgress.test.jsx` — the transforming, retrieving (queries joined by
-  `"; "`) and generating messages, and that a null payload renders nothing.
+- `utils.test.ts` — the transforming, retrieving (queries joined by `"; "`) and
+  generating fallbacks, and that a null payload resolves to nothing.
 - `GenerativeChat.test.jsx` — an in-flight RAG message shows the live stage
   line when the payload resolves and falls back to the waiting bubble when it
   does not.

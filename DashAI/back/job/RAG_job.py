@@ -43,7 +43,9 @@ def _make_progress_reporter(
     The pipeline calls the returned closure once per stage while the run is in
     flight. Each call opens a short-lived session, stores the payload on the
     process's ``progress`` column, and commits — so the chat frontend polling
-    the process sees the current stage.
+    the process sees the current stage. A write is ignored unless the process is
+    still ``STARTED``, so a late event cannot revive progress on a terminal
+    (finished/error/cancelled) process.
 
     Reporting is best-effort: any failure is logged as a warning and swallowed.
     A transient DB error must never fail the chat turn, so the guard lives here
@@ -69,7 +71,7 @@ def _make_progress_reporter(
         try:
             with session_factory() as db:
                 process: GenerativeProcess = db.get(GenerativeProcess, process_id)
-                if process is None:
+                if process is None or process.status != RunStatus.STARTED:
                     return
                 process.set_progress(progress)
                 db.commit()
@@ -267,6 +269,7 @@ class RAGJob(BaseJob):
                 input_data = task.prepare_for_task(input_data, history=history)
 
                 generative_process.set_status_as_started()
+                generative_process.set_progress(None)
                 db.commit()
 
                 process_id = generative_process.id

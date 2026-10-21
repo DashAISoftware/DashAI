@@ -98,6 +98,12 @@ class TestDefaultTemplates:
             assert '"top_k":' not in template
             assert '"children":' not in template
 
+    def test_templates_request_progress_narrative(self):
+        """Every default template asks for an optional message and justification."""
+        for template in sufficiency_mod.TEMPLATES.values():
+            assert '"message"' in template
+            assert '"justification"' in template
+
 
 # ===================================================================
 # format rendering

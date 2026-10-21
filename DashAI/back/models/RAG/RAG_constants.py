@@ -68,9 +68,28 @@ RAG_OUTPUT_MESSAGE_TYPE = "str"
 #   before the prompt is built, so the reporter's own overhead is not charged
 #   to the generation stage timing.
 #
+# LLM-backed stages may decorate any payload with two optional, LLM-authored
+# keys when the model supplied them:
+#
+# - ``"message"`` — a short, one-sentence user-facing status (for example the
+#   query transformation technique that ran, or the retrieval decision).
+# - ``"justification"`` — an optional short rationale for that decision.
+#
+# Both are omitted entirely when the model says nothing, so the stage-only
+# payloads above remain byte-identical for non-LLM or silent runs.
+#
+# The pipeline's initial ``retrieving`` payload carries the full resolved
+# ``queries`` list. Narrative updates emitted by an LLM-evaluated retriever
+# deliberately omit ``queries``: a retriever only knows the single query it is
+# working on, and overwriting the full list with that one query would corrupt
+# the contract. Consumers that need the query list should treat a
+# narrative-only update as a status change, not as a new query list.
+#
 # The column is set back to ``None`` when the process finishes or errors.
 RAG_PROGRESS_STAGE_KEY = "stage"
 RAG_PROGRESS_QUERIES_KEY = "queries"
+RAG_PROGRESS_MESSAGE_KEY = "message"
+RAG_PROGRESS_JUSTIFICATION_KEY = "justification"
 RAG_PROGRESS_STAGE_TRANSFORMING = "transforming"
 RAG_PROGRESS_STAGE_RETRIEVING = "retrieving"
 RAG_PROGRESS_STAGE_GENERATING = "generating"

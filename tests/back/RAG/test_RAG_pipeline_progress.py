@@ -31,12 +31,28 @@ def _retriever_stub(chunks):
     return (chunks, {"name": "MockRetriever", "chunks": [chunk_ref(c) for c in chunks]})
 
 
-def _transformer(queries):
-    """A transformer stub whose ``transform`` returns ``queries``."""
+def _transformer(queries, message="", justification=""):
+    """A transformer stub whose ``transform`` returns ``queries`` and narrative."""
     transformer = MagicMock()
     result = MagicMock()
     result.queries = list(queries)
+    result.message = message
+    result.justification = justification
     transformer.transform.return_value = result
+    return transformer
+
+
+class _LegacyTransformationResult:
+    """A plugin-style result carrying only ``queries`` (no narrative fields)."""
+
+    def __init__(self, queries):
+        self.queries = list(queries)
+
+
+def _legacy_transformer(queries):
+    """A transformer stub whose result predates the narrative fields."""
+    transformer = MagicMock()
+    transformer.transform.return_value = _LegacyTransformationResult(queries)
     return transformer
 
 
@@ -231,3 +247,114 @@ class TestProgressQueriesPayload:
         )
 
         assert type(events[0]["queries"]) is list
+
+
+# ===================================================================
+# LLM-authored narrative
+# ===================================================================
+
+
+class TestProgressNarrative:
+    """Narrative fields decorate the retrieving payload only when present."""
+
+    def test_transformation_narrative_appears_in_retrieving_payload(self):
+        """The transformer's message/justification reach the retrieving event."""
+        events = []
+        pipeline = _make_pipeline(
+            query_transformation=_transformer(
+                ["q1", "q2"],
+                message="Dividiendo la consulta por tema",
+                justification="La pregunta tiene dos partes",
+            ),
+        )
+
+        pipeline.generate(
+            ({"role": "user", "content": "msg"},),
+            progress_callback=events.append,
+        )
+
+        assert events == [
+            {"stage": "transforming"},
+            {
+                "stage": "retrieving",
+                "queries": ["q1", "q2"],
+                "message": "Dividiendo la consulta por tema",
+                "justification": "La pregunta tiene dos partes",
+            },
+            {"stage": "generating"},
+        ]
+
+    def test_only_message_adds_only_the_message_key(self):
+        """An empty justification is omitted from the payload."""
+        events = []
+        pipeline = _make_pipeline(
+            query_transformation=_transformer(["q"], message="Buscando más"),
+        )
+
+        pipeline.generate(
+            ({"role": "user", "content": "msg"},),
+            progress_callback=events.append,
+        )
+
+        retrieving = events[1]
+        assert retrieving == {
+            "stage": "retrieving",
+            "queries": ["q"],
+            "message": "Buscando más",
+        }
+        assert "justification" not in retrieving
+
+    def test_legacy_transformer_without_narrative_fields_still_works(self):
+        """A plugin result with only ``queries`` keeps the existing payload."""
+        events = []
+        pipeline = _make_pipeline(
+            query_transformation=_legacy_transformer(["legacy"]),
+        )
+
+        result = pipeline.generate(
+            ({"role": "user", "content": "msg"},),
+            progress_callback=events.append,
+        )
+
+        assert result.queries == ["legacy"]
+        assert events == [
+            {"stage": "transforming"},
+            {"stage": "retrieving", "queries": ["legacy"]},
+            {"stage": "generating"},
+        ]
+
+    def test_empty_narrative_adds_no_keys(self):
+        """Empty narrative strings are treated exactly like absent ones."""
+        events = []
+        pipeline = _make_pipeline(
+            query_transformation=_transformer(["q"], message="", justification=""),
+        )
+
+        pipeline.generate(
+            ({"role": "user", "content": "msg"},),
+            progress_callback=events.append,
+        )
+
+        assert events == [
+            {"stage": "transforming"},
+            {"stage": "retrieving", "queries": ["q"]},
+            {"stage": "generating"},
+        ]
+
+    def test_non_string_narrative_is_ignored(self):
+        """Legacy/plugin results with non-string attributes do not leak values."""
+        events = []
+        pipeline = _make_pipeline(
+            query_transformation=_transformer(["q"], message=object(), justification=3),
+        )
+
+        pipeline.generate(
+            ({"role": "user", "content": "msg"},),
+            progress_callback=events.append,
+        )
+
+        assert events == [
+            {"stage": "transforming"},
+            {"stage": "retrieving", "queries": ["q"]},
+            {"stage": "generating"},
+        ]
