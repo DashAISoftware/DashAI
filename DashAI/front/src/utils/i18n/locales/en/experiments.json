@@ -60,6 +60,7 @@
     "noDatasetsAvailableGoToDataTab": "Go to <1>data tab</1> to upload one first.",
     "noModelsAvailable": "No Models Available",
     "noOptimizersNoMetric": "No hyperparameter optimization",
+    "noSplitConfigNeeded": "This task type trains on the full dataset — no train/validation/test split needs to be configured.",
     "optimizer": "Optimizer",
     "optimizerMetric": "Optimization Metric",
     "parameterModification": "Parameter Modification",

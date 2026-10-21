@@ -22,6 +22,7 @@ function SelectInput({
   description,
   options,
   optionNames = undefined,
+  optionDescriptions = undefined,
   disabled = false,
 }) {
   const handleChange = (event) => {
@@ -65,11 +66,26 @@ function SelectInput({
                     display: "block",
                   },
                 },
+                secondary: {
+                  sx: {
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "normal",
+                    maxWidth: "100%",
+                    display: "block",
+                    lineHeight: 1.35,
+                  },
+                },
               }}
               primary={
                 optionNames !== undefined && index < options.length
                   ? optionNames[index]
                   : option
+              }
+              secondary={
+                optionDescriptions !== undefined && index < options.length
+                  ? optionDescriptions[index]
+                  : undefined
               }
             />
           </MenuItem>
@@ -88,6 +104,7 @@ SelectInput.propTypes = {
   error: PropTypes.string,
   options: PropTypes.arrayOf(PropTypes.string).isRequired,
   optionNames: PropTypes.arrayOf(PropTypes.string),
+  optionDescriptions: PropTypes.arrayOf(PropTypes.string),
 };
 
 export default SelectInput;

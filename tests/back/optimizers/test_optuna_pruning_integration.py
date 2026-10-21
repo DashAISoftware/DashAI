@@ -5,8 +5,8 @@ epoch+validation, `TrialPruned` is raised. This one wires the real parts
 together and checks the outcome Optuna records, which is what the feature is
 for — a pruner that never prunes passes every unit test in the file next door.
 
-Real, not stubbed: `OptunaOptimizer.optimize`, `HoldoutEvaluationStrategy.
-evaluate` (the strategy that trains with validation data), `BaseModel.
+Real, not stubbed: `OptunaOptimizer.optimize`, the trial objective of
+`FitModelUnit` (the unit that trains with validation data), `BaseModel.
 calculate_metrics` (where the hook lives), `_report_epoch`, and Optuna's own
 MedianPruner and trial bookkeeping.
 
@@ -27,7 +27,7 @@ import pytest
 
 from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
 from DashAI.back.evaluation.holdout import HoldoutEvaluationStrategy
-from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.supervised_model import SupervisedModel
 from DashAI.back.optimizers.optuna_optimizer import OptunaOptimizer
 from DashAI.back.units.fit_model_unit import FitModelUnit
 
@@ -73,7 +73,7 @@ class Score:
         return y_pred
 
 
-class SteppedModel(BaseModel):
+class SteppedModel(SupervisedModel):
     """A model that gets worse every trial, revealing it epoch by epoch.
 
     Each trial improves by `1 / (1 + trials already run)` per epoch, so trial 5

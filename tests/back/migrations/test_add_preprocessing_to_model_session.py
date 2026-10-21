@@ -25,7 +25,7 @@ def test_migration_adds_preprocessing_columns(tmp_path):
         "preprocessing_job_id",
     } <= columns
 
-    command.downgrade(alembic_cfg, "-1")
+    command.downgrade(alembic_cfg, "m6n7o8p9q0r1")
     columns_after_downgrade = {
         c["name"] for c in sa.inspect(engine).get_columns("model_session")
     }

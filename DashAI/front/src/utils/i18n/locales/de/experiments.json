@@ -65,6 +65,7 @@
     "noDatasetsAvailableGoToDataTab": "Gehen Sie zum <1>Daten-Tab</1>, um zuerst einen hochzuladen.",
     "noModelsAvailable": "Keine Modelle verfügbar",
     "noOptimizersNoMetric": "Keine Hyperparameter-Optimierung",
+    "noSplitConfigNeeded": "Dieser Aufgabentyp trainiert mit dem gesamten Datensatz — es muss keine Aufteilung in Training/Validierung/Test konfiguriert werden.",
     "numFolds": "Anzahl der Folds (k)",
     "numFoldsDescription": "Anzahl der Folds bei der Kreuzvalidierung. Mehr Folds können die Stabilität der Bewertung verbessern, erhöhen aber die Verarbeitungszeit. Muss eine ganze Zahl größer als 1 sein.",
     "numRepeats": "Anzahl der Wiederholungen",

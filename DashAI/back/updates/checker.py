@@ -7,6 +7,7 @@ exists and which file the user needs for their install channel.
 
 import logging
 import platform
+import re
 import threading
 import time
 from typing import Optional
@@ -23,9 +24,10 @@ from DashAI.back.updates.installation import (
 
 logger = logging.getLogger(__name__)
 
-LATEST_RELEASE_URL = (
-    "https://api.github.com/repos/DashAISoftware/DashAI/releases/latest"
-)
+DEFAULT_REPOSITORY = "DashAISoftware/DashAI"
+_LATEST_RELEASE_URL = "https://api.github.com/repos/{repository}/releases/latest"
+# GitHub "owner/name": letters, digits, "-", "_" and ".".
+_REPOSITORY_PATTERN = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
 _REQUEST_TIMEOUT_SECONDS = 5
 
 # Unauthenticated GitHub API calls are limited to 60 per hour per IP, and a
@@ -36,8 +38,8 @@ _SUCCESS_TTL_SECONDS = 24 * 60 * 60
 _FAILURE_TTL_SECONDS = 60 * 60
 
 _cache_lock = threading.Lock()
-# (expires_at, release). release is None when the last fetch failed.
-_cache: Optional[tuple[float, Optional[dict]]] = None
+# (expires_at, repository, release). release is None when the fetch failed.
+_cache: Optional[tuple[float, str, Optional[dict]]] = None
 
 
 class UpdateInfo(BaseModel):
@@ -55,8 +57,22 @@ class UpdateInfo(BaseModel):
     check_failed: bool = False
 
 
-def _fetch_latest_release() -> Optional[dict]:
-    """Ask GitHub for the latest published release.
+class UpdateAsset(BaseModel):
+    """A release file that installs dashAI for one install channel."""
+
+    name: str
+    url: str
+    size: Optional[int] = None
+    sha256: Optional[str] = None
+
+
+def _fetch_latest_release(repository: str) -> Optional[dict]:
+    """Ask GitHub for the latest published release of a repository.
+
+    Parameters
+    ----------
+    repository : str
+        The GitHub repository as "owner/name".
 
     Returns
     -------
@@ -64,9 +80,12 @@ def _fetch_latest_release() -> Optional[dict]:
         The release as returned by the GitHub API, or None when it could not
         be fetched. Drafts and pre-releases are never returned by this API.
     """
+    if not _REPOSITORY_PATTERN.fullmatch(repository):
+        logger.warning("Invalid update repository %r, expected owner/name", repository)
+        return None
     try:
         response = httpx.get(
-            LATEST_RELEASE_URL,
+            _LATEST_RELEASE_URL.format(repository=repository),
             headers={
                 "Accept": "application/vnd.github+json",
                 "User-Agent": "dashAI-update-check",
@@ -80,16 +99,16 @@ def _fetch_latest_release() -> Optional[dict]:
         return None
 
 
-def _get_latest_release() -> Optional[dict]:
+def _get_latest_release(repository: str) -> Optional[dict]:
     """Return the latest release, fetching it only when the cache expired."""
     global _cache
     with _cache_lock:
         now = time.monotonic()
-        if _cache is not None and _cache[0] > now:
-            return _cache[1]
-        release = _fetch_latest_release()
+        if _cache is not None and _cache[0] > now and _cache[1] == repository:
+            return _cache[2]
+        release = _fetch_latest_release(repository)
         ttl = _SUCCESS_TTL_SECONDS if release is not None else _FAILURE_TTL_SECONDS
-        _cache = (now + ttl, release)
+        _cache = (now + ttl, repository, release)
         return release
 
 
@@ -119,25 +138,66 @@ def _asset_suffix(channel: InstallChannel) -> Optional[str]:
     return suffixes.get(channel)
 
 
-def _download_url(release: dict, channel: InstallChannel) -> Optional[str]:
-    """Return the download link of the release file for an install channel.
+def _select_asset(release: dict, channel: InstallChannel) -> Optional[UpdateAsset]:
+    """Return the release file for an install channel.
 
     Returns
     -------
-    Optional[str]
-        The link, or None when the channel has no installer (pip, source,
+    Optional[UpdateAsset]
+        The file, or None when the channel has no installer (pip, source,
         Docker) or the release does not ship one for this platform.
     """
     suffix = _asset_suffix(channel)
     if suffix is None:
         return None
     for asset in release.get("assets", []):
-        if asset.get("name", "").endswith(suffix):
-            return asset.get("browser_download_url")
+        name = asset.get("name", "")
+        if not name.endswith(suffix) or not asset.get("browser_download_url"):
+            continue
+        # GitHub publishes the digest as "sha256:<hex>".
+        algorithm, _, value = (asset.get("digest") or "").partition(":")
+        return UpdateAsset(
+            name=name,
+            url=asset["browser_download_url"],
+            size=asset.get("size"),
+            sha256=value if algorithm == "sha256" and value else None,
+        )
     return None
 
 
-def check_for_updates(enabled: bool = True) -> UpdateInfo:
+def _is_newer(release: dict, current_version: Optional[str]) -> bool:
+    """Tell whether a release is newer than the running version."""
+    latest = _parse_version(release.get("tag_name"))
+    current = _parse_version(current_version)
+    return bool(latest and current and latest > current)
+
+
+def find_update_asset(
+    repository: str = DEFAULT_REPOSITORY,
+) -> Optional[UpdateAsset]:
+    """Return the file that updates this install, if a newer release has one.
+
+    Parameters
+    ----------
+    repository : str
+        The GitHub repository whose releases are checked, as "owner/name".
+
+    Returns
+    -------
+    Optional[UpdateAsset]
+        The release file for the detected install channel, or None when there
+        is no newer release, GitHub is unreachable or the channel cannot be
+        updated from a downloaded file.
+    """
+    release = _get_latest_release(repository)
+    if release is None or not _is_newer(release, get_installed_version()):
+        return None
+    return _select_asset(release, detect_install_channel())
+
+
+def check_for_updates(
+    enabled: bool = True, repository: str = DEFAULT_REPOSITORY
+) -> UpdateInfo:
     """Compare the running dashAI with the latest GitHub release.
 
     Never raises on network problems: an unreachable GitHub is reported with
@@ -147,6 +207,8 @@ def check_for_updates(enabled: bool = True) -> UpdateInfo:
     ----------
     enabled : bool
         When False, nothing is requested from GitHub.
+    repository : str
+        The GitHub repository whose releases are checked, as "owner/name".
 
     Returns
     -------
@@ -159,18 +221,18 @@ def check_for_updates(enabled: bool = True) -> UpdateInfo:
     if not enabled:
         return info
 
-    release = _get_latest_release()
+    release = _get_latest_release(repository)
     if release is None:
         info.check_failed = True
         return info
 
     latest = _parse_version(release.get("tag_name"))
-    current = _parse_version(current_version)
     info.latest_version = str(latest) if latest else None
     info.release_notes = release.get("body")
     info.release_url = release.get("html_url")
     info.published_at = release.get("published_at")
-    info.update_available = bool(latest and current and latest > current)
+    info.update_available = _is_newer(release, current_version)
     if info.update_available:
-        info.download_url = _download_url(release, channel)
+        asset = _select_asset(release, channel)
+        info.download_url = asset.url if asset else None
     return info

@@ -14,6 +14,11 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import ReactMarkdown from "react-markdown";
 import { useTranslation } from "react-i18next";
+import useUpdateInstall from "./useUpdateInstall";
+import {
+  UpdateInstallButton,
+  UpdateInstallStatus,
+} from "./UpdateInstallControls";
 
 // Channels without an installer are updated from a terminal.
 const UPDATE_COMMANDS = {
@@ -57,9 +62,13 @@ export default function UpdatesDialog({ open, onClose, info }) {
   const updateAvailable = Boolean(info?.update_available);
   const channel = info?.channel ?? "unknown";
   const command = UPDATE_COMMANDS[channel];
+  const installerChannel = INSTALLER_CHANNELS.includes(channel);
   const downloadUrl =
-    INSTALLER_CHANNELS.includes(channel) &&
-    (info?.download_url || info?.release_url);
+    installerChannel && (info?.download_url || info?.release_url);
+  const updater = useUpdateInstall(open && updateAvailable && installerChannel);
+  // Installed from inside the app when the backend has a file for this
+  // install; otherwise the user downloads it from the browser.
+  const inAppUpdate = installerChannel && Boolean(updater.status?.available);
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
@@ -172,6 +181,13 @@ export default function UpdatesDialog({ open, onClose, info }) {
               )}
             </Box>
           )}
+
+          {updateAvailable && inAppUpdate && (
+            <UpdateInstallStatus
+              updater={updater}
+              manualUrl={downloadUrl || undefined}
+            />
+          )}
         </Stack>
       </DialogContent>
       {updateAvailable && (
@@ -186,7 +202,10 @@ export default function UpdatesDialog({ open, onClose, info }) {
               {t("viewOnGitHub")}
             </Button>
           )}
-          {downloadUrl && (
+          {inAppUpdate && (
+            <UpdateInstallButton updater={updater} channel={channel} />
+          )}
+          {!inAppUpdate && downloadUrl && (
             <Button
               component="a"
               href={downloadUrl}

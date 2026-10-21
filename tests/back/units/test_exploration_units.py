@@ -13,6 +13,7 @@ from kink import di
 from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
 from DashAI.back.exploration.base_explorer import BaseExplorer
 from DashAI.back.job.base_job import JobError
+from DashAI.back.units import run_exploration_unit
 from DashAI.back.units.context import ExecutionContext, UnitContractError
 from DashAI.back.units.run_exploration_unit import RunExplorationUnit
 from DashAI.back.units.save_exploration_unit import SaveExplorationUnit
@@ -107,12 +108,20 @@ class ExplodingExplorer(RecordingExplorer):
         raise RuntimeError("the exploration itself blew up")
 
 
+class ComplainingExplorer(RecordingExplorer):
+    """Explorer that refuses its data, in words written for the user."""
+
+    def launch_exploration(self, dataset, explorer_info):
+        raise ValueError("Select at least two numeric columns.")
+
+
 @pytest.fixture(name="registry")
 def fixture_registry():
     registry = {
         "RecordingExplorer": {"class": RecordingExplorer},
         "BadPathExplorer": {"class": BadPathExplorer},
         "ExplodingExplorer": {"class": ExplodingExplorer},
+        "ComplainingExplorer": {"class": ComplainingExplorer},
     }
     di["component_registry"] = registry
     yield registry
@@ -235,6 +244,36 @@ def test_a_failing_exploration_is_wrapped_with_the_component_name(
         )(ctx)
 
     assert "the exploration itself blew up" in str(excinfo.value.__cause__)
+
+
+def test_an_explorer_complaint_reaches_the_user_verbatim_and_the_log(
+    ctx, registry, fake_db, monkeypatch
+):
+    """A ValueError from ``launch_exploration`` is passed on as it was written.
+
+    It is the explorer's own complaint about the data, and the rule covers
+    every explorer rather than only the clustering ones that brought it in:
+    class overlap, autocorrelation, seasonal decomposition, box plot, time
+    index audit and time series plot all raise ValueError from there. Not
+    wrapped, but not silent either: the traceback reaches the log.
+
+    The logging call is recorded on the module's logger itself rather than
+    through ``caplog``: the app other tests build reconfigures the DashAI
+    loggers, so whether a record reaches a capture handler depends on test
+    order, while whether the unit asked to log it does not.
+    """
+    logged = []
+    monkeypatch.setattr(run_exploration_unit.log, "exception", logged.append)
+
+    with pytest.raises(JobError) as excinfo:
+        RunExplorationUnit(
+            explorer_id=11, explorer=_explorer(component="ComplainingExplorer")
+        )(ctx)
+
+    assert str(excinfo.value) == "Select at least two numeric columns."
+    assert isinstance(excinfo.value.__cause__, ValueError)
+    assert len(logged) == 1
+    assert logged[0] is excinfo.value.__cause__
 
 
 def test_two_exploration_units_do_not_share_a_resolved_class(ctx, registry, fake_db):

@@ -35,7 +35,7 @@ class BaseConverter(ConfigObject, ABC):
     Converters modify dataset columns in a supervised or unsupervised way.
     Operations include scaling, encoding, dimensionality reduction, imputation,
     and feature engineering. Converters do not add or remove rows unless
-    `changes_row_count` returns True (e.g. samplers).
+    `CHANGES_ROW_COUNT` is True (e.g. samplers).
 
     All converters must implement `fit`, `transform`, and `get_output_type`.
     """
@@ -174,6 +174,32 @@ class BaseConverter(ConfigObject, ABC):
             meta["output_dtype"] = None
 
         return meta
+
+    def get_report(self) -> Union[Dict[str, Any], None]:
+        """Return the converter report produced after execution, if any.
+
+        The report complements the transformed dataset with information that
+        helps downstream tools (explorers, visualisations) interpret what the
+        converter did during its pipeline step. Persisted to disk per converter
+        execution. Optional — converters that produce no supplementary
+        information return ``None``.
+
+        Returns
+        -------
+        Dict[str, Any] or None
+            JSON-serializable report dict, or ``None`` when the converter does
+            not produce one.
+        """
+        return None
+
+    def build_report(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Wrap converter-specific data with the producer converter name.
+
+        Subclasses pass only information that is useful after the conversion
+        has finished. Configuration parameters are already persisted with the
+        converter DB row.
+        """
+        return {"converter": self.__class__.__name__, **data}
 
     def infer_output_columns(self, inputs: List[StateItem]) -> StructureDelta:
         """Estimate what this converter does to its scope, without any data.

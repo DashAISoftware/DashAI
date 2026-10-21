@@ -3,6 +3,8 @@
 import logging
 from typing import TYPE_CHECKING, Type
 
+from DashAI.back.converters.converter_report import load_converter_report
+from DashAI.back.core.enums.status import ConverterStatus
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     component_field,
@@ -10,7 +12,7 @@ from DashAI.back.core.schema_fields import (
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.dependencies.database.models import Explorer
+from DashAI.back.dependencies.database.models import Converter, Explorer
 from DashAI.back.job.base_job import JobError
 from DashAI.back.units.base_unit import BaseUnit
 from DashAI.back.units.context import ExecutionContext
@@ -19,6 +21,95 @@ if TYPE_CHECKING:
     from DashAI.back.exploration.base_explorer import BaseExplorer
 
 log = logging.getLogger(__name__)
+
+
+def _build_explorer_context(
+    db,
+    notebook_id: int,
+    explorer_instance: "BaseExplorer",
+) -> dict:
+    """Build optional runtime context for explorers.
+
+    Moved here from ``ExplorerJob`` when the job was merged with its unit
+    version: it has to run between instantiating the explorer and preparing
+    its dataset, and both happen inside ``RunExplorationUnit``. It reads the
+    database and the disk and never sees the execution context.
+
+    Explorers keep receiving the current notebook dataset as their main input.
+    A converter report is loaded only when the explorer explicitly requires it
+    via ``metadata["requires_converter_report"] = True``.
+
+    When the explorer also declares ``metadata["requires_converter_class"]``,
+    the most recently finished converter of any type in the notebook must be
+    of that class. This guarantees the referenced report describes exactly
+    the current dataset state: nothing could have run afterwards to alter the
+    columns the report depends on. If a different converter ran more recently,
+    the explorer is refused instead of silently reusing a report that may no
+    longer match the live dataset.
+    """
+    explorer_metadata = explorer_instance.get_metadata()
+    if not explorer_metadata.get("requires_converter_report", False):
+        return {}
+
+    required_class = explorer_metadata.get("requires_converter_class")
+    latest_converter = (
+        db.query(Converter)
+        .filter(Converter.notebook_id == notebook_id)
+        .filter(Converter.status == ConverterStatus.FINISHED)
+        .order_by(Converter.created.desc())
+        .first()
+    )
+
+    if latest_converter is None:
+        class_hint = f" of type '{required_class}'" if required_class else ""
+        raise JobError(
+            f"This explorer requires a converter report, but the notebook has "
+            f"no finished converters{class_hint}."
+        )
+
+    if required_class and latest_converter.converter != required_class:
+        raise JobError(
+            f"This explorer requires a report from the most recently finished "
+            f"converter in the notebook, but the last converter was "
+            f"'{latest_converter.converter}', not '{required_class}'. Re-run "
+            f"the '{required_class}' converter before creating this explorer "
+            f"so its report reflects the current dataset."
+        )
+
+    # Read only here: an explorer that needs no report needs no paths either.
+    from kink import di
+
+    notebook_output_path = di["config"]["NOTEBOOK_PATH"] / str(notebook_id)
+    converter_report = load_converter_report(
+        notebook_output_path,
+        latest_converter.id,
+    )
+
+    if converter_report is None:
+        class_hint = f" '{required_class}'" if required_class else ""
+        raise JobError(
+            f"This explorer requires a converter report, but the latest "
+            f"finished{class_hint} converter did not produce one."
+        )
+
+    required_algorithm = explorer_metadata.get("requires_algorithm")
+    if required_algorithm:
+        used_algorithm = converter_report.get("algorithm_key", "").lower()
+        if used_algorithm != required_algorithm.lower():
+            raise JobError(
+                f"This explorer requires the '{required_algorithm}' clustering "
+                f"algorithm, but the last Clustering converter ran '{used_algorithm}'"
+                f". Re-run the Clustering converter selecting the "
+                f"'{required_algorithm}' algorithm."
+            )
+
+    return {
+        "converter_report": converter_report,
+        "converter_report_source": {
+            "converter_id": latest_converter.id,
+            "converter": latest_converter.converter,
+        },
+    }
 
 
 class RunExplorationSchema(BaseSchema):
@@ -160,6 +251,26 @@ class RunExplorationUnit(BaseUnit):
                     f"Error instancing the explorer {exploration_type}."
                 ) from e
 
+            # An explorer that draws from a converter's report gets it here,
+            # before it prepares its dataset. Its own refusals are JobErrors
+            # and reach the user verbatim; anything else is reported as a
+            # failure to load the context.
+            try:
+                explorer_instance.set_context(
+                    _build_explorer_context(
+                        db,
+                        explorer_info.notebook_id,
+                        explorer_instance,
+                    )
+                )
+            except JobError:
+                raise
+            except Exception as e:
+                log.exception(e)
+                raise JobError(
+                    f"Error loading context for explorer {exploration_type}."
+                ) from e
+
             try:
                 prepared_dataset = explorer_instance.prepare_dataset(
                     loaded_dataset, explorer_info.columns
@@ -177,6 +288,14 @@ class RunExplorationUnit(BaseUnit):
                 result = explorer_instance.launch_exploration(
                     prepared_dataset, explorer_info
                 )
+            except (JobError, ValueError) as e:
+                # The explorer's own complaint about the data it was given is
+                # already written for the user. That holds for every explorer,
+                # not only the clustering ones that brought the rule in: several
+                # older ones raise ValueError from here too. The traceback still
+                # goes to the log, as it does for the wrapped failures below.
+                log.exception(e)
+                raise JobError(str(e)) from e
             except Exception as e:
                 log.exception(e)
                 raise JobError(

@@ -34,8 +34,8 @@ def install(monkeypatch):
 def _fake_fetch(monkeypatch, release):
     calls = []
 
-    def fetch():
-        calls.append(1)
+    def fetch(repository):
+        calls.append(repository)
         return release
 
     monkeypatch.setattr(checker, "_fetch_latest_release", fetch)
@@ -79,3 +79,12 @@ def test_release_is_cached_between_checks(install, monkeypatch):
     checker.check_for_updates()
 
     assert len(calls) == 1
+
+
+def test_another_repository_is_not_served_from_the_cache(install, monkeypatch):
+    calls = _fake_fetch(monkeypatch, RELEASE)
+
+    checker.check_for_updates()
+    checker.check_for_updates(repository="me/DashAI")
+
+    assert calls == [checker.DEFAULT_REPOSITORY, "me/DashAI"]
