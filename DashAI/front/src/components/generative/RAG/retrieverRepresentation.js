@@ -1,77 +1,12 @@
 import { resolveLocalizedText } from "../../../utils/localize";
+import {
+  MISSING_VALUE,
+  normalizeComponentRef,
+  resolveParamValue,
+} from "./paramResolution";
 
-/**
- * Text rendered when a representation placeholder cannot be resolved.
- * @type {string}
- */
-export const MISSING_VALUE = "—";
-
-/**
- * Normalise a component reference into a plain `{ component, params }` shape.
- * Supports the form-shaped structure
- * `{ properties: { params: { comp: { component, params } } } }` as well as a
- * plain `{ component, params }` reference.
- *
- * @param {*} value - Candidate component reference.
- * @returns {{component: string, params: object|undefined}|null} The normalised
- *   reference, or null when the value is not a component reference.
- */
-export function normalizeComponentRef(value) {
-  if (!value || typeof value !== "object") return null;
-
-  const formRef = value.properties?.params?.comp;
-  const ref = formRef && typeof formRef === "object" ? formRef : value;
-  if (typeof ref.component !== "string" || ref.component.length === 0) {
-    return null;
-  }
-  return { component: ref.component, params: ref.params };
-}
-
-/**
- * Render a primitive parameter value as text.
- *
- * @param {*} value - Parameter value.
- * @returns {string} The rendered value, or {@link MISSING_VALUE}.
- */
-function renderPrimitive(value) {
-  const isPrimitive =
-    typeof value === "string" ||
-    typeof value === "number" ||
-    typeof value === "boolean";
-  if (!isPrimitive) return MISSING_VALUE;
-
-  const text = String(value);
-  return text.length > 0 ? text : MISSING_VALUE;
-}
-
-/**
- * Resolve a dotted parameter path against the current node parameters.
- * A direct component reference renders its class name; a `nested.param` path
- * reads `param` from the nested component stored under `nested`.
- *
- * @param {*} params - Node parameters (may be missing or malformed).
- * @param {string[]} path - Path segments, e.g. `["embedding_model", "model_name"]`.
- * @returns {string} The resolved value, or {@link MISSING_VALUE}.
- */
-export function resolveParamValue(params, path) {
-  if (!params || typeof params !== "object" || Array.isArray(params)) {
-    return MISSING_VALUE;
-  }
-
-  const [head, ...rest] = path;
-  if (!head) return MISSING_VALUE;
-
-  const raw = params[head];
-  if (raw === undefined || raw === null) return MISSING_VALUE;
-
-  const ref = normalizeComponentRef(raw);
-  if (rest.length === 0) {
-    return ref ? ref.component : renderPrimitive(raw);
-  }
-  if (!ref) return MISSING_VALUE;
-
-  return resolveParamValue(ref.params, rest);
-}
+// Re-export the generic resolution helpers for backward compatibility.
+export { MISSING_VALUE, normalizeComponentRef, resolveParamValue };
 
 /**
  * Substitute every `{...}` placeholder in a representation template.

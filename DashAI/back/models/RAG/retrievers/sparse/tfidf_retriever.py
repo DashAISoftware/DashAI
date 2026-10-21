@@ -343,6 +343,14 @@ class TFIDFRetriever(SparseRetriever):
 
     SCHEMA = TFIDFRetrieverSchema
 
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the TF-IDF similarity function and top-k paths."""
+        return {
+            "similarity_function": "similarity_function",
+            "top_k": "top_k",
+        }
+
     def __init__(self, **kwargs):
         """Initialize the TF-IDF retriever.
 
@@ -423,6 +431,20 @@ class TFIDFRetriever(SparseRetriever):
                 current_idx += 1
 
         self._tf_idf_matrix = self._vectorizer.fit_transform(chunk_texts)
+
+    @property
+    def similarity_function(self) -> str:
+        """Return the configured similarity function.
+
+        The raw configuration key is ``similarity_function``; the live value is
+        stored as ``similarity_function_name`` during construction. Exposing it
+        under the configuration name lets the schema-summary resolver find it on
+        directly constructed instances.
+
+        Returns:
+            The configured distance metric name.
+        """
+        return self.similarity_function_name
 
     @property
     def retrieval_top_k(self) -> int:

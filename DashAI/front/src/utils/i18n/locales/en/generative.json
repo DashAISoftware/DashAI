@@ -241,6 +241,21 @@
     "retrieverConfig": {
       "modelLabel": "Retriever model"
     },
+    "schemaSummary": {
+      "labels": {
+        "b": "b",
+        "embedding_model": "embedding model",
+        "k1": "k1",
+        "max_chunks": "max chunks",
+        "max_iters": "max iterations",
+        "merge_strategy": "merge",
+        "mmr_lambda": "MMR λ",
+        "model_name": "model",
+        "similarity_function": "similarity",
+        "similarity_metric": "similarity",
+        "top_k": "top-k"
+      }
+    },
     "session": {
       "notFound": "Session not found"
     },

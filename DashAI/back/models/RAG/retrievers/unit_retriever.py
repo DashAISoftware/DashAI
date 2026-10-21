@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import Any, Dict, List
 
-from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.documents import Chunk, RAGDocument
 from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
 from DashAI.back.models.RAG.retrievers.persistence import (
     DensePersistence,
@@ -31,6 +31,7 @@ class UnitRetriever(BaseRetriever, ABC):
         env_RAG_path: str,  # noqa: N803
         chunks: Dict[int, Dict[int, Chunk]],
         persistence: Any,
+        documents: Dict[int, RAGDocument] | None = None,
     ) -> None:
         """Inject runtime infrastructure with type-checked persistence.
 
@@ -40,6 +41,7 @@ class UnitRetriever(BaseRetriever, ABC):
                 to :class:`Chunk` instances.
             persistence: A :class:`SparsePersistence` or
                 :class:`DensePersistence` instance.
+            documents: Optional document mapping forwarded to the base.
 
         Raises:
             TypeError: If *persistence* is not a supported persistence type.
@@ -49,7 +51,7 @@ class UnitRetriever(BaseRetriever, ABC):
                 f"Expected SparsePersistence or DensePersistence, "
                 f"got {type(persistence).__name__}"
             )
-        super().inject_infra(env_RAG_path, chunks, persistence)
+        super().inject_infra(env_RAG_path, chunks, persistence, documents)
 
     def _check_infra(self) -> None:
         """Raise if infrastructure has not been injected.

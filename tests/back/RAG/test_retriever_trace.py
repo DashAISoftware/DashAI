@@ -100,12 +100,37 @@ def test_chunk_ref_format_is_document_id_position():
 
 
 def test_retriever_trace_node_shape():
-    """A unit node has a name and chunk refs, and no children key."""
+    """A unit node has a name, chunk refs and a schema summary."""
     retriever = _StubRetriever([_chunk(1, 0)], top_k=1)
     node = retriever_trace(retriever, [_chunk(1, 0)])
 
-    assert node == {"name": "_StubRetriever", "chunks": ["1_0"]}
+    assert node == {
+        "name": "_StubRetriever",
+        "chunks": ["1_0"],
+        "schema_summary": {"class": "_StubRetriever", "params": {}},
+    }
     assert "children" not in node
+
+
+def test_retriever_trace_omits_schema_summary_when_it_raises():
+    """A broken schema summary is omitted instead of breaking the trace."""
+
+    class _BrokenSummaryRetriever(_StubRetriever):
+        def get_schema_summary(self):
+            raise RuntimeError("broken summary")
+
+    retriever = _BrokenSummaryRetriever([], top_k=1)
+    node = retriever_trace(retriever, [])
+
+    assert "schema_summary" not in node
+    assert node["name"] == "_BrokenSummaryRetriever"
+
+
+def test_retriever_trace_canonical_schema_summary_cannot_be_overridden():
+    """Extras may not shadow the schema summary."""
+    stub = _StubRetriever([], top_k=1)
+    with pytest.raises(ValueError, match="canonical"):
+        retriever_trace(stub, [], schema_summary={"class": "nope"})
 
 
 def test_retriever_trace_canonical_keys_cannot_be_overridden():

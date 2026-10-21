@@ -171,6 +171,7 @@ class SetupService:
             chunking_result.chunks,
             chunk_set.id,
             pipeline_id,
+            documents,
         )
         retriever_result = retriever_service.setup(
             config.retriever_model.component,

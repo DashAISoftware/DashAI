@@ -43,6 +43,11 @@ class CrossEncoderRetriever(CompositeRetriever, ABC):
         "candidates retrieved by a child retriever."
     )
 
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the final top-k path."""
+        return {"top_k": "top_k"}
+
     def __init__(self, **kwargs):
         """Initialize the cross-encoder retriever.
 

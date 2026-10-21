@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Box, Typography, IconButton, Tooltip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
@@ -17,6 +17,8 @@ import {
 } from "../retrieverKinds";
 import { resolveLocalizedText } from "../../../../utils/localize";
 import { resolveRetrieverRepresentation } from "../../../../components/generative/RAG/retrieverRepresentation";
+import { resolveRetrieverSchemaSummary } from "../../../../components/generative/RAG/schemaSummary";
+import { isPlainObject } from "../../../../components/generative/RAG/traceUtils";
 import RetrieverNodeConfig from "./RetrieverNodeConfig";
 
 // Base horizontal unit (px) for the tree indentation. A card at depth d is
@@ -58,9 +60,11 @@ function getChildRefs(ref) {
  * filtered out by callers, keeping unknown components out of the tree.
  * @param {object} ref - Serialised retriever ref to map.
  * @param {function} findComponent - Lookup for component definitions by name.
- * @returns {object|null} The tree node, or null when the component is unknown.
+ * @returns {object|null} The tree node, or null when the ref is malformed or
+ *   the component is unknown.
  */
 function buildNodeFromRef(ref, findComponent) {
+  if (!isPlainObject(ref)) return null;
   if (!findComponent(ref.component)) return null;
   const node = {
     nodeId: nextId(),
@@ -113,40 +117,6 @@ export default function CompositeRetrieverBuilder({
 
   const [ready, setReady] = useState(false);
   const [editingParentId, setEditingParentId] = useState(null);
-  const treeBoxRef = useRef(null);
-
-  useEffect(() => {
-    if (!tree) return;
-    const container = treeBoxRef.current;
-    if (!container) return;
-    const cr = container.getBoundingClientRect();
-    const fmt = (el, label) => {
-      const r = el.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      const x = (r.left - cr.left).toFixed(1);
-      const y = (r.top - cr.top).toFixed(1);
-      const w = r.width.toFixed(1);
-      const h = r.height.toFixed(1);
-      return (
-        `${label.padEnd(10)} ${el.getAttribute("data-node")?.padEnd(30)}` +
-        ` x=${x.padStart(6)} y=${y.padStart(6)} w=${w.padStart(
-          6,
-        )} h=${h.padStart(6)}` +
-        ` | pos=${cs.position} L=${cs.left} T=${cs.top} W=${cs.width} B=${cs.boxSizing}`
-      );
-    };
-    const lines = ["[CompositeRetrieverBuilder DOM layout]"];
-    container.querySelectorAll("[data-card]").forEach((el) => {
-      lines.push(fmt(el, "card"));
-    });
-    container.querySelectorAll("[data-conn]").forEach((el) => {
-      lines.push(fmt(el, "connector"));
-    });
-    container.querySelectorAll("[data-spine]").forEach((el) => {
-      lines.push(fmt(el, "spine"));
-    });
-    console.log(lines.join("\n"));
-  }, [tree]);
 
   useEffect(() => {
     (async () => {
@@ -170,19 +140,34 @@ export default function CompositeRetrieverBuilder({
     if (!ready) return;
 
     (async () => {
-      _nodeIdCounter = 0;
-      const fromParams = rootParams?.children || [];
+      try {
+        _nodeIdCounter = 0;
+        const fromParams = Array.isArray(rootParams?.children)
+          ? rootParams.children
+          : [];
 
-      const existingChildren = fromParams
-        .map((child) => buildNodeFromRef(child, findComponent))
-        .filter(Boolean);
+        const existingChildren = fromParams
+          .map((child) => buildNodeFromRef(child, findComponent))
+          .filter(Boolean);
 
-      setTree({
-        nodeId: nextId(),
-        component: rootComponent,
-        params: rootParams || {},
-        children: existingChildren,
-      });
+        setTree({
+          nodeId: nextId(),
+          component: rootComponent,
+          params: isPlainObject(rootParams) ? rootParams : {},
+          children: existingChildren,
+        });
+      } catch (error) {
+        console.warn(
+          "[CompositeRetrieverBuilder] Failed to initialise retriever tree",
+          error,
+        );
+        setTree({
+          nodeId: nextId(),
+          component: rootComponent,
+          params: isPlainObject(rootParams) ? rootParams : {},
+          children: [],
+        });
+      }
     })();
   }, [ready, rootComponent]);
 
@@ -415,7 +400,7 @@ export default function CompositeRetrieverBuilder({
         </Typography>
       </Box>
 
-      <Box ref={treeBoxRef} sx={{ flex: 1, minWidth: 0 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
         <TreeNodeView
           node={tree}
           depth={0}
@@ -515,13 +500,21 @@ function TreeNodeView({
     t("generative:rag.composite.configureNode");
   const isComposite = isCompositeKind(node.component);
   const cardX = depth * INDENT;
+  const translateLabel = (label) =>
+    t(`rag.schemaSummary.labels.${label}`, { defaultValue: label });
+  const summaryText = resolveRetrieverSchemaSummary(
+    info,
+    node.params,
+    findComponent,
+    translateLabel,
+  );
   const representation = resolveRetrieverRepresentation(
     info,
     node.params,
     i18n,
   );
   const description = resolveLocalizedText(info?.description, i18n);
-  const caption = representation || description || null;
+  const caption = summaryText || representation || description || null;
 
   return (
     <Box>
@@ -551,7 +544,15 @@ function TreeNodeView({
         <Box
           data-card
           data-node={`${node.component}@${depth}`}
+          role="button"
+          tabIndex={0}
+          aria-label={`${t("generative:rag.composite.configureNode")}: ${name}`}
           onClick={() => onEdit(node.nodeId)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            onEdit(node.nodeId);
+          }}
           sx={{
             display: "flex",
             alignItems: "center",

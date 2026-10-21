@@ -87,6 +87,11 @@ class ParallelRetriever(CompositeRetriever):
         zh="合并 {merge_strategy}",
     )
 
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the merge-strategy path."""
+        return {"merge_strategy": "merge_strategy"}
+
     def __init__(self, **kwargs):
         """Initialize the parallel retriever with a merge strategy.
 

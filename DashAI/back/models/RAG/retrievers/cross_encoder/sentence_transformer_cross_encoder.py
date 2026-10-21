@@ -12,7 +12,7 @@ from DashAI.back.core.schema_fields import (
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.documents import Chunk, RAGDocument
 from DashAI.back.models.RAG.exceptions import RAGRetrieverError
 from DashAI.back.models.RAG.retrievers.cross_encoder.cross_encoder_retriever import (
     CrossEncoderRetriever,
@@ -274,6 +274,11 @@ class SentenceTransformerCrossEncoderRetriever(CrossEncoderRetriever):
         zh="模型 {model_name} · top-k {top_k}",
     )
 
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the cross-encoder model name and final top-k paths."""
+        return {"model_name": "model_name", "top_k": "top_k"}
+
     def __init__(self, **kwargs):
         """Initialize the SentenceTransformer cross-encoder retriever.
 
@@ -376,6 +381,7 @@ class SentenceTransformerCrossEncoderRetriever(CrossEncoderRetriever):
         env_RAG_path: str,  # noqa: N803
         chunks: Dict[int, Dict[int, Chunk]],
         persistence: Any,
+        documents: Dict[int, RAGDocument] | None = None,
     ) -> None:
         """Inject runtime infrastructure and load the cross-encoder model.
 
@@ -388,6 +394,7 @@ class SentenceTransformerCrossEncoderRetriever(CrossEncoderRetriever):
             chunks: Nested dictionary mapping document IDs to chunk IDs to
                 :class:`Chunk` instances.
             persistence: Persistence object.
+            documents: Optional document mapping forwarded to the base.
         """
-        super().inject_infra(env_RAG_path, chunks, persistence)
+        super().inject_infra(env_RAG_path, chunks, persistence, documents)
         self.load()

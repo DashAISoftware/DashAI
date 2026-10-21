@@ -239,6 +239,21 @@
     "retrieverConfig": {
       "modelLabel": "检索模型"
     },
+    "schemaSummary": {
+      "labels": {
+        "b": "b",
+        "embedding_model": "嵌入模型",
+        "k1": "k1",
+        "max_chunks": "最大片段",
+        "max_iters": "最大迭代",
+        "merge_strategy": "合并",
+        "mmr_lambda": "MMR λ",
+        "model_name": "模型",
+        "similarity_function": "相似度",
+        "similarity_metric": "相似度",
+        "top_k": "top-k"
+      }
+    },
     "session": {
       "notFound": "未找到会话"
     },

@@ -11,10 +11,16 @@ unparseable model response drive retrieval without anyone noticing.
 Contract
 --------
 ``{"sufficient": true}`` — the pool answers the query.
-``{"sufficient": false, "top_k": <int >= 1>}`` — the depth retriever must
-delegate again for a larger retrieval size.
-``{"sufficient": false, "children": [<int indices >= 0>]}`` — the ensemble
-retriever must consult the listed child retrievers.
+
+An insufficient verdict carries any combination of:
+
+* ``call_retrievers`` — ``{<1-based retriever index>: <top_k>}``;
+* ``request_chunks`` — ``{<document id>: [<chunk positions>]}``;
+* ``discard`` — ``{<document id>: [<chunk positions>]}``.
+
+Requested and discarded chunks persist across rounds and can override each
+other (the last action wins). An insufficient verdict that performs no action at
+all is rejected: it cannot make progress.
 
 Unknown keys are tolerated; the contract fields are not.
 """
@@ -24,8 +30,8 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
-from typing import Any, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
 
 from DashAI.back.models.RAG.exceptions.retriever import (
     RAGRetrieverEvaluationError,
@@ -39,8 +45,9 @@ _FENCE_RE = re.compile(r"```[a-zA-Z0-9_-]*")
 
 #: Canonical contract field names, shared with the retrievers consuming a verdict.
 SUFFICIENT_KEY = "sufficient"
-TOP_K_KEY = "top_k"
-CHILDREN_KEY = "children"
+CALL_RETRIEVERS_KEY = "call_retrievers"
+REQUEST_CHUNKS_KEY = "request_chunks"
+DISCARD_KEY = "discard"
 
 
 @dataclass(frozen=True)
@@ -51,17 +58,21 @@ class RetrievalVerdict:
     ----------
     sufficient : bool
         Whether the accumulated pool answers the query.
-    top_k : Optional[int]
-        For an insufficient depth verdict, the retrieval size the next round
-        should request. Must be at least ``1`` when present.
-    children : Optional[List[int]]
-        For an insufficient ensemble verdict, the child retriever indices to
-        consult next. Indices must be at least ``0`` when present.
+    call_retrievers : Dict[int, int]
+        Mapping of 1-based retriever index to the number of chunks to retrieve
+        from it next. Empty when no retriever call is requested.
+    request_chunks : Dict[int, List[int]]
+        Mapping of document id to chunk positions to include in the pool. Empty
+        when no chunk is explicitly requested.
+    discard : Dict[int, List[int]]
+        Mapping of document id to chunk positions to exclude from the pool.
+        Empty when no chunk is discarded.
     """
 
     sufficient: bool
-    top_k: Optional[int] = None
-    children: Optional[List[int]] = None
+    call_retrievers: Dict[int, int] = field(default_factory=dict)
+    request_chunks: Dict[int, List[int]] = field(default_factory=dict)
+    discard: Dict[int, List[int]] = field(default_factory=dict)
 
 
 def _preview(raw: Any) -> str:
@@ -112,68 +123,155 @@ def _extract_json_object(text: str) -> str:
     return text[start : end + 1]
 
 
-def _validate_top_k(value: Any, raw: Any) -> int:
-    """Validate the optional ``top_k`` field.
+def _coerce_key(value: Any, key: str, minimum: int, raw: Any) -> int:
+    """Coerce a mapping key to an integer honouring the contract bounds.
 
     Parameters
     ----------
     value : Any
-        Raw ``top_k`` value from the parsed object.
+        Raw mapping key (an integer or a digit string).
+    key : str
+        Contract field name, echoed in error messages.
+    minimum : int
+        Smallest accepted value.
     raw : Any
-        Original payload (a string or a decoded mapping), echoed in the error
-        message.
+        Original payload, echoed in the error message.
 
     Returns
     -------
     int
-        The validated positive retrieval size.
+        The coerced key.
 
     Raises
     ------
     RAGRetrieverEvaluationError
-        If the value is not an integer greater than or equal to ``1``.
+        If the key is neither an integer nor a digit string, or is below
+        ``minimum``.
     """
-    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+    if isinstance(value, bool):
         raise RAGRetrieverEvaluationError(
-            "'top_k' must be an integer greater than or equal to 1, got "
-            f"{value!r}. Preview: {_preview(raw)}"
+            f"'{key}' keys must be integers greater than or equal to {minimum}, "
+            f"got {value!r}. Preview: {_preview(raw)}"
+        )
+    if isinstance(value, int):
+        coerced = value
+    elif isinstance(value, str) and value.isdigit():
+        coerced = int(value)
+    else:
+        raise RAGRetrieverEvaluationError(
+            f"'{key}' keys must be integers greater than or equal to {minimum}, "
+            f"got {value!r}. Preview: {_preview(raw)}"
+        )
+    if coerced < minimum:
+        raise RAGRetrieverEvaluationError(
+            f"'{key}' keys must be integers greater than or equal to {minimum}, "
+            f"got {value!r}. Preview: {_preview(raw)}"
+        )
+    return coerced
+
+
+def _coerce_value(value: Any, key: str, minimum: int, raw: Any) -> int:
+    """Coerce a mapping value to an integer honouring the contract bounds."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        raise RAGRetrieverEvaluationError(
+            f"'{key}' values must be integers greater than or equal to {minimum}, "
+            f"got {value!r}. Preview: {_preview(raw)}"
         )
     return value
 
 
-def _validate_children(value: Any, raw: Any) -> List[int]:
-    """Validate the optional ``children`` field.
+def _validate_call_retrievers(value: Any, raw: Any) -> Dict[int, int]:
+    """Validate the ``call_retrievers`` mapping.
 
     Parameters
     ----------
     value : Any
-        Raw ``children`` value from the parsed object.
+        Raw ``call_retrievers`` value from the parsed verdict.
     raw : Any
-        Original payload (a string or a decoded mapping), echoed in the error
-        message.
+        Original payload, echoed in error messages.
 
     Returns
     -------
-    List[int]
-        The validated list of non-negative child indices (unchanged order).
+    Dict[int, int]
+        1-based retriever index to requested chunk count.
 
     Raises
     ------
     RAGRetrieverEvaluationError
-        If the value is not a list of integers greater than or equal to ``0``.
+        If the value is not a mapping, a key cannot be coerced to an index
+        ``>= 1``, two keys collide after coercion, or a value is not an integer
+        ``>= 1``.
     """
-    if not isinstance(value, list):
+    if not isinstance(value, Mapping):
         raise RAGRetrieverEvaluationError(
-            f"'children' must be a list of integers, got {type(value).__name__}. "
-            f"Preview: {_preview(raw)}"
+            f"'{CALL_RETRIEVERS_KEY}' must be a mapping of retriever index to "
+            f"top_k, got {type(value).__name__}. Preview: {_preview(raw)}"
         )
-    for index in value:
-        if isinstance(index, bool) or not isinstance(index, int) or index < 0:
+    calls: Dict[int, int] = {}
+    seen: set[int] = set()
+    for raw_index, raw_top_k in value.items():
+        index = _coerce_key(raw_index, CALL_RETRIEVERS_KEY, 1, raw)
+        if index in seen:
             raise RAGRetrieverEvaluationError(
-                "'children' must contain only integers greater than or equal to "
-                f"0, got {index!r}. Preview: {_preview(raw)}"
+                f"'{CALL_RETRIEVERS_KEY}' contains duplicate key {index!r} "
+                f"after integer coercion. Preview: {_preview(raw)}"
             )
-    return list(value)
+        seen.add(index)
+        calls[index] = _coerce_value(raw_top_k, CALL_RETRIEVERS_KEY, 1, raw)
+    return calls
+
+
+def _validate_chunk_map(value: Any, key: str, raw: Any) -> Dict[int, List[int]]:
+    """Validate a ``request_chunks``/``discard`` document-to-positions mapping.
+
+    Parameters
+    ----------
+    value : Any
+        Raw mapping from the parsed verdict.
+    key : str
+        Contract field name, echoed in error messages.
+    raw : Any
+        Original payload, echoed in error messages.
+
+    Returns
+    -------
+    Dict[int, List[int]]
+        Document id to chunk positions, deduplicated in first-seen order.
+
+    Raises
+    ------
+    RAGRetrieverEvaluationError
+        If the value is not a mapping, a document id cannot be coerced to an
+        id ``>= 0``, two ids collide after coercion, a value is not a list, or
+        a position is not an integer ``>= 0``.
+    """
+    if not isinstance(value, Mapping):
+        raise RAGRetrieverEvaluationError(
+            f"'{key}' must be a mapping of document id to chunk positions, got "
+            f"{type(value).__name__}. Preview: {_preview(raw)}"
+        )
+    chunks: Dict[int, List[int]] = {}
+    seen: set[int] = set()
+    for raw_document_id, raw_positions in value.items():
+        document_id = _coerce_key(raw_document_id, key, 0, raw)
+        if document_id in seen:
+            raise RAGRetrieverEvaluationError(
+                f"'{key}' contains duplicate key {document_id!r} after integer "
+                f"coercion. Preview: {_preview(raw)}"
+            )
+        seen.add(document_id)
+        if not isinstance(raw_positions, list):
+            raise RAGRetrieverEvaluationError(
+                f"'{key}' values must be lists of chunk positions, got "
+                f"{type(raw_positions).__name__}. Preview: {_preview(raw)}"
+            )
+        positions: List[int] = []
+        for raw_position in raw_positions:
+            position = _coerce_value(raw_position, key, 0, raw)
+            if position not in positions:
+                positions.append(position)
+        chunks[document_id] = positions
+    return chunks
 
 
 def _validate_verdict(parsed: Any, raw: Any) -> RetrievalVerdict:
@@ -196,7 +294,8 @@ def _validate_verdict(parsed: Any, raw: Any) -> RetrievalVerdict:
     ------
     RAGRetrieverEvaluationError
         If the payload is not a mapping, ``sufficient`` is missing or not a
-        boolean, or an optional field is present with the wrong type/shape.
+        boolean, an action map has the wrong type/shape, a chunk is both
+        requested and discarded, or an insufficient verdict performs no action.
     """
     if not isinstance(parsed, Mapping):
         raise RAGRetrieverEvaluationError(
@@ -209,18 +308,54 @@ def _validate_verdict(parsed: Any, raw: Any) -> RetrievalVerdict:
             f"'sufficient' must be present and a boolean. Preview: {_preview(raw)}"
         )
 
-    top_k: int | None = None
-    if TOP_K_KEY in parsed:
-        top_k = _validate_top_k(parsed[TOP_K_KEY], raw)
+    calls: Dict[int, int] = {}
+    if CALL_RETRIEVERS_KEY in parsed:
+        calls = _validate_call_retrievers(parsed[CALL_RETRIEVERS_KEY], raw)
 
-    children: List[int] | None = None
-    if CHILDREN_KEY in parsed:
-        children = _validate_children(parsed[CHILDREN_KEY], raw)
+    requests: Dict[int, List[int]] = {}
+    if REQUEST_CHUNKS_KEY in parsed:
+        requests = _validate_chunk_map(
+            parsed[REQUEST_CHUNKS_KEY], REQUEST_CHUNKS_KEY, raw
+        )
+
+    discards: Dict[int, List[int]] = {}
+    if DISCARD_KEY in parsed:
+        discards = _validate_chunk_map(parsed[DISCARD_KEY], DISCARD_KEY, raw)
+
+    for document_id, positions in requests.items():
+        conflicting = set(positions) & set(discards.get(document_id, []))
+        if conflicting:
+            raise RAGRetrieverEvaluationError(
+                f"Chunk positions {sorted(conflicting)} of document "
+                f"{document_id} cannot be both requested and discarded in the "
+                f"same verdict. Preview: {_preview(raw)}"
+            )
+
+    if not sufficient and not calls:
+        has_requested_positions = False
+        for positions in requests.values():
+            if positions:
+                has_requested_positions = True
+                break
+        has_discarded_positions = False
+        if not has_requested_positions:
+            for positions in discards.values():
+                if positions:
+                    has_discarded_positions = True
+                    break
+        if not has_requested_positions and not has_discarded_positions:
+            raise RAGRetrieverEvaluationError(
+                "An insufficient verdict must perform at least one action with "
+                f"at least one chunk position: '{CALL_RETRIEVERS_KEY}', "
+                f"'{REQUEST_CHUNKS_KEY}' or '{DISCARD_KEY}'. "
+                f"Preview: {_preview(raw)}"
+            )
 
     return RetrievalVerdict(
         sufficient=sufficient,
-        top_k=top_k,
-        children=children,
+        call_retrievers=calls,
+        request_chunks=requests,
+        discard=discards,
     )
 
 
@@ -229,8 +364,8 @@ def parse_evaluation_output(raw: str) -> RetrievalVerdict:
 
     Markdown fences are stripped, the substring from the first ``{`` to the last
     ``}`` is taken, and the result must be a JSON object carrying a boolean
-    ``sufficient`` field. The optional ``top_k`` and ``children`` fields are
-    validated when present; unknown keys are ignored.
+    ``sufficient`` field. The optional action maps are validated when present;
+    unknown keys are ignored.
 
     Parameters
     ----------
@@ -247,7 +382,7 @@ def parse_evaluation_output(raw: str) -> RetrievalVerdict:
     RAGRetrieverEvaluationError
         If the output contains no JSON object, the JSON is invalid, the parsed
         value is not a mapping, ``sufficient`` is missing or not a boolean, or
-        an optional field is present with the wrong type/shape.
+        an action map violates the contract.
     """
     text = _FENCE_RE.sub("", str(raw)).strip()
     candidate = _extract_json_object(text)
@@ -294,80 +429,73 @@ def parse_evaluation_arguments(arguments: Any) -> RetrievalVerdict:
     )
 
 
-def require_for_depth(verdict: RetrievalVerdict) -> int:
-    """Return the retrieval size an insufficient depth verdict requires.
+def validate_call_indices(
+    calls: Dict[int, int], retriever_count: int
+) -> Dict[int, int]:
+    """Validate that every retriever index addresses a configured retriever.
 
     Parameters
     ----------
-    verdict : RetrievalVerdict
-        A verdict produced by :func:`parse_evaluation_output`.
+    calls : Dict[int, int]
+        A validated ``call_retrievers`` mapping.
+    retriever_count : int
+        Number of retrievers the caller may address.
 
     Returns
     -------
-    int
-        The requested retrieval size (contract field ``top_k``).
+    Dict[int, int]
+        The same mapping, unchanged.
 
     Raises
     ------
     RAGRetrieverEvaluationError
-        If the verdict is marked sufficient (the caller should have returned) or
-        an insufficient verdict omits ``top_k``.
+        If any index is outside ``1..retriever_count``.
     """
-    if verdict.sufficient:
-        raise RAGRetrieverEvaluationError(
-            "Expected an insufficient verdict with a retrieval size, but the "
-            "verdict is marked sufficient."
-        )
-    if verdict.top_k is None:
-        raise RAGRetrieverEvaluationError(
-            "An insufficient depth evaluation must provide a positive 'top_k' "
-            "retrieval size."
-        )
-    return verdict.top_k
+    for index in calls:
+        if index < 1 or index > retriever_count:
+            raise RAGRetrieverEvaluationError(
+                f"Retriever index {index} is out of range for "
+                f"{retriever_count} configured retriever(s); indices are "
+                "1-based."
+            )
+    return calls
 
 
-def require_for_ensemble(verdict: RetrievalVerdict, child_count: int) -> List[int]:
-    """Return the child indices an insufficient ensemble verdict selects.
+def require_planning_calls(
+    verdict: RetrievalVerdict, retriever_count: int
+) -> Dict[int, int]:
+    """Return the retriever calls of an ensemble planning verdict.
 
-    Duplicate indices are collapsed preserving their first-seen order. Every
-    index must address a configured child.
+    The planning evaluation runs over an empty pool, so it must be insufficient
+    and must request at least one retriever.
 
     Parameters
     ----------
     verdict : RetrievalVerdict
-        A verdict produced by :func:`parse_evaluation_output`.
-    child_count : int
+        The verdict of the planning evaluation.
+    retriever_count : int
         Number of child retrievers available to the ensemble.
 
     Returns
     -------
-    List[int]
-        Deduplicated, order-preserving child indices.
+    Dict[int, int]
+        The validated ``call_retrievers`` mapping.
 
     Raises
     ------
     RAGRetrieverEvaluationError
-        If the verdict is marked sufficient, ``children`` is missing or empty,
-        or any index is out of range for ``child_count``.
+        If the verdict is marked sufficient, requests no retriever, or names an
+        out-of-range retriever index.
     """
     if verdict.sufficient:
         raise RAGRetrieverEvaluationError(
-            "An ensemble evaluation over an empty pool must select children, "
-            "but the verdict is marked sufficient."
+            "An ensemble planning evaluation over an empty pool must be "
+            "insufficient and request retrievers, but the verdict is marked "
+            "sufficient."
         )
-    children = verdict.children
-    if not children:
+    if not verdict.call_retrievers:
         raise RAGRetrieverEvaluationError(
-            "An insufficient ensemble evaluation must select a non-empty "
-            "'children' list."
+            "An insufficient ensemble planning evaluation must request at "
+            f"least one retriever via '{CALL_RETRIEVERS_KEY}'."
         )
-    deduplicated: List[int] = []
-    for index in children:
-        if index < 0 or index >= child_count:
-            raise RAGRetrieverEvaluationError(
-                f"Child index {index} is out of range for {child_count} "
-                "configured children."
-            )
-        if index not in deduplicated:
-            deduplicated.append(index)
-    return deduplicated
+    return validate_call_indices(verdict.call_retrievers, retriever_count)

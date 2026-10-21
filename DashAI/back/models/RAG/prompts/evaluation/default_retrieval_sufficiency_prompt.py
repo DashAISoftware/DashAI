@@ -25,26 +25,42 @@ TEMPLATES = {
         "User message:\n"
         "{input}\n"
         "\n"
-        "Retrieved chunks:\n"
-        "{chunks}\n"
+        "Documents: {documents.names}\n"
         "\n"
-        'Child retriever catalog, as "index: retriever name": '
-        "{children_catalog}\n"
+        "Document description: {documents.description}\n"
+        "\n"
+        "Retrieved chunks (each line shows its document_id and position):\n"
+        "{chunks}\n"
         "\n"
         "Candidate pool size: {pool_size} chunks.\n"
         "\n"
-        "If the chunks are sufficient, respond with "
-        '{"sufficient": true}.\n'
-        "If more chunks are needed from the same retrievers, respond with "
-        '{"sufficient": false, "top_k": <positive integer>}, using the '
-        "suggested chunk count for the next retrieval round.\n"
-        "To consult specific child retrievers, respond with "
-        '{"sufficient": false, "children": [<indices selected from: '
-        "{children_catalog}>]}.\n"
-        "When the retrieved chunks are absent or empty, decide which "
-        "retrievers to consult.\n"
-        'When no child retriever catalog is available, the "children" field '
-        "must not appear.\n"
+        "Maximum retrievable chunks: {topk}.\n"
+        "\n"
+        "Retriever catalog: {retriever.description}\n"
+        "\n"
+        "Respond by calling the function evaluate_retrieval_sufficiency with a "
+        "single JSON object with this shape:\n"
+        '{"sufficient": <true or false>, "call_retrievers": '
+        '{"<retriever index>": <top_k>}, "request_chunks": '
+        '{"<document id>": [<chunk positions>]}, "discard": '
+        '{"<document id>": [<chunk positions>]}}\n'
+        "\n"
+        '- "sufficient" is required and says whether the retrieved chunks '
+        "answer the user message.\n"
+        '- "call_retrievers" maps 1-based retriever indices from the retriever '
+        "catalog to the number of chunks to retrieve from that retriever next. "
+        "Indices must be at least 1.\n"
+        '- "request_chunks" maps document ids to chunk positions (taken from '
+        "the retrieved chunk lines) to include in the pool, even if no "
+        "retriever returned them.\n"
+        '- "discard" maps document ids to chunk positions (taken from the '
+        "retrieved chunk lines) to exclude from the pool.\n"
+        "- Requests and discards persist across rounds and can override each "
+        "other: the last action applied to a chunk wins.\n"
+        '- When "sufficient" is true, omit "call_retrievers", '
+        '"request_chunks" and "discard".\n'
+        "- An insufficient verdict must request at least one retriever, chunk "
+        "or discard.\n"
         "\n"
         "Respond with ONLY one JSON object, with no markdown fences and no "
         "extra text."
@@ -57,26 +73,43 @@ TEMPLATES = {
         "Mensaje del usuario:\n"
         "{input}\n"
         "\n"
-        "Fragmentos recuperados:\n"
-        "{chunks}\n"
+        "Documentos: {documents.names}\n"
         "\n"
-        'Catálogo de recuperadores hijos, como "índice: nombre del '
-        'recuperador": {children_catalog}\n'
+        "Descripción de los documentos: {documents.description}\n"
+        "\n"
+        "Fragmentos recuperados (cada línea muestra su document_id y posición):\n"
+        "{chunks}\n"
         "\n"
         "Tamaño del conjunto de candidatos: {pool_size} fragmentos.\n"
         "\n"
-        "Si los fragmentos son suficientes, responde con "
-        '{"sufficient": true}.\n'
-        "Si necesitas más fragmentos de los mismos recuperadores, responde con "
-        '{"sufficient": false, "top_k": <entero positivo>}, usando la cantidad '
-        "sugerida de fragmentos para la siguiente ronda de recuperación.\n"
-        "Para consultar recuperadores hijos específicos, responde con "
-        '{"sufficient": false, "children": [<índices seleccionados de: '
-        "{children_catalog}>]}.\n"
-        "Cuando los fragmentos recuperados estén ausentes o vacíos, decide qué "
-        "recuperadores consultar.\n"
-        "Cuando no haya un catálogo de recuperadores hijos disponible, el "
-        'campo "children" no debe aparecer.\n'
+        "Máximo de fragmentos recuperables: {topk}.\n"
+        "\n"
+        "Catálogo de recuperadores: {retriever.description}\n"
+        "\n"
+        "Responde llamando a la función evaluate_retrieval_sufficiency con un "
+        "único objeto JSON con esta forma:\n"
+        '{"sufficient": <true o false>, "call_retrievers": '
+        '{"<índice del recuperador>": <top_k>}, "request_chunks": '
+        '{"<id del documento>": [<posiciones de fragmentos>]}, "discard": '
+        '{"<id del documento>": [<posiciones de fragmentos>]}}\n'
+        "\n"
+        '- "sufficient" es obligatorio e indica si los fragmentos recuperados '
+        "responden al mensaje del usuario.\n"
+        '- "call_retrievers" asigna índices de recuperador basados en 1 del '
+        "catálogo al número de fragmentos a recuperar de ese recuperador en la "
+        "siguiente ronda. Los índices deben ser al menos 1.\n"
+        '- "request_chunks" asigna ids de documento a posiciones de fragmento '
+        "(tomadas de las líneas de fragmentos recuperados) que se incluirán en "
+        "el conjunto, aunque ningún recuperador las haya devuelto.\n"
+        '- "discard" asigna ids de documento a posiciones de fragmento (tomadas '
+        "de las líneas de fragmentos recuperados) que se excluirán del "
+        "conjunto.\n"
+        "- Las solicitudes y descartes persisten entre rondas y pueden "
+        "sobrescribirse: la última acción aplicada a un fragmento prevalece.\n"
+        '- Cuando "sufficient" sea true, omite "call_retrievers", '
+        '"request_chunks" y "discard".\n'
+        "- Un veredicto insuficiente debe solicitar al menos un recuperador, "
+        "fragmento o descarte.\n"
         "\n"
         "Responde ÚNICAMENTE con un objeto JSON, sin bloques de código ni "
         "texto adicional."
@@ -89,26 +122,42 @@ TEMPLATES = {
         "Mensagem do usuário:\n"
         "{input}\n"
         "\n"
-        "Trechos recuperados:\n"
-        "{chunks}\n"
+        "Documentos: {documents.names}\n"
         "\n"
-        'Catálogo de recuperadores filhos, como "índice: nome do '
-        'recuperador": {children_catalog}\n'
+        "Descrição dos documentos: {documents.description}\n"
+        "\n"
+        "Trechos recuperados (cada linha mostra seu document_id e posição):\n"
+        "{chunks}\n"
         "\n"
         "Tamanho do conjunto de candidatos: {pool_size} trechos.\n"
         "\n"
-        "Se os trechos forem suficientes, responda com "
-        '{"sufficient": true}.\n'
-        "Se precisar de mais trechos dos mesmos recuperadores, responda com "
-        '{"sufficient": false, "top_k": <inteiro positivo>}, usando a '
-        "quantidade sugerida de trechos para a próxima rodada de recuperação.\n"
-        "Para consultar recuperadores filhos específicos, responda com "
-        '{"sufficient": false, "children": [<índices selecionados de: '
-        "{children_catalog}>]}.\n"
-        "Quando os trechos recuperados estiverem ausentes ou vazios, decida "
-        "quais recuperadores consultar.\n"
-        "Quando não houver um catálogo de recuperadores filhos disponível, o "
-        'campo "children" não deve aparecer.\n'
+        "Máximo de trechos recuperáveis: {topk}.\n"
+        "\n"
+        "Catálogo de recuperadores: {retriever.description}\n"
+        "\n"
+        "Responda chamando a função evaluate_retrieval_sufficiency com um "
+        "único objeto JSON com esta forma:\n"
+        '{"sufficient": <true ou false>, "call_retrievers": '
+        '{"<índice do recuperador>": <top_k>}, "request_chunks": '
+        '{"<id do documento>": [<posições de trechos>]}, "discard": '
+        '{"<id do documento>": [<posições de trechos>]}}\n'
+        "\n"
+        '- "sufficient" é obrigatório e indica se os trechos recuperados '
+        "respondem à mensagem do usuário.\n"
+        '- "call_retrievers" mapeia índices de recuperador baseados em 1 do '
+        "catálogo para o número de trechos a recuperar desse recuperador na "
+        "próxima rodada. Os índices devem ser pelo menos 1.\n"
+        '- "request_chunks" mapeia ids de documento para posições de trecho '
+        "(obtidas das linhas de trechos recuperados) a incluir no conjunto, "
+        "mesmo que nenhum recuperador as tenha retornado.\n"
+        '- "discard" mapeia ids de documento para posições de trecho (obtidas '
+        "das linhas de trechos recuperados) a excluir do conjunto.\n"
+        "- Solicitações e descartes persistem entre rodadas e podem ser "
+        "sobrescritos: a última ação aplicada a um trecho prevalece.\n"
+        '- Quando "sufficient" for true, omita "call_retrievers", '
+        '"request_chunks" e "discard".\n'
+        "- Um veredicto insuficiente deve solicitar pelo menos um recuperador, "
+        "trecho ou descarte.\n"
         "\n"
         "Responda APENAS com um objeto JSON, sem blocos de código e sem texto "
         "adicional."
@@ -165,13 +214,13 @@ class DefaultRetrievalSufficiencyPrompt(RetrievalSufficiencyPrompt):
         zh="默认检索充分性提示词",
     )
 
-    required_placeholders = ["{input}", "{chunks}"]
-    optional_placeholders = ["{children_catalog}", "{pool_size}"]
+    required_placeholders = RetrievalSufficiencyPrompt.required_placeholders
+    optional_placeholders = RetrievalSufficiencyPrompt.optional_placeholders
 
     metadata = {
         "name": "Default Retrieval Sufficiency Prompt",
         "description": "Default prompt template for deciding whether retrieved"
-        " chunks are sufficient and which retrievers to consult next.",
+        " chunks are sufficient and which retrievers or chunks to fetch next.",
         "type": "evaluation",
         "technique": "sufficiency",
         "required_placeholders": required_placeholders,
@@ -179,15 +228,32 @@ class DefaultRetrievalSufficiencyPrompt(RetrievalSufficiencyPrompt):
         "placeholder_descriptions": {
             "{input}": "The current user message the chunks must answer.",
             "{chunks}": (
-                "The already-retrieved chunks under evaluation; empty when the "
-                "previous round returned nothing."
+                "The chunks under evaluation, one line per chunk carrying its "
+                "document_id, position and text; a preformatted string is kept "
+                "verbatim."
             ),
             "{children_catalog}": (
-                "Optional child-retriever catalog; the whole line disappears "
-                "when it is not provided."
+                "Optional alias for the retriever catalog; the whole line "
+                "disappears when it is not provided."
             ),
             "{pool_size}": (
                 "Optional candidate pool size; the whole line disappears when "
+                "it is not provided."
+            ),
+            "{topk}": (
+                "Optional maximum number of retrievable chunks; the whole line "
+                "disappears when it is not provided."
+            ),
+            "{retriever.description}": (
+                "Optional JSON catalog of the retrievers; the whole line "
+                "disappears when it is not provided."
+            ),
+            "{documents.names}": (
+                "Optional comma-separated document names; the whole line "
+                "disappears when it is not provided."
+            ),
+            "{documents.description}": (
+                "Optional JSON document summary; the whole line disappears when "
                 "it is not provided."
             ),
         },
@@ -221,45 +287,3 @@ class DefaultRetrievalSufficiencyPrompt(RetrievalSufficiencyPrompt):
                 f"No template available for language: {self.language}"
             )
         self._validate()
-
-    def format(
-        self,
-        input: str,
-        chunks: str,
-        children_catalog: str | None = None,
-        pool_size: int | None = None,
-        **kwargs: Any,
-    ) -> str:
-        """Render the default sufficiency prompt.
-
-        Parameters
-        ----------
-        input : str
-            The current user message.
-        chunks : str
-            The already-formatted block of retrieved chunks.
-        children_catalog : str | None
-            Optional child-retriever catalog. When ``None`` the owning line is
-            removed from the rendered prompt.
-        pool_size : int | None
-            Optional candidate pool size. When ``None`` the owning line is
-            removed from the rendered prompt.
-        **kwargs
-            Unused.
-
-        Returns
-        -------
-        str
-            The rendered prompt.
-
-        Raises
-        ------
-        RAGPromptTemplateError
-            If the template is missing required placeholders.
-        """
-        self._validate()
-        return self._render(
-            self.template,
-            {"{input}": input, "{chunks}": chunks},
-            {"{children_catalog}": children_catalog, "{pool_size}": pool_size},
-        )

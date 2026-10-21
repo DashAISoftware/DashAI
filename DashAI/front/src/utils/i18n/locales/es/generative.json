@@ -245,6 +245,21 @@
     "retrieverConfig": {
       "modelLabel": "Modelo de recuperación"
     },
+    "schemaSummary": {
+      "labels": {
+        "b": "b",
+        "embedding_model": "modelo de embedding",
+        "k1": "k1",
+        "max_chunks": "máx. fragmentos",
+        "max_iters": "máx. iteraciones",
+        "merge_strategy": "fusión",
+        "mmr_lambda": "MMR λ",
+        "model_name": "modelo",
+        "similarity_function": "similitud",
+        "similarity_metric": "similitud",
+        "top_k": "top-k"
+      }
+    },
     "session": {
       "notFound": "Sesión no encontrada"
     },

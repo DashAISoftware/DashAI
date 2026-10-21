@@ -21,11 +21,16 @@ example cascade stages of a sequential retriever or re-rank candidates), so a
 missing reference resolves to nothing and is not an error.
 """
 
+import logging
 import re
 from typing import Any, Dict, List
 
 from DashAI.back.core.utils import MultilingualString
 from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.retrievers.ref_utils import is_component_ref
+from DashAI.back.models.RAG.retrievers.retrieval_contracts import SchemaSummary
+
+log = logging.getLogger(__name__)
 
 #: Text rendered when a representation placeholder cannot be resolved.
 _MISSING_VALUE = "—"
@@ -36,17 +41,7 @@ _LANGUAGES = ("en", "es", "pt", "de", "zh")
 _PLACEHOLDER_RE = re.compile(r"\{([^{}]+)\}")
 
 #: Trace keys populated from the model itself; extras may never shadow them.
-_CANONICAL_KEYS = ("name", "chunks", "description", "representation")
-
-
-def _is_component_ref(value: Any) -> bool:
-    """Return whether ``value`` is a ``{component, params}`` reference dict."""
-    return (
-        isinstance(value, dict)
-        and "component" in value
-        and "params" in value
-        and isinstance(value.get("component"), str)
-    )
+_CANONICAL_KEYS = ("name", "chunks", "description", "representation", "schema_summary")
 
 
 def _render_primitive(value: Any) -> str:
@@ -69,7 +64,7 @@ def _resolve_param(params: Any, path: List[str]) -> str:
     if raw is None:
         return _MISSING_VALUE
 
-    ref = raw if _is_component_ref(raw) else None
+    ref = raw if is_component_ref(raw) else None
     if not rest:
         if ref is not None:
             return raw["component"] or _MISSING_VALUE
@@ -153,6 +148,35 @@ def _serialize_description(model: Any) -> Dict[str, str] | None:
     return description or None
 
 
+def _serialize_schema_summary(model: Any) -> SchemaSummary | None:
+    """Return the model's recursive schema summary, or ``None`` on failure.
+
+    Parameters
+    ----------
+    model : Any
+        Retriever whose summary is serialized into the trace node.
+
+    Returns
+    -------
+    SchemaSummary | None
+        The summary, or ``None`` when the model exposes no summary method or
+        raises while building it. Unexpected failures are logged so a broken
+        retriever does not degrade traces silently.
+    """
+    getter = getattr(model, "get_schema_summary", None)
+    if getter is None:
+        return None
+    try:
+        return getter()
+    except Exception:  # noqa: BLE001 - a broken summary must not break the trace
+        log.warning(
+            "Failed to build the schema summary for %s.",
+            type(model).__name__,
+            exc_info=True,
+        )
+        return None
+
+
 def chunk_ref(chunk: Chunk) -> str:
     """Build the canonical reference string for a chunk.
 
@@ -217,6 +241,10 @@ def retriever_trace(model: Any, chunks: List[Chunk], **extras: Any) -> Dict[str,
     representation = _render_representation(model)
     if representation is not None:
         node["representation"] = representation
+
+    schema_summary = _serialize_schema_summary(model)
+    if schema_summary is not None:
+        node["schema_summary"] = schema_summary
 
     node.update(extras)
     return node

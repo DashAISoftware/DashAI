@@ -23,16 +23,33 @@ class CustomRetrievalSufficiencyPrompt(RetrievalSufficiencyPrompt):
         "placeholder_descriptions": {
             "{input}": "The current user message the chunks must answer.",
             "{chunks}": (
-                "The already-retrieved chunks under evaluation; empty when the "
-                "previous round returned nothing."
+                "The chunks under evaluation, one line per chunk carrying its "
+                "document_id, position and text; a preformatted string is kept "
+                "verbatim."
             ),
             "{children_catalog}": (
-                "Optional child-retriever catalog; the whole line disappears "
-                "when it is not provided."
+                "Optional alias for the retriever catalog; the whole line "
+                "disappears when it is not provided."
             ),
             "{pool_size}": (
                 "Optional candidate pool size; the whole line disappears when "
                 "it is not provided."
+            ),
+            "{topk}": (
+                "Optional maximum number of retrievable chunks; the whole line "
+                "disappears when it is not provided."
+            ),
+            "{retriever.description}": (
+                "Optional JSON catalog of the retrievers; the whole line "
+                "disappears when it is not provided."
+            ),
+            "{documents.names}": (
+                "Optional comma-separated document names; the whole line "
+                "disappears when it is not provided."
+            ),
+            "{documents.description}": (
+                "Optional JSON document summary; the whole line disappears "
+                "when it is not provided."
             ),
         },
     }
@@ -53,45 +70,3 @@ class CustomRetrievalSufficiencyPrompt(RetrievalSufficiencyPrompt):
         """
         self.template = kwargs.pop("template")
         self._validate()
-
-    def format(
-        self,
-        input: str,
-        chunks: str,
-        children_catalog: str | None = None,
-        pool_size: int | None = None,
-        **kwargs: Any,
-    ) -> str:
-        """Render the custom sufficiency prompt.
-
-        Parameters
-        ----------
-        input : str
-            The current user message.
-        chunks : str
-            The already-formatted block of retrieved chunks.
-        children_catalog : str | None
-            Optional child-retriever catalog. When ``None`` the owning line is
-            removed from the rendered prompt.
-        pool_size : int | None
-            Optional candidate pool size. When ``None`` the owning line is
-            removed from the rendered prompt.
-        **kwargs
-            Unused.
-
-        Returns
-        -------
-        str
-            The rendered prompt.
-
-        Raises
-        ------
-        RAGPromptTemplateError
-            If the template is missing required placeholders.
-        """
-        self._validate()
-        return self._render(
-            self.template,
-            {"{input}": input, "{chunks}": chunks},
-            {"{children_catalog}": children_catalog, "{pool_size}": pool_size},
-        )

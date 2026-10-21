@@ -33,14 +33,19 @@ from DashAI.back.models.RAG.RAG_defaults import (
     default_retrieval_sufficiency_prompt,
 )
 from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
+    CALL_RETRIEVERS_KEY,
+    DISCARD_KEY,
+    REQUEST_CHUNKS_KEY,
     SUFFICIENT_KEY,
-    TOP_K_KEY,
-    RetrievalVerdict,
-    require_for_depth,
+    validate_call_indices,
 )
 from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_retriever import (
     LLMEvaluatedRetriever,
 )
+from DashAI.back.models.RAG.retrievers.composite.retrieval_context import (
+    RetrievalContext,
+)
+from DashAI.back.models.RAG.retrievers.composite.retrieval_pool import RetrievalPool
 from DashAI.back.models.RAG.retrievers.exceptions import CompositeValidationError
 
 
@@ -189,27 +194,50 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
     EXPECTED_FUNCTION: ClassVar[str] = "evaluate_retrieval_sufficiency"
     FUNCTION_DESCRIPTION: ClassVar[str] = (
         "Decide whether the retrieved chunks are sufficient to answer the user "
-        "message and, when they are not, how many chunks the next retrieval "
-        "round should request."
+        "message. Use call_retrievers with 1-based retriever indices mapped to "
+        "the number of chunks to retrieve from that retriever next (only index "
+        "1 is valid here). Use request_chunks and discard to include or exclude "
+        "specific chunk positions by document id. Requested and discarded chunks "
+        "persist across rounds and can override each other (the last action "
+        "wins)."
     )
-    # ``top_k`` stays optional in the JSON schema; the runtime validator
-    # requires it whenever ``sufficient`` is false.
     FUNCTION_PARAMETERS: ClassVar[Dict[str, Any]] = {
         "type": "object",
         "properties": {
             SUFFICIENT_KEY: {
                 "type": "boolean",
                 "description": (
-                    "Whether the retrieved chunks suffice. When false, top_k is "
-                    "required."
+                    "Whether the retrieved chunks suffice to answer the user message."
                 ),
             },
-            TOP_K_KEY: {
-                "type": "integer",
-                "minimum": 1,
+            CALL_RETRIEVERS_KEY: {
+                "type": "object",
+                "additionalProperties": {"type": "integer", "minimum": 1},
                 "description": (
-                    "When insufficient, the number of chunks the next retrieval "
-                    "round should request."
+                    "When insufficient, maps the 1-based retriever index (only "
+                    "1 is valid) to the number of chunks to retrieve next."
+                ),
+            },
+            REQUEST_CHUNKS_KEY: {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "array",
+                    "items": {"type": "integer", "minimum": 0},
+                },
+                "description": (
+                    "Maps document ids to chunk positions to include in the pool "
+                    "even if no retriever returned them."
+                ),
+            },
+            DISCARD_KEY: {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "array",
+                    "items": {"type": "integer", "minimum": 0},
+                },
+                "description": (
+                    "Maps document ids to chunk positions to exclude from the "
+                    "pool even if a retriever returns them."
                 ),
             },
         },
@@ -256,75 +284,88 @@ class LLMEvaluatedDepthRetriever(LLMEvaluatedRetriever):
         Raises
         ------
         RAGRetrieverEvaluationError
-            If an insufficient verdict omits ``top_k`` or the model output is
-            malformed.
+            If a verdict is malformed or names an out-of-range retriever.
         """
         child = self._children[0]
-        pool: List[Chunk] = []
+        context = RetrievalContext.from_retriever(self)
+        pool = RetrievalPool(self.max_chunks, context)
         child_nodes: List[Dict[str, Any]] = []
         rounds: List[Dict[str, Any]] = []
         requested_top_k: int | None = None
+        max_requested = 0
+        should_delegate = True
 
         for round_index in range(self.max_iters):
-            new_chunks, node = self._delegate(child, query, requested_top_k)
-            child_nodes.append(node)
-            pool = self._cap_pool(self._merge_new_chunks(pool, new_chunks))
+            delegating = should_delegate and pool.size() < self.max_chunks
             entry: Dict[str, Any] = {
                 "round": round_index + 1,
                 "name": type(child).__name__,
-                "requested_top_k": requested_top_k,
-                "returned": len(new_chunks),
+                "requested_top_k": requested_top_k if delegating else None,
+                "returned": 0,
                 "verdict": None,
+                "call_retrievers": {},
+                "request_chunks": {},
+                "discard": {},
             }
+            if delegating:
+                new_chunks, node = self._delegate(child, query, requested_top_k)
+                child_nodes.append(node)
+                pool.add(new_chunks)
+                # Largest size actually delegated. A child that ignores the
+                # ``top_k`` hint cannot extend the loop beyond ``max_iters``.
+                max_requested = max(max_requested, len(new_chunks))
+                entry["returned"] = len(new_chunks)
+            elif should_delegate:
+                # The pool is already full; still evaluate so request/discard
+                # actions can change its composition.
+                should_delegate = False
+                requested_top_k = None
             rounds.append(entry)
 
-            remaining = self.max_chunks - len(pool)
-            if remaining <= 0 or round_index == self.max_iters - 1:
+            if round_index == self.max_iters - 1:
                 break
 
-            verdict = self._evaluate(query, pool, include_children_catalog=False)
+            verdict = self._evaluate(query, pool, context)
+            calls = validate_call_indices(verdict.call_retrievers, 1)
+            entry["verdict"] = verdict.sufficient
+            entry["call_retrievers"] = dict(verdict.call_retrievers)
+            entry["request_chunks"] = dict(verdict.request_chunks)
+            entry["discard"] = dict(verdict.discard)
             if verdict.sufficient:
-                entry["verdict"] = True
+                # A sufficient verdict is terminal: chunk actions are not
+                # applied and unknown positions are never resolved.
                 break
-            entry["verdict"] = False
-            requested_top_k = self._next_top_k(verdict, len(pool))
 
-        return pool, self._build_trace(pool, child_nodes, rounds)
+            self._apply_verdict_actions(pool, verdict)
+            if 1 in calls:
+                requested_top_k = self._next_delegation_size(
+                    calls, max_requested, pool.discarded_count()
+                )
+                should_delegate = True
+            else:
+                requested_top_k = None
+                should_delegate = False
 
-    def _next_top_k(self, verdict: RetrievalVerdict, pool_size: int) -> int:
-        """Return the next delegation's retrieval-size hint.
+        pool_chunks = pool.materialize()
+        return pool_chunks, self._build_trace(pool_chunks, child_nodes, rounds)
 
-        The model's requested size is capped by ``max_chunks`` (a per-call
-        size, not a pool increment). When it would not add a chunk — e.g. a
-        deterministic child that already returned that many — it is raised to
-        the smallest size that can, so an unhelpful verdict cannot produce a
-        zero-progress round. The pool cap itself is enforced by the merge/cap
-        step, not by shrinking the request: a request below the current pool
-        size would make a deterministic child return its same prefix again and
-        stall until ``max_iters``.
+    def _next_delegation_size(
+        self, calls: Dict[int, int], max_requested: int, discarded_count: int
+    ) -> int:
+        """Return the next delegation size.
 
-        Parameters
-        ----------
-        verdict : RetrievalVerdict
-            An insufficient verdict carrying ``top_k``.
-        pool_size : int
-            Current number of pooled chunks.
-
-        Returns
-        -------
-        int
-            The retrieval-size hint for the next delegation (at least one
-            chunk more than the pool currently holds, when possible).
-
-        Raises
-        ------
-        RAGRetrieverEvaluationError
-            If the verdict lacks a positive ``top_k``.
+        The model's requested size is capped by ``max_chunks`` plus the number
+        of discarded slots. Discarded chunks still occupy the child's prefix,
+        so replacing one requires fetching past the pool cap; the pool itself
+        keeps materializing at most ``max_chunks`` chunks. When the request
+        would not exceed the largest size already delegated, it is raised to the
+        smallest size that can add a chunk.
         """
-        size = min(require_for_depth(verdict), self.max_chunks)
-        if size <= pool_size:
-            size = min(pool_size + 1, self.max_chunks)
-        return size
+        call_limit = self.max_chunks + discarded_count
+        size = min(calls[1], call_limit)
+        if size > max_requested:
+            return size
+        return min(max_requested + 1, call_limit)
 
     def score_chunks(self, chunk_ids: List[int], query: str) -> List[Tuple[int, float]]:
         """Score chunks by delegating to the single child.

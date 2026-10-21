@@ -11,6 +11,7 @@ from typing import Any
 from DashAI.back.core.schema_fields.utils import fill_objects, normalize_payload
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.RAG.documents.chunk import Chunk
+from DashAI.back.models.RAG.documents.rag_document import RAGDocument
 from DashAI.back.models.RAG.exceptions import (
     RAGComponentNotFoundError,
     RAGRetrieverError,
@@ -29,6 +30,9 @@ from DashAI.back.models.RAG.retrievers.persistence import (
     DensePersistence,
     SparsePersistence,
 )
+from DashAI.back.models.RAG.retrievers.ref_utils import (
+    is_component_ref as _is_component_ref,
+)
 from DashAI.back.models.RAG.retrievers.sparse.sparse_retriever import SparseRetriever
 from DashAI.back.models.text_to_text_generation_model import (
     TextToTextGenerationTaskModel,
@@ -37,11 +41,6 @@ from DashAI.back.models.text_to_text_generation_model import (
 #: Parameter keys recognized as nested ``{component, params}`` references.
 _LLM_MODEL_KEY = "llm_model"
 _PROMPT_KEY = "prompt"
-
-
-def _is_component_ref(value: Any) -> bool:
-    """Return whether ``value`` is a ``{component, params}`` reference dict."""
-    return isinstance(value, dict) and "component" in value and "params" in value
 
 
 def _resolve_llm(
@@ -189,6 +188,7 @@ class RetrieverFactory:
         RAG_path: Root path for RAG data storage.
         chunks: Nested mapping of document IDs to chunk IDs to
             :class:`Chunk` instances.
+        documents: Optional document mapping forwarded to unit retrievers.
     """
 
     def __init__(
@@ -196,10 +196,12 @@ class RetrieverFactory:
         registry: ComponentRegistry,
         RAG_path: str,  # noqa: N803
         chunks: dict[int, dict[int, Chunk]],
+        documents: dict[int, RAGDocument] | None = None,
     ):
         self._registry = registry
         self._RAG_path = RAG_path
         self._chunks = chunks
+        self._documents = documents
 
     def create(
         self,
@@ -283,14 +285,18 @@ class RetrieverFactory:
                     "A DensePersistence is required for dense retrievers "
                     "but none was provided."
                 )
-            model.inject_infra(self._RAG_path, self._chunks, persistence)
+            model.inject_infra(
+                self._RAG_path, self._chunks, persistence, self._documents
+            )
         elif issubclass(model_class, SparseRetriever):
             if not isinstance(persistence, SparsePersistence):
                 raise RAGRetrieverMissingParameterError(
                     "A SparsePersistence is required for sparse retrievers "
                     "but none was provided."
                 )
-            model.inject_infra(self._RAG_path, self._chunks, persistence)
+            model.inject_infra(
+                self._RAG_path, self._chunks, persistence, self._documents
+            )
         else:
             raise RAGRetrieverError(
                 f"Unsupported unit retriever: {model_class.__name__}"

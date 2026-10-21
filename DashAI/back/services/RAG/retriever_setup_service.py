@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from DashAI.back.core.schema_fields.utils import normalize_payload
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
 from DashAI.back.models.RAG.documents.chunk import Chunk
+from DashAI.back.models.RAG.documents.rag_document import RAGDocument
 from DashAI.back.models.RAG.exceptions import (
     RAGRetrieverEmptyChildrenError,
     RAGRetrieverError,
@@ -84,6 +85,7 @@ class RetrieverSetupService:
         chunks: dict[int, dict[int, Chunk]],
         chunk_set_id: int,
         pipeline_id: int,
+        documents: dict[int, RAGDocument] | None = None,
     ):
         """Initialize the retriever setup service.
 
@@ -97,6 +99,7 @@ class RetrieverSetupService:
             chunks: Nested dict of chunks keyed by document_id and index.
             chunk_set_id: FK to the owning chunk set.
             pipeline_id: FK to the owning pipeline.
+            documents: Optional document mapping injected into the retrievers.
         """
         self._db = db
         self._registry = registry
@@ -104,6 +107,7 @@ class RetrieverSetupService:
         self._chunks = chunks
         self._chunk_set_id = chunk_set_id
         self._pipeline_id = pipeline_id
+        self._documents = documents
         self._db_service = RetrieverDBService(db)
         self._embedding_service = EmbeddingStorageService(
             env_RAG_path, self._db_service
@@ -118,7 +122,9 @@ class RetrieverSetupService:
         persistence: DensePersistence | SparsePersistence | None = None,
     ) -> BaseRetriever:
         """Phase 1: Build model in memory. No I/O, no DB."""
-        factory = RetrieverFactory(self._registry, self._env_RAG_path, self._chunks)
+        factory = RetrieverFactory(
+            self._registry, self._env_RAG_path, self._chunks, self._documents
+        )
         result = factory.create(component_name, params, persistence)
         return result.model
 
@@ -208,7 +214,7 @@ class RetrieverSetupService:
             children=[c.model for c in children],
             **resolved_params,
         )
-        model.inject_infra(self._env_RAG_path, self._chunks, None)
+        model.inject_infra(self._env_RAG_path, self._chunks, None, self._documents)
 
         try:
             bridge = self._db_service.save_composite(
@@ -298,7 +304,9 @@ class RetrieverSetupService:
         if record is None:
             return None
         persistence = self._build_dense_persistence(record.embedding_model_id)
-        factory = RetrieverFactory(self._registry, self._env_RAG_path, self._chunks)
+        factory = RetrieverFactory(
+            self._registry, self._env_RAG_path, self._chunks, self._documents
+        )
         result = factory.create(
             class_name, dict(sorted_params), persistence=persistence
         )
@@ -334,7 +342,9 @@ class RetrieverSetupService:
         if record is None:
             return None
         persistence = SparsePersistence(model_dir=record.storage_folder)
-        factory = RetrieverFactory(self._registry, self._env_RAG_path, self._chunks)
+        factory = RetrieverFactory(
+            self._registry, self._env_RAG_path, self._chunks, self._documents
+        )
         result = factory.create(
             class_name, dict(sorted_params), persistence=persistence
         )

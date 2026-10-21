@@ -111,6 +111,11 @@ class MMRRerankerRetriever(CompositeRetriever):
         zh="MMR λ {mmr_lambda} · top-k {top_k}",
     )
 
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the MMR trade-off and final top-k paths."""
+        return {"mmr_lambda": "mmr_lambda", "top_k": "top_k"}
+
     def __init__(self, **kwargs):
         """Initialize the MMR reranker.
 

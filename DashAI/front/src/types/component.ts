@@ -3,6 +3,7 @@ import type { ITaskMetadataParameters } from "./task";
 
 export interface IComponentMetadata extends ITaskMetadataParameters {
   representation?: string | Record<string, string | null>;
+  schema_summary_parameters?: Record<string, string>;
 }
 
 export interface IComponent {

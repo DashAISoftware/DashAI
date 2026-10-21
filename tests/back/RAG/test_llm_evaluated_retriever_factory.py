@@ -27,7 +27,7 @@ from DashAI.back.dependencies.database.models import (
     RAGRetriever,
 )
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
-from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.documents import Chunk, RAGDocument
 from DashAI.back.models.RAG.prompts.evaluation import (
     CustomRetrievalSufficiencyPrompt,
     DefaultRetrievalSufficiencyPrompt,
@@ -44,6 +44,9 @@ from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_depth_retriever i
 )
 from DashAI.back.models.RAG.retrievers.composite.llm_evaluated_ensemble_retriever import (  # noqa: E501
     LLMEvaluatedEnsembleRetriever,
+)
+from DashAI.back.models.RAG.retrievers.composite.retrieval_context import (
+    RetrievalContext,
 )
 from DashAI.back.models.RAG.retrievers.retriever_factory import RetrieverFactory
 from DashAI.back.models.RAG.retrievers.sparse.sparse_retriever import SparseRetriever
@@ -93,6 +96,35 @@ class _LeafRetriever(CompositeRetriever):
     def retrieval_top_k(self) -> int:
         """Return a single chunk."""
         return 1
+
+
+class _DocumentedLeafRetriever(_LeafRetriever):
+    """Composite child that carries documents without infrastructure injection."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Store the supplied document names as ``RAGDocument`` instances."""
+        document_names = kwargs.pop("document_names", [])
+        super().__init__(**kwargs)
+        self.documents = {
+            index: RAGDocument(id=index, name=name, segments=[])
+            for index, name in enumerate(document_names, start=1)
+        }
+
+
+class _FactoryRecordingPrompt(RetrievalSufficiencyPrompt):
+    """Sufficiency prompt stub recording the structured format arguments."""
+
+    SCHEMA = BaseSchema
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialise the recording log and a valid template."""
+        self.template = "{input} {chunks}"
+        self.calls: List[Dict[str, Any]] = []
+
+    def format(self, **kwargs: Any) -> str:
+        """Record the structured arguments."""
+        self.calls.append(kwargs)
+        return "recorded"
 
 
 class _StubSparseSchema(BaseSchema):
@@ -147,6 +179,8 @@ def _pure_registry() -> ComponentRegistry:
         DefaultRetrievalSufficiencyPrompt,
         CustomRetrievalSufficiencyPrompt,
         _LeafRetriever,
+        _DocumentedLeafRetriever,
+        _FactoryRecordingPrompt,
         ParallelRetriever,
         LLMEvaluatedDepthRetriever,
         LLMEvaluatedEnsembleRetriever,
@@ -199,6 +233,69 @@ def test_pure_factory_builds_depth_retriever_with_resolved_refs():
     assert isinstance(model.prompt, RetrievalSufficiencyPrompt)
     assert len(model.get_children()) == 1
     assert isinstance(model.get_children()[0], _LeafRetriever)
+    summary = model.get_schema_summary()
+    assert summary["params"] == {"max_iters": 2, "max_chunks": 5}
+    assert summary["children"][0]["class"] == "_LeafRetriever"
+
+
+def test_pure_factory_collects_child_documents_for_the_prompt():
+    """The factory path collects child documents when the composite has none."""
+    registry = _pure_registry()
+    factory = RetrieverFactory(registry, "C:/tmp/rag", {})
+    params = {
+        "children": [
+            {
+                "component": "_DocumentedLeafRetriever",
+                "params": {"children": [], "document_names": ["factory-doc"]},
+            }
+        ],
+        "max_iters": 2,
+        "max_chunks": 5,
+        "llm_model": _llm_ref(),
+        "prompt": {"component": "_FactoryRecordingPrompt", "params": {}},
+    }
+
+    model = factory.create("LLMEvaluatedDepthRetriever", copy.deepcopy(params)).model
+    model.retrieve("q")
+
+    assert isinstance(model.prompt, _FactoryRecordingPrompt)
+    documents = model.prompt.calls[0]["documents"]
+    assert documents == [
+        {"document_id": 1, "name": "factory-doc", "chunks": 0, "pages": 0}
+    ]
+
+
+def test_context_merges_partial_parent_documents_with_children():
+    """Parent documents win on id collisions and children fill the gaps."""
+    registry = _pure_registry()
+    factory = RetrieverFactory(registry, "C:/tmp/rag", {})
+    params = {
+        "children": [
+            {
+                "component": "_DocumentedLeafRetriever",
+                "params": {
+                    "children": [],
+                    "document_names": ["child-doc", "child-doc-2"],
+                },
+            }
+        ],
+        "max_iters": 2,
+        "max_chunks": 5,
+        "llm_model": _llm_ref(),
+        "prompt": {"component": "_FactoryRecordingPrompt", "params": {}},
+    }
+    model = factory.create("LLMEvaluatedDepthRetriever", copy.deepcopy(params)).model
+    model.documents = {
+        1: RAGDocument(id=1, name="parent-doc", segments=[]),
+        3: RAGDocument(id=3, name="parent-doc-3", segments=[]),
+    }
+
+    context = RetrievalContext.from_retriever(model)
+    documents = context.documents()
+
+    assert documents[1].name == "parent-doc"
+    assert documents[2].name == "child-doc-2"
+    assert documents[3].name == "parent-doc-3"
 
 
 def test_pure_factory_builds_ensemble_retriever_with_resolved_refs():

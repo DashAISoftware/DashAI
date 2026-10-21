@@ -1,12 +1,57 @@
 import copy
 import os
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, ClassVar, Dict, Final, List, Tuple
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.core.utils import MultilingualString
-from DashAI.back.models.RAG.documents import Chunk
+from DashAI.back.models.RAG.documents import Chunk, RAGDocument
 from DashAI.back.models.RAG.exceptions import RAGWorkflowError
+from DashAI.back.models.RAG.retrievers.ref_utils import is_component_ref
+from DashAI.back.models.RAG.retrievers.retrieval_contracts import (
+    SCHEMA_CHILDREN,
+    SCHEMA_CLASS,
+    SCHEMA_PARAMS,
+    SchemaSummary,
+)
+
+#: Sentinel returned when a schema-summary path cannot be resolved.
+_UNRESOLVED: Final = object()
+
+#: Maximum number of nested composite levels summarized before stopping.
+_MAX_SCHEMA_SUMMARY_DEPTH: Final = 32
+
+
+def _json_safe(value: Any) -> Any:
+    """Return a JSON-serializable copy of ``value``.
+
+    Enums are replaced by their ``.value``; lists, tuples and dicts are walked
+    recursively; every other value (primitives included) is returned as-is.
+
+    Parameters
+    ----------
+    value : Any
+        Value to make JSON-serializable.
+
+    Returns
+    -------
+    Any
+        A JSON-serializable value with enum instances replaced by their values.
+    """
+    if isinstance(value, Enum):
+        return _json_safe(value.value)
+    if isinstance(value, dict):
+        converted: Dict[Any, Any] = {}
+        for key, item in value.items():
+            converted[key] = _json_safe(item)
+        return converted
+    if isinstance(value, (list, tuple)):
+        converted_list: List[Any] = []
+        for item in value:
+            converted_list.append(_json_safe(item))
+        return converted_list
+    return value
 
 
 class BaseRetriever(ConfigObject, ABC):
@@ -50,6 +95,7 @@ class BaseRetriever(ConfigObject, ABC):
 
     env_RAG_path: str | os.PathLike | None  # noqa: N815
     chunks: Dict[int, Dict[int, Chunk]]
+    documents: Dict[int, RAGDocument]
     params: Dict[str, Any]
 
     @classmethod
@@ -79,6 +125,9 @@ class BaseRetriever(ConfigObject, ABC):
         representation = cls.get_representation()
         if representation is not None:
             metadata["representation"] = representation
+        parameters = cls.get_schema_summary_parameters()
+        if parameters:
+            metadata["schema_summary_parameters"] = parameters
         return metadata
 
     def __init__(self, **kwargs):
@@ -92,7 +141,157 @@ class BaseRetriever(ConfigObject, ABC):
         """
         self._db_id: int | None = None
         self._trace_params: Dict[str, Any] = {}
+        self.documents: Dict[int, RAGDocument] = {}
         self.params = kwargs
+
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the display label -> dotted configuration path mapping.
+
+        This is the single source of truth for the schema summary: the frontend
+        receives the same mapping through ``schema_summary_parameters`` in the
+        metadata, while :meth:`get_schema_summary` resolves each path against
+        the live instance.
+
+        Returns
+        -------
+        Dict[str, str]
+            The retriever's summary parameters (empty by default).
+        """
+        return {}
+
+    @classmethod
+    def get_schema_summary_parameters(cls) -> Dict[str, str]:
+        """Return a copy of the summary parameter mapping for the frontend."""
+        return dict(cls._get_main_parameters())
+
+    def _resolve_first_segment(self, segment: str) -> Any:
+        """Resolve a first path segment from trace params, params or attributes.
+
+        ``_top_k`` is the one summary value stored under a private attribute
+        (the public ``top_k`` is popped during construction), so it is resolved
+        as a fallback when no raw configuration snapshot is available.
+
+        Parameters
+        ----------
+        segment : str
+            First segment of a dotted summary path.
+
+        Returns
+        -------
+        Any
+            The resolved value, or ``_UNRESOLVED`` when the segment is unknown.
+        """
+        for source in (self._trace_params, self.params):
+            if segment in source:
+                return source[segment]
+        value = getattr(self, segment, _UNRESOLVED)
+        if value is _UNRESOLVED:
+            value = getattr(self, f"_{segment}", _UNRESOLVED)
+        return value
+
+    @staticmethod
+    def _resolve_next_segment(value: Any, segment: str) -> Any:
+        """Resolve a nested segment through component refs, dicts or attributes.
+
+        Parameters
+        ----------
+        value : Any
+            Current value in the path resolution.
+        segment : str
+            Next segment to resolve.
+
+        Returns
+        -------
+        Any
+            The resolved value, or ``_UNRESOLVED`` when it cannot be resolved.
+        """
+        if is_component_ref(value):
+            value = value.get("params") or {}
+        if isinstance(value, dict):
+            return value.get(segment, _UNRESOLVED)
+        return getattr(value, segment, _UNRESOLVED)
+
+    def _resolve_parameter(self, path: str) -> Any:
+        """Resolve a dotted parameter path against the live instance.
+
+        Parameters
+        ----------
+        path : str
+            Dotted configuration path (for example
+            ``"embedding_model.model_name"``).
+
+        Returns
+        -------
+        Any
+            The resolved value, or ``_UNRESOLVED`` when any segment is unknown.
+        """
+        segments: List[str] = []
+        for segment in path.split("."):
+            if segment:
+                segments.append(segment)
+        if not segments:
+            return _UNRESOLVED
+        value = self._resolve_first_segment(segments[0])
+        for segment in segments[1:]:
+            if value is _UNRESOLVED:
+                return _UNRESOLVED
+            value = self._resolve_next_segment(value, segment)
+        return value
+
+    def _get_schema_summary(self, depth: int) -> SchemaSummary:
+        """Build the recursive schema summary at a bounded nesting depth.
+
+        This is the protected recursion hook: nested composites call it
+        directly with ``depth + 1`` instead of restarting at zero.
+
+        Parameters
+        ----------
+        depth : int
+            Current nesting depth. Children are summarized at ``depth + 1`` and
+            recursion stops once ``_MAX_SCHEMA_SUMMARY_DEPTH`` is reached.
+
+        Returns
+        -------
+        SchemaSummary
+            ``{"class": ..., "params": ...}`` plus ``children`` when present.
+        """
+        params: Dict[str, Any] = {}
+        for label, path in type(self).get_schema_summary_parameters().items():
+            value = self._resolve_parameter(path)
+            if value is _UNRESOLVED or value is None:
+                continue
+            params[label] = _json_safe(value)
+        summary: SchemaSummary = {
+            SCHEMA_CLASS: type(self).__name__,
+            SCHEMA_PARAMS: params,
+        }
+        if depth >= _MAX_SCHEMA_SUMMARY_DEPTH:
+            return summary
+        try:
+            children = self.get_children()
+        except NotImplementedError:
+            children = []
+        if children:
+            child_summaries: List[SchemaSummary] = []
+            for child in children:
+                child_summaries.append(child._get_schema_summary(depth + 1))
+            summary[SCHEMA_CHILDREN] = child_summaries
+        return summary
+
+    def get_schema_summary(self) -> SchemaSummary:
+        """Return a recursive, JSON-serializable summary of this retriever.
+
+        Each declared label is resolved against the live instance and omitted
+        when its path cannot be resolved. Composite retrievers also nest their
+        children's summaries under ``children``; unit retrievers omit that key.
+
+        Returns
+        -------
+        SchemaSummary
+            ``{"class": ..., "params": ...}`` plus ``children`` when present.
+        """
+        return self._get_schema_summary(0)
 
     def set_trace_params(self, params: Dict[str, Any]) -> None:
         """Store a JSON-serializable snapshot of this retriever's configuration.
@@ -173,12 +372,12 @@ class BaseRetriever(ConfigObject, ABC):
         env_RAG_path: str | os.PathLike,  # noqa: N803
         chunks: Dict[int, Dict[int, Chunk]],
         persistence: Any,
+        documents: Dict[int, RAGDocument] | None = None,
     ) -> None:
         """Inject runtime infrastructure *after* schema validation.
 
-        Subclasses **must** store the three arguments as instance
-        attributes.  Raises ``TypeError`` if any argument has an
-        unexpected type.
+        Subclasses **must** store the arguments as instance attributes.  Raises
+        ``TypeError`` if any argument has an unexpected type.
 
         Subclasses define required params in their ``__init__`` and
         pop them from ``self.params``.
@@ -188,10 +387,13 @@ class BaseRetriever(ConfigObject, ABC):
             chunks: Nested dictionary mapping document IDs to chunk IDs
                 to :class:`Chunk` instances.
             persistence: Persistence object for saving/loading state.
+            documents: Optional document mapping used by the LLM-evaluated
+                retrievers to describe the corpus in their prompts.
         """
         self.env_RAG_path = env_RAG_path
         self.chunks = chunks
         self._persistence = persistence
+        self.documents = documents or {}
         self._validate_chunks_dict()
 
     @property

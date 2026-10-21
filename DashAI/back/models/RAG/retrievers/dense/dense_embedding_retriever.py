@@ -1,3 +1,5 @@
+from typing import Dict
+
 from DashAI.back.core.schema_fields import (
     BaseSchema,
     component_field,
@@ -95,6 +97,15 @@ class DenseEmbeddingRetriever(DenseRetriever):
         " · top-k {top_k}",
         zh="{embedding_model.model_name} · 相似度 {similarity_metric} · top-k {top_k}",
     )
+
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the embedding model, similarity metric and top-k paths."""
+        return {
+            "embedding_model": "embedding_model.model_name",
+            "similarity_metric": "similarity_metric",
+            "top_k": "top_k",
+        }
 
     def __init__(self, **kwargs):
         """Initialize the dense embedding retriever.

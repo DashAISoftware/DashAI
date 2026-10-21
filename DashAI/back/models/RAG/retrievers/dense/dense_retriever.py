@@ -83,6 +83,11 @@ class DenseRetriever(UnitRetriever):
 
     SCHEMA = DenseRetrieverSchema
 
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the dense similarity metric and top-k paths."""
+        return {"similarity_metric": "similarity_metric", "top_k": "top_k"}
+
     def __init__(self, **kwargs):
         """Initialize the dense retriever.
 

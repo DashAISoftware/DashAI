@@ -6,6 +6,10 @@ import SchemaIcon from "@mui/icons-material/Schema";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import { resolveLocalizedText } from "../../../utils/localize";
 import { resolveRetrieverRepresentation } from "./retrieverRepresentation";
+import {
+  renderSchemaSummaryText,
+  resolveRetrieverSchemaSummary,
+} from "./schemaSummary";
 import { asArray, isPlainObject, resolveChunkLabel } from "./traceUtils";
 
 // Base horizontal unit (px) for the tree indentation, mirroring the geometry
@@ -179,6 +183,8 @@ function TreeChunkRow({ chunkRef, info, score, interactive, onClick }) {
  * @param {object} props.node - The trace retriever node to render.
  * @param {object|null} [props.references] - Chunk reference map by ref key.
  * @param {object} [props.retrieverComponents] - Retriever components by class name.
+ * @param {Function} [props.resolveComponent] - Optional component resolver; by
+ *   default components are looked up in `retrieverComponents`.
  * @param {object|null} [props.configNode] - Matching session retriever config.
  * @param {Function} [props.onChunkClick] - Called with (chunkRef, info|undefined).
  * @param {number} [props.depth=0] - Current indentation depth.
@@ -189,12 +195,15 @@ function RetrieverTraceTree({
   node,
   references,
   retrieverComponents = {},
+  resolveComponent,
   configNode = null,
   onChunkClick,
   depth = 0,
   isRoot = true,
 }) {
   const { t, i18n } = useTranslation("generative");
+  const translateLabel = (label) =>
+    t(`rag.schemaSummary.labels.${label}`, { defaultValue: label });
 
   if (!isPlainObject(node)) return null;
 
@@ -210,15 +219,36 @@ function RetrieverTraceTree({
   const interactive =
     hasEntries(references) && typeof onChunkClick === "function";
   const component = retrieverComponents?.[node.name];
+  const componentResolver =
+    typeof resolveComponent === "function"
+      ? resolveComponent
+      : (name) => retrieverComponents?.[name];
   const effectiveConfig =
     configNode?.component === node.name ? configNode : null;
+  const traceSchemaSummary = renderSchemaSummaryText(
+    node.schema_summary,
+    translateLabel,
+  );
+  let configSchemaSummary = null;
+  if (!traceSchemaSummary && effectiveConfig) {
+    configSchemaSummary = resolveRetrieverSchemaSummary(
+      component,
+      effectiveConfig?.params ?? configNode?.params,
+      componentResolver,
+      translateLabel,
+    );
+  }
   const traceRepresentation = resolveLocalizedText(node.representation, i18n);
   const configRepresentation = resolveRetrieverRepresentation(
     component,
     effectiveConfig?.params,
     i18n,
   );
-  const representation = traceRepresentation || configRepresentation;
+  const representation =
+    traceSchemaSummary ||
+    configSchemaSummary ||
+    traceRepresentation ||
+    configRepresentation;
   const description =
     resolveLocalizedText(node.description, i18n) ||
     resolveLocalizedText(component?.description, i18n);
@@ -343,6 +373,7 @@ function RetrieverTraceTree({
                 node={child}
                 references={references}
                 retrieverComponents={retrieverComponents}
+                resolveComponent={componentResolver}
                 configNode={resolveChildConfig(
                   effectiveConfig?.params?.children,
                   children,
@@ -364,6 +395,7 @@ RetrieverTraceTree.propTypes = {
   node: PropTypes.object,
   references: PropTypes.object,
   retrieverComponents: PropTypes.object,
+  resolveComponent: PropTypes.func,
   configNode: PropTypes.object,
   onChunkClick: PropTypes.func,
   depth: PropTypes.number,

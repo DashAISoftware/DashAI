@@ -308,6 +308,11 @@ class BM25Retriever(SparseRetriever):
 
     SCHEMA = BM25RetrieverSchema
 
+    @classmethod
+    def _get_main_parameters(cls) -> Dict[str, str]:
+        """Return the BM25 weighting and top-k parameter paths."""
+        return {"k1": "k1", "b": "b", "top_k": "top_k"}
+
     def __init__(self, **kwargs):
         """Initialize the BM25 retriever.
 
