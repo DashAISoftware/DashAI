@@ -13,7 +13,7 @@ from DashAI.back.api.api_v1.schemas.model_sessions_params import (
     ModelSessionParams,
     PreprocessingStructureParams,
 )
-from DashAI.back.api.utils import remove_path
+from DashAI.back.api.utils import offered_components, remove_path
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
 from DashAI.back.job.preprocessing_job import PreprocessingJob
 from DashAI.back.preprocessing.column_ref import ConverterSequence, RawColumnRef
@@ -368,11 +368,7 @@ def _validate_evaluation_strategy(
             detail=f"Task {task_name} does not exist in the registry.",
         )
 
-    offered = sorted(
-        component["name"]
-        for component in component_registry.get_related_components(task_name)
-        if component.get("type") == "EvaluationStrategy"
-    )
+    offered = offered_components(component_registry, task_name, "EvaluationStrategy")
     if evaluation_strategy not in offered:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -445,11 +441,7 @@ def _validate_splits(
             detail=f"Splitter {splitter_name} does not exist in the registry.",
         )
 
-    offered = sorted(
-        component["name"]
-        for component in component_registry.get_related_components(task_name)
-        if component.get("type") == "Splitter"
-    )
+    offered = offered_components(component_registry, task_name, "Splitter")
     if splitter_name not in offered:
         named = isinstance(payload, dict) and isinstance(
             payload.get("splitter_name"), str
@@ -489,6 +481,51 @@ def _validate_splits(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid configuration for splitter {splitter_name}: {e}",
         ) from e
+
+
+def _validate_runs_for_task(
+    db, model_session_id: int, task_name: str, component_registry: "ComponentRegistry"
+) -> None:
+    """Check that every run of a session has a model the new task offers.
+
+    A change of task keeps the session's runs, and a run whose model the task
+    does not offer is one the run API would have refused. Rather than deleting
+    or flagging those runs, the change is refused and the runs are named, so
+    the user learns about it and decides: changing the task of a session that
+    already trained something is rare.
+
+    Parameters
+    ----------
+    db : Session
+        The open database session.
+    model_session_id : int
+        The session whose task changes.
+    task_name : str
+        The new task, already known to be registered.
+    component_registry : ComponentRegistry
+        Registry that relates tasks to the models they offer.
+
+    Raises
+    ------
+    HTTPException
+        If any run's model is not offered by the new task.
+    """
+    offered = offered_components(component_registry, task_name, "Model")
+    runs = db.execute(
+        select(Run).where(Run.model_session_id == model_session_id).order_by(Run.id)
+    ).scalars()
+    affected = [run for run in runs if run.model_name not in offered]
+    if affected:
+        named = ", ".join(
+            f"{run.name!r} (id {run.id}, {run.model_name})" for run in affected
+        )
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Task {task_name} does not offer the model of these runs of the "
+                f"session: {named}. Delete them or keep the current task."
+            ),
+        )
 
 
 def _validate_empty_splits(splits: str, evaluation_strategy: str) -> None:
@@ -965,6 +1002,9 @@ async def update_model_session(
                             strategy_class,
                             component_registry,
                         )
+                    _validate_runs_for_task(
+                        db, model_session_id, task_name, component_registry
+                    )
                 setattr(model_session, "task_name", task_name)
 
             if dataset_id or task_name or name:
