@@ -7,6 +7,12 @@ backfill, so the staged rows are what lets ``backfill_rag_documents`` turn the
 legacy documents into Data documents on the same startup. The extracted text
 cache is not kept: the DataLoader reproduces it from the stored file.
 
+Before the ``document`` table goes, every stored chat citation is made to name
+a document of the session that made it, because the backfill remaps citations
+session by session. Citations of a deleted document lose their id;
+citations that ``k4l5m6n7o8p9`` left on the original of a document it cloned
+into several sessions move to the clone of the same file in their session.
+
 This migration performs no filesystem I/O.
 
 Revision ID: c5d1a9e74f28
@@ -14,6 +20,7 @@ Revises: b3e8f2c61d47
 Create Date: 2026-10-02
 """
 
+import json
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -29,7 +36,59 @@ _DEFAULT_EXTRACTORS = {"pdf": "PypdfExtractor"}
 _FALLBACK_EXTRACTOR = "PlainTextExtractor"
 
 
+def _scope_citations_to_their_session(conn) -> None:
+    """Point every chat citation at a legacy document of its own session.
+
+    A citation id that is not a document of the citing session would otherwise
+    survive the backfill unchanged and name whichever ``data_document`` later
+    takes that id. It moves to the session's document with the same file, or
+    becomes None when the session has none.
+
+    Parameters
+    ----------
+    conn : sqlalchemy.engine.Connection
+        Connection of the running migration.
+    """
+    documents = conn.execute(
+        sa.text("SELECT id, session_id, file_hash FROM document")
+    ).fetchall()
+    session_of = {row.id: row.session_id for row in documents}
+    file_of = {row.id: row.file_hash for row in documents}
+    by_session_file = {(row.session_id, row.file_hash): row.id for row in documents}
+    rows = conn.execute(
+        sa.text(
+            "SELECT pd.id, pd.data, gp.session_id FROM process_data pd "
+            "JOIN generative_process gp ON gp.id = pd.process_id "
+            "WHERE pd.data_type = 'Dict'"
+        )
+    ).fetchall()
+    for row in rows:
+        try:
+            references = json.loads(row.data)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(references, dict):
+            continue
+        changed = False
+        for reference in references.values():
+            if not isinstance(reference, dict):
+                continue
+            document_id = reference.get("document_id")
+            if document_id is None or session_of.get(document_id) == row.session_id:
+                continue
+            reference["document_id"] = by_session_file.get(
+                (row.session_id, file_of.get(document_id))
+            )
+            changed = True
+        if changed:
+            conn.execute(
+                sa.text("UPDATE process_data SET data = :data WHERE id = :id"),
+                {"data": json.dumps(references, ensure_ascii=False), "id": row.id},
+            )
+
+
 def upgrade() -> None:
+    _scope_citations_to_their_session(op.get_bind())
     op.create_table(
         "rag_legacy_document",
         sa.Column("id", sa.Integer(), nullable=False),

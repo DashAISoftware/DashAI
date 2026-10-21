@@ -44,13 +44,17 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
     setSelectedChunks([]);
   };
 
-  // Group references by document ID
+  // Group references by document ID. A citation of a document that no longer
+  // exists has no ID, so it is grouped by its document name instead.
   const groupedReferences = referenceEntries.reduce((acc, [key, ref]) => {
-    const docId = ref.document_id;
-    if (!acc[docId]) {
-      acc[docId] = [];
+    const groupKey =
+      ref.document_id != null
+        ? String(ref.document_id)
+        : `name:${ref.document_name ?? key}`;
+    if (!acc[groupKey]) {
+      acc[groupKey] = [];
     }
-    acc[docId].push({ key, ...ref });
+    acc[groupKey].push({ key, ...ref });
     return acc;
   }, {});
 
@@ -227,7 +231,12 @@ const SourcesDisplay = ({ references, onOpenReference, isUser = false }) => {
                       size="small"
                       variant="outlined"
                       startIcon={<VisibilityIcon />}
-                      onClick={() => handleOpenDocumentModal(docId, chunks)}
+                      onClick={() =>
+                        handleOpenDocumentModal(
+                          chunks[0].document_id ?? null,
+                          chunks,
+                        )
+                      }
                       sx={{
                         fontSize: "0.75rem",
                         py: 0.5,
