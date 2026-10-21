@@ -86,7 +86,7 @@ def connect(src: Node, dst: Node) -> Tuple[Edge, ...]:
     """Wire every key two nodes agree on: ``PROVIDES`` against ``REQUIRES``.
 
     A canvas cannot draw one edge per key — ``FitModelUnit`` alone requires
-    seven — so one drawn edge between two nodes stands for this whole set.
+    six — so one drawn edge between two nodes stands for this whole set.
 
     The rule does not cover every wire a real graph needs, and that is by
     design rather than an omission: ``ApplyConverterUnit`` does not republish

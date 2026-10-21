@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { parseRangeToIndex } from "../../../utils/parseRange";
 import {
+  Alert,
   Box,
   FormHelperText,
   Grid,
@@ -315,6 +316,9 @@ function SplitDatasetRows({
       setSplitsReady(
         Boolean(splitterName) && !tooManyFolds && !groupColumnError,
       );
+    } else if (strategyKind === STRATEGY_KINDS.FULL) {
+      // Nothing is carved, so there is nothing left to configure.
+      setSplitsReady(true);
     } else {
       setSplitsReady(false);
     }
@@ -323,6 +327,7 @@ function SplitDatasetRows({
     manualSplitError,
     splitType,
     evaluationStrategy,
+    strategyKind,
     paramsError,
     proportionsSumToOne,
     trainIsEmpty,
@@ -359,44 +364,46 @@ function SplitDatasetRows({
 
   return (
     <Stack spacing={4} data-tour="exp-dataset-splits">
-      {/* Evaluation Strategy Selector */}
-      <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
-        <Box
-          sx={{
-            px: 8,
-            py: 3,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Typography variant="body2" fontWeight={600}>
-            {t("experiments:label.selectEvaluationStrategy")}
-          </Typography>
-        </Box>
-        <Box sx={{ px: 8, pt: 2, pb: 4 }}>
-          <ToggleButtonGroup
-            value={evaluationStrategy}
-            exclusive={true}
-            onChange={(_, value) => {
-              value && setEvaluationStrategy(value);
+      {/* Evaluation Strategy Selector, when the task offers a choice */}
+      {allowedStrategies.length > 1 && (
+        <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
+          <Box
+            sx={{
+              px: 8,
+              py: 3,
+              borderBottom: "1px solid",
+              borderColor: "divider",
             }}
-            fullWidth
-            size="small"
           >
-            {allowedStrategies.map((strategy) => (
-              <ToggleButton
-                key={strategy.name}
-                value={strategy.name}
-                sx={{ textTransform: "none", fontSize: "0.8rem" }}
-              >
-                {strategyKindOf(strategy) === STRATEGY_KINDS.CV
-                  ? t("experiments:label.crossValidation")
-                  : t("experiments:label.holdout")}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Box>
-      </Paper>
+            <Typography variant="body2" fontWeight={600}>
+              {t("experiments:label.selectEvaluationStrategy")}
+            </Typography>
+          </Box>
+          <Box sx={{ px: 8, pt: 2, pb: 4 }}>
+            <ToggleButtonGroup
+              value={evaluationStrategy}
+              exclusive={true}
+              onChange={(_, value) => {
+                value && setEvaluationStrategy(value);
+              }}
+              fullWidth
+              size="small"
+            >
+              {allowedStrategies.map((strategy) => (
+                <ToggleButton
+                  key={strategy.name}
+                  value={strategy.name}
+                  sx={{ textTransform: "none", fontSize: "0.8rem" }}
+                >
+                  {strategyKindOf(strategy) === STRATEGY_KINDS.CV
+                    ? t("experiments:label.crossValidation")
+                    : t("experiments:label.holdout")}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
+        </Paper>
+      )}
 
       {/* HOLDOUT SECTION */}
       {strategyKind === STRATEGY_KINDS.HOLDOUT && (
@@ -556,15 +563,23 @@ function SplitDatasetRows({
         </>
       )}
 
-      <SplitPreview
-        geometry={geometryOf(selectedSplitter)}
-        description={selectedStrategy?.description}
-        splitterDescription={selectedSplitter?.description}
-        splitType={splitType}
-        params={splitterParams}
-        indexes={rowsPartitionsIndex}
-        datasetInfo={datasetInfo}
-      />
+      {/* FULL DATASET SECTION: nothing is carved, so there is no splitter to
+          choose and no partition to preview */}
+      {strategyKind === STRATEGY_KINDS.FULL ? (
+        <Alert severity="info">
+          {t("experiments:label.noSplitConfigNeeded")}
+        </Alert>
+      ) : (
+        <SplitPreview
+          geometry={geometryOf(selectedSplitter)}
+          description={selectedStrategy?.description}
+          splitterDescription={selectedSplitter?.description}
+          splitType={splitType}
+          params={splitterParams}
+          indexes={rowsPartitionsIndex}
+          datasetInfo={datasetInfo}
+        />
+      )}
 
       {/* Splitter parameters, generated from the component schema */}
       {splitterName && (

@@ -16,7 +16,7 @@ import math
 import pytest
 
 from DashAI.back.core.enums.metrics import LevelEnum, SplitEnum
-from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.supervised_model import SupervisedModel
 
 
 class _Metric:
@@ -30,7 +30,7 @@ class _Metric:
         return self._value
 
 
-class _StubModel(BaseModel):
+class _StubModel(SupervisedModel):
     """A model that predicts nothing, so only the scoring loop is under test."""
 
     def train(self, *args, **kwargs):

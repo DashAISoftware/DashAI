@@ -282,10 +282,16 @@ def test_a_unit_does_not_write_domain_rows(name, cls):
     do open a session, always read-only (``db.get`` / ``db.query``); the ones
     whose verb is "save" write to disk and publish the path.
 
-    The one place a unit reaches a write is indirect and named:
-    ``EvaluateModelUnit`` calls ``BaseModel.calculate_metrics``, which persists
-    through a session of its own. That is why that unit needs a real ``Run``
-    row and refuses to run without one.
+    What this cannot see is a write made on a unit's behalf. Four units reach
+    ``Metric`` rows through ``BaseModel``, which persists through a session of
+    its own: ``EvaluateModelUnit`` (LAST), ``FitModelUnit`` (TRIAL, and the
+    per-epoch rows of models that log while training), ``FitModelOverFoldsUnit``
+    (FOLD and TRIAL) and ``FitModelOverNestedFoldsUnit`` (OUTER_FOLD). Every one
+    of those writes is gated on the model's ``run_id``, which is what keeps a
+    pipeline -- where it is always None -- from writing any. Nor does it see a
+    module-level helper the unit hands a session to. ``EvaluateModelUnit`` is
+    the one that refuses to run without a ``Run`` row, because writing is all
+    it does. See DAG_ENGINE.md, section 15.1.
     """
     # Whatever the unit bound its session to, rather than a fixed list of
     # names: a unit that writes through ``as s:`` would otherwise slip past.

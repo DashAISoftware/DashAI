@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from kink import inject
 from sqlalchemy import exc
@@ -13,6 +13,7 @@ from DashAI.back.dependencies.database.models import (
     Run,
 )
 from DashAI.back.job.base_job import BaseJob, JobError
+from DashAI.back.metrics.base_metric import BaseMetric
 from DashAI.back.optimizers.base_optimizer import BaseOptimizer
 from DashAI.back.splitters.splits_payload import normalize_splits_payload
 from DashAI.back.units.build_model_unit import BuildModelUnit
@@ -23,10 +24,13 @@ from DashAI.back.units.fit_model_over_nested_folds_unit import (
     FitModelOverNestedFoldsUnit,
 )
 from DashAI.back.units.fit_model_unit import FitModelUnit
+from DashAI.back.units.fit_without_target_unit import FitWithoutTargetUnit
 from DashAI.back.units.load_dataset_unit import LoadDatasetUnit
 from DashAI.back.units.prepare_and_fold_unit import PrepareAndFoldUnit
 from DashAI.back.units.prepare_and_split_unit import PrepareAndSplitUnit
+from DashAI.back.units.prepare_without_target_unit import PrepareWithoutTargetUnit
 from DashAI.back.units.save_model_unit import SaveModelUnit
+from DashAI.back.units.score_clusters_unit import ScoreClustersUnit
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -150,7 +154,7 @@ class ModelJob(BaseJob):
                     )
                     # The download gate lives in validate(), and running it here
                     # keeps a model that cannot be trained from being reported
-                    # as a splitting failure further down.
+                    # as a preparation failure further down.
                     build_model.validate(ctx)
                 except Exception as e:
                     log.exception(e)
@@ -161,22 +165,19 @@ class ModelJob(BaseJob):
                 try:
                     # Preparing the dataset for the task and partitioning it are
                     # one step: how many partitions there are and what they are
-                    # called is the splitter's answer, and the pair of units
-                    # differ only in which family of splitters they offer and in
-                    # the shape they publish for it.
+                    # called is the strategy's and the splitter's answer, and
+                    # the units differ in the shape they publish for it. A
+                    # strategy that carves nothing publishes no partitions, so
+                    # there are no indexes to keep for a re-train.
                     prepare(ctx)
 
-                    # Only the partitions are needed here, and only to ask
-                    # whether the session reserved any rows: the units read
-                    # what they work on from the context themselves.
-                    x = ctx.get("x") if ctx.has("x") else ctx.require("x_folds")
-
                     # save the obtained splits into the database
-                    run.split_indexes = json.dumps(ctx.require("split_indexes"))
+                    if ctx.has("split_indexes"):
+                        run.split_indexes = json.dumps(ctx.require("split_indexes"))
                 except Exception as e:
                     log.exception(e)
                     raise JobError(
-                        f"Error splitting the dataset for run {run_id}: {e}",
+                        f"Error preparing the dataset for run {run_id}: {e}",
                     ) from e
 
                 try:
@@ -206,8 +207,25 @@ class ModelJob(BaseJob):
                 self.report_progress(0.2, "Training")
                 try:
                     plot_paths = []
+                    kind = getattr(strategy_class, "KIND", "holdout")
 
-                    if getattr(strategy_class, "KIND", "holdout") == "holdout":
+                    if kind == "full":
+                        # Nothing was held out, so the model is fitted once and
+                        # scored over the whole dataset, with every metric the
+                        # registry relates to the task: there is no split to
+                        # choose metrics for. The fitting unit publishes the
+                        # model the saving unit below reads.
+                        metrics = self._metrics_for_task(
+                            model_session.task_name, component_registry
+                        )
+                        FitWithoutTargetUnit()(ctx)
+                        ScoreClustersUnit(
+                            metrics=[metric.__name__ for metric in metrics]
+                        )(ctx)
+                        self._write_full_metrics(
+                            db, run_id, ctx.require("metrics")["full"]
+                        )
+                    elif kind == "holdout":
                         fit_model = FitModelUnit(
                             optimizer={
                                 "component": run.optimizer_name,
@@ -294,6 +312,7 @@ class ModelJob(BaseJob):
                         # uses. Whether there is anything to score is the
                         # caller's to know: a session that reserved nothing
                         # leaves that partition empty rather than absent.
+                        x = ctx.get("x") if ctx.has("x") else ctx.require("x_folds")
                         if "TEST" in scored_splits and len(x[-1]["test"]) > 0:
                             EvaluateModelUnit(run_id=run_id, splits=["TEST"])(ctx)
                 except Exception as e:
@@ -447,9 +466,6 @@ class ModelJob(BaseJob):
             If the run's session, its splits payload, its splitter, its
             optimizer or its evaluation strategy cannot be resolved.
         """
-
-        import json
-
         run: Run = db.get(Run, run_id)
 
         model_session: ModelSession = db.get(ModelSession, run.model_session_id)
@@ -461,6 +477,72 @@ class ModelJob(BaseJob):
         dataset: Dataset = db.get(Dataset, model_session.dataset_id)
         if not dataset:
             raise JobError(f"Dataset {model_session.dataset_id} does not exist in DB.")
+
+        try:
+            evaluation_strategy_class = component_registry[
+                model_session.evaluation_strategy
+            ]["class"]
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                # string is too long, so it has to be split in two
+                f"""Unable to find Evaluation Strategy with name
+                {model_session.evaluation_strategy} in registry.""",
+            ) from e
+
+        # A strategy that carves nothing has no splitter and no splits payload
+        # to read: its unit prepares the features over every row. The session
+        # API only pairs such a strategy with a task without a target, which is
+        # what lets that unit leave the target out.
+        if getattr(evaluation_strategy_class, "KIND", "holdout") == "full":
+            prepare_unit = PrepareWithoutTargetUnit(
+                task_name=model_session.task_name,
+                input_columns=model_session.input_columns,
+                standardise=True,
+            )
+        else:
+            prepare_unit = self._partitioning_unit(
+                run, model_session, component_registry
+            )
+
+        try:
+            # Get the optimizer if defined
+            optimizer: BaseOptimizer = None
+            goal_metric = None
+
+            if run.optimizer_name:
+                run_optimizer_class = component_registry[run.optimizer_name]["class"]
+                optimizer: BaseOptimizer = run_optimizer_class(
+                    **run.optimizer_parameters
+                )
+                goal_metric = component_registry[run.goal_metric]
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                f"Error instantiating optimizer {run.optimizer_name}, {e}",
+            ) from e
+
+        return {
+            "model_session": model_session,
+            "prepare_unit": prepare_unit,
+            "evaluation_strategy_class": evaluation_strategy_class,
+            "optimizer": optimizer,
+            "goal_metric": goal_metric,
+        }
+
+    @staticmethod
+    def _partitioning_unit(run: Run, model_session: ModelSession, component_registry):
+        """Build the unit that prepares the dataset and partitions it.
+
+        Which unit it is follows from how the session's splitter carves the
+        dataset, which the splitter declares.
+
+        Raises
+        ------
+        JobError
+            If the session's splits payload or its splitter cannot be resolved.
+        """
+        import json
 
         try:
             # Unpacking the JSON column is an artifact of how the row stores
@@ -510,41 +592,79 @@ class ModelJob(BaseJob):
             prepare_config["preprocessing_artifacts_path"] = (
                 model_session.preprocessing_artifacts_path
             )
-        prepare_unit = prepare_class(**prepare_config)
+        return prepare_class(**prepare_config)
 
+    @staticmethod
+    def _metrics_for_task(task_name: str, component_registry) -> List[BaseMetric]:
+        """Every metric the registry relates to a task without a target.
+
+        Such a task has no metric picker of its own: every metric registered for
+        it is computed, since there is no split to choose between.
+
+        Raises
+        ------
+        JobError
+            If the registry cannot answer.
+        """
         try:
-            # Get the optimizer if defined
-            optimizer: BaseOptimizer = None
-            goal_metric = None
+            metric_names = [
+                component["name"]
+                for component in component_registry.get_related_components(task_name)
+                if component.get("type") == "Metric"
+            ]
+            metrics: List[BaseMetric] = [
+                component_registry[name]["class"] for name in metric_names
+            ]
+        except Exception as e:
+            log.exception(e)
+            raise JobError(
+                f"Unable to find metrics associated with Task {task_name} in registry",
+            ) from e
 
-            if run.optimizer_name:
-                run_optimizer_class = component_registry[run.optimizer_name]["class"]
-                optimizer: BaseOptimizer = run_optimizer_class(
-                    **run.optimizer_parameters
+        return metrics
+
+    @staticmethod
+    def _write_full_metrics(db, run_id: int, results: Dict[str, float]) -> None:
+        """Write one LAST metric row per score, over the full dataset.
+
+        Written here rather than through ``BaseModel.calculate_metrics``: that
+        path compares y_true against predictions, which is precisely what a task
+        without a target does not have, and ``_save_metrics`` would number the
+        row's step instead of leaving it at 0. Upserted, so a re-train replaces
+        the previous values instead of adding rows.
+
+        Raises
+        ------
+        JobError
+            If the rows cannot be written.
+        """
+        try:
+            for name, value in results.items():
+                existing = (
+                    db.query(Metric)
+                    .filter_by(
+                        run_id=run_id,
+                        split=SplitEnum.FULL,
+                        level=LevelEnum.LAST,
+                        name=name,
+                    )
+                    .first()
                 )
-                goal_metric = component_registry[run.goal_metric]
+                if existing:
+                    existing.value = value
+                    existing.step = 0
+                else:
+                    db.add(
+                        Metric(
+                            run_id=run_id,
+                            split=SplitEnum.FULL,
+                            level=LevelEnum.LAST,
+                            name=name,
+                            value=value,
+                            step=0,
+                        )
+                    )
+            db.commit()
         except Exception as e:
             log.exception(e)
-            raise JobError(
-                f"Error instantiating optimizer {run.optimizer_name}, {e}",
-            ) from e
-
-        try:
-            evaluation_strategy_class = component_registry[
-                model_session.evaluation_strategy
-            ]["class"]
-        except Exception as e:
-            log.exception(e)
-            raise JobError(
-                # string is too long, so it has to be split in two
-                f"""Unable to find Evaluation Strategy with name
-                {model_session.evaluation_strategy} in registry.""",
-            ) from e
-
-        return {
-            "model_session": model_session,
-            "prepare_unit": prepare_unit,
-            "evaluation_strategy_class": evaluation_strategy_class,
-            "optimizer": optimizer,
-            "goal_metric": goal_metric,
-        }
+            raise JobError(f"Metric saving failed {e}") from e

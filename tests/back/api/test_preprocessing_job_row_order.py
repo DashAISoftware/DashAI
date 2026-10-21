@@ -56,7 +56,17 @@ KFOLD = {
 
 
 class ReversingTask(TabularClassificationTask):
-    """A task whose preparation hands the rows back in reverse order."""
+    """A task whose preparation hands the rows back in reverse order.
+
+    Like any task added from outside, it names the strategies it offers: the
+    strategies list only the built-in tasks, and the session API refuses a
+    strategy its task does not offer.
+    """
+
+    COMPATIBLE_COMPONENTS = [
+        "HoldoutEvaluationStrategy",
+        "CrossValidationEvaluationStrategy",
+    ]
 
     def prepare_for_task(self, dataset, input_columns, output_columns):
         prepared = super().prepare_for_task(dataset, input_columns, output_columns)

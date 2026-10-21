@@ -7,8 +7,11 @@ EXPECTED_UNITS = {
     "LoadDatasetUnit",
     "PrepareAndSplitUnit",
     "PrepareAndFoldUnit",
+    "PrepareWithoutTargetUnit",
     "BuildModelUnit",
     "FitModelUnit",
+    "FitWithoutTargetUnit",
+    "ScoreClustersUnit",
     "FitModelOverFoldsUnit",
     "FitModelOverNestedFoldsUnit",
     "EvaluateModelUnit",
@@ -91,6 +94,16 @@ def test_unit_schemas_describe_their_configuration(units):
         units["PrepareAndFoldUnit"]["schema"]["properties"]["splitter"]["parent"]
         == "FoldSplitter"
     )
+    # The target-free counterparts. Preparing has no output columns and no
+    # splitter to pick, fitting has nothing to configure, and scoring only
+    # names the metrics: the labels come from the model it is handed.
+    assert set(units["PrepareWithoutTargetUnit"]["schema"]["properties"]) == {
+        "task_name",
+        "input_columns",
+        "standardise",
+    }
+    assert units["FitWithoutTargetUnit"]["schema"]["properties"] == {}
+    assert set(units["ScoreClustersUnit"]["schema"]["properties"]) == {"metrics"}
     assert "model" in units["BuildModelUnit"]["schema"]["properties"]
     assert "optimizer" in units["FitModelUnit"]["schema"]["properties"]
     assert set(units["ApplyConverterUnit"]["schema"]["properties"]) == {

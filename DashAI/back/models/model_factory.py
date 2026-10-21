@@ -299,8 +299,14 @@ class ModelFactory:
         return updated_parameters
 
     def evaluate(self, x, y, metrics):
-        """
+        """Legacy supervised evaluation helper.
+
         Computes metrics only if the model is fitted.
+
+        This method assumes ``x`` and ``y`` are split dictionaries and metrics
+        follow the ``y_true`` versus ``y_pred`` contract. New task executors
+        should prefer task-specific evaluation logic instead of extending this
+        method to non-supervised workflows.
 
         Parameters
         ----------

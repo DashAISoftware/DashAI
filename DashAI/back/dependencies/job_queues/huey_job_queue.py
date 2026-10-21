@@ -465,6 +465,18 @@ class HueyJobQueue(BaseJobQueue):
                 _signal_terminate(pid)
         proc.terminate()
 
+    def stop_worker(self) -> None:
+        """Terminate the persistent worker process, if one is running.
+
+        The worker is a daemon process, but daemon processes are only reaped
+        on a normal interpreter exit. Call this before ending the application
+        with ``os._exit`` (as the update installer does) so the worker does
+        not outlive it.
+        """
+        proc = self._worker_proc
+        if proc is not None and proc.is_alive():
+            self._terminate_worker(proc, self._worker_pid)
+
     def _run_in_subprocess(self, job: BaseJob, huey_id: str):
         """Run *job* in the persistent worker process and return its result.
 

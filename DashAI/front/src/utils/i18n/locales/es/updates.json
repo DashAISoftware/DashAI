@@ -13,12 +13,29 @@
   "download": "Descargar",
   "viewOnGitHub": "Ver en GitHub",
   "hint": {
-    "windows": "Ejecuta el instalador descargado. Tus datos y experimentos se conservan.",
-    "macos": "Abre el archivo descargado y arrastra dashAI a Aplicaciones. Tus datos y experimentos se conservan.",
-    "appimage": "Reemplaza tu archivo .AppImage por el descargado. Tus datos y experimentos se conservan.",
+    "windows": "Descarga la actualización e instálala desde aquí. Windows pedirá permiso. Tus datos y experimentos se conservan.",
+    "macos": "Descarga la actualización y ábrela desde aquí. dashAI se cerrará para que arrastres la nueva versión a Aplicaciones. Tus datos y experimentos se conservan.",
+    "appimage": "Descarga la actualización e instálala desde aquí. dashAI se reiniciará con la nueva versión. Tus datos y experimentos se conservan.",
     "pip": "Actualiza con este comando y luego reinicia dashAI:",
     "source": "Actualiza el repositorio con estos comandos y luego reinicia dashAI:",
     "docker": "Reconstruye la imagen de Docker con la nueva versión.",
     "unknown": "Descarga la nueva versión desde GitHub."
+  },
+  "downloadUpdate": "Descargar actualización ({{size}})",
+  "downloading": "Descargando actualización... {{percent}}%",
+  "downloadingShort": "Descargando...",
+  "downloadFailed": "No se pudo descargar la actualización.",
+  "installRestart": "Instalar y reiniciar",
+  "openInstaller": "Abrir instalador",
+  "installing": "Instalando...",
+  "installFailed": "No se pudo instalar la actualización. {{error}}",
+  "jobsRunningWarning": "Hay trabajos en curso. Instalar cierra dashAI y los detiene.",
+  "installAnyway": "Instalar igualmente",
+  "cancel": "Cancelar",
+  "manualDownload": "Descargar manualmente",
+  "installed": {
+    "windows": "Acepta el aviso de Windows para continuar. dashAI se cerrará y se abrirá de nuevo al terminar la instalación.",
+    "appimage": "dashAI se está reiniciando con la nueva versión.",
+    "macos": "Se abrió el instalador. Arrastra dashAI a Aplicaciones, reemplaza la versión anterior y vuelve a abrirla."
   }
 }

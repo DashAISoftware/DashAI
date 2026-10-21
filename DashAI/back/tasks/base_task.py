@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Final, List, Union
 
 from starlette.datastructures import UploadFile
@@ -15,31 +14,25 @@ class BaseTask:
     """Base class for DashAI compatible tasks."""
 
     TYPE: Final[str] = "Task"
+    REQUIRES_TARGET: bool = True
 
     PREDICTS_FORWARD_ONLY: bool = False
 
     @property
-    @abstractmethod
     def schema(self) -> Dict[str, Any]:
-        """Return the schema of components compatible with this task.
+        """Return optional task-specific configuration schema.
 
-        Concrete subclasses must implement this property to return a mapping
-        that describes which models, metrics, and other components are compatible
-        with the task.
+        Most modeling tasks do not need an additional schema beyond their
+        metadata and compatible components, so the default is an empty mapping.
+        Concrete tasks can override this property when they require extra
+        task-level parameters.
 
         Returns
         -------
         Dict[str, Any]
-            A dictionary whose keys are component category names (e.g.
-            ``"models"``, ``"metrics"``) and whose values are lists or
-            mappings of the compatible component classes or identifiers.
-
-        Raises
-        ------
-        NotImplementedError
-            If the subclass does not provide an implementation.
+            Task-specific schema, or an empty dictionary when not applicable.
         """
-        raise NotImplementedError
+        return {}
 
     @classmethod
     def _column_groups(cls, side: str) -> List[Dict[str, Any]]:
@@ -208,8 +201,8 @@ class BaseTask:
         -------
         Dict[str, Any]
             Dictionary with keys ``"inputs_types"``, ``"outputs_types"``,
-            ``"inputs_cardinality"``, ``"outputs_cardinality"``, ``"inputs"``
-            and ``"outputs"``.
+            ``"inputs_cardinality"``, ``"outputs_cardinality"``, ``"inputs"``,
+            ``"outputs"`` and ``"requires_target"``.
         """
         parsed_metadata: dict = {}
 
@@ -233,6 +226,8 @@ class BaseTask:
                 }
                 for group in groups
             ]
+
+        parsed_metadata["requires_target"] = cls.REQUIRES_TARGET
 
         return parsed_metadata
 
@@ -306,7 +301,7 @@ class BaseTask:
         dataset: "DashAIDataset",
         dataset_name: str,
         input_columns: List[str],
-        output_columns: List[str],
+        output_columns: List[str] | None,
     ) -> None:
         """Validate a dataset for the current task.
 
@@ -322,6 +317,7 @@ class BaseTask:
             Names of the columns selected as outputs.
         """
         types = dataset._types
+        output_columns = output_columns or []
         self._validate_side(input_columns, types, "inputs")
         self._validate_side(output_columns, types, "outputs")
 
@@ -329,7 +325,7 @@ class BaseTask:
         self,
         dataset: Union["DatasetDict", "DashAIDataset"],
         input_columns: List[str],
-        output_columns: List[str],
+        output_columns: List[str] | None = None,
     ) -> "DashAIDataset":
         """Prepare and validate a dataset for this task.
 
@@ -344,8 +340,9 @@ class BaseTask:
             converted to ``DashAIDataset`` automatically.
         input_columns : list of str
             Names of columns to use as model inputs.
-        output_columns : list of str
-            Names of columns to use as model outputs/targets.
+        output_columns : list of str, optional
+            Names of columns to use as model outputs/targets. Tasks without
+            targets, such as clustering, can omit this argument.
 
         Returns
         -------
@@ -363,6 +360,7 @@ class BaseTask:
         from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
 
         dashai_dataset = to_dashai_dataset(dataset)
+        output_columns = output_columns or []
         self.validate_dataset_for_task(
             dashai_dataset,
             dataset_name=getattr(dashai_dataset, "name", "dataset"),
@@ -370,24 +368,6 @@ class BaseTask:
             output_columns=output_columns,
         )
         return dashai_dataset
-
-    @abstractmethod
-    def num_labels(self, dataset: "DashAIDataset", output_column: str) -> int | None:
-        """Get the number of unique labels in the output column.
-
-        Parameters
-        ----------
-        dataset : DashAIDataset
-            Dataset used for training
-        output_column : str
-            Output column
-
-        Returns
-        -------
-        int | None
-            Number of unique labels or None if not applicable
-        """
-        raise NotImplementedError
 
     def _validate_and_normalize_value(
         self,

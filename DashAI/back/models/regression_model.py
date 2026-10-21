@@ -1,7 +1,7 @@
-from DashAI.back.models.base_model import BaseModel
+from DashAI.back.models.supervised_model import SupervisedModel
 
 
-class RegressionModel(BaseModel):
+class RegressionModel(SupervisedModel):
     """Base class for models that perform regression tasks.
 
     Concrete regression models must extend this class and implement ``save``,
