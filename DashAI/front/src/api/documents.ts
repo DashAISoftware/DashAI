@@ -156,3 +156,26 @@ export const enqueueDocumentJob = async (
   });
   return response.data;
 };
+
+export const enqueueHubDocumentJob = async (
+  documentId: number,
+  name: string,
+  datafileId: number,
+  selectedFile: string,
+): Promise<{ id: string }> => {
+  const formData = new FormData();
+  formData.append("job_type", "DocumentJob");
+  formData.append(
+    "kwargs",
+    JSON.stringify({
+      document_id: documentId,
+      name,
+      datafile_id: datafileId,
+      selected_file: selectedFile,
+    }),
+  );
+  const response = await api.post<{ id: string }>("/v1/job/", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};

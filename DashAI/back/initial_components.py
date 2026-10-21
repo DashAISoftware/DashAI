@@ -579,6 +579,7 @@ from DashAI.back.units.load_run_model_unit import LoadRunModelUnit
 from DashAI.back.units.load_trained_model_unit import LoadTrainedModelUnit
 from DashAI.back.units.load_training_dataset_unit import LoadTrainingDatasetUnit
 from DashAI.back.units.load_uploaded_dataset_unit import LoadUploadedDatasetUnit
+from DashAI.back.units.parse_document_unit import ParseDocumentUnit
 from DashAI.back.units.predict_unit import PredictUnit
 from DashAI.back.units.prepare_and_fold_unit import PrepareAndFoldUnit
 from DashAI.back.units.prepare_and_split_unit import PrepareAndSplitUnit
@@ -587,10 +588,17 @@ from DashAI.back.units.prepare_without_target_unit import PrepareWithoutTargetUn
 from DashAI.back.units.run_exploration_unit import RunExplorationUnit
 from DashAI.back.units.save_dataset_to_path_unit import SaveDatasetToPathUnit
 from DashAI.back.units.save_dataset_unit import SaveDatasetUnit
+from DashAI.back.units.save_document_to_path_unit import SaveDocumentToPathUnit
 from DashAI.back.units.save_exploration_unit import SaveExplorationUnit
 from DashAI.back.units.save_model_unit import SaveModelUnit
 from DashAI.back.units.save_prediction_unit import SavePredictionUnit
 from DashAI.back.units.score_clusters_unit import ScoreClustersUnit
+from DashAI.back.units.store_datafile_document_source_unit import (
+    StoreDatafileDocumentSourceUnit,
+)
+from DashAI.back.units.store_uploaded_document_source_unit import (
+    StoreUploadedDocumentSourceUnit,
+)
 from DashAI.back.units.transform_dataset_unit import TransformDatasetUnit
 
 logging.basicConfig(level=logging.DEBUG)
@@ -817,6 +825,10 @@ def get_initial_components():
         ApplyDatasetSchemaUnit,
         ComputeDatasetMetadataUnit,
         SaveDatasetToPathUnit,
+        StoreUploadedDocumentSourceUnit,
+        StoreDatafileDocumentSourceUnit,
+        ParseDocumentUnit,
+        SaveDocumentToPathUnit,
         RAGJob,
         # Reports
         ConfusionMatrix,

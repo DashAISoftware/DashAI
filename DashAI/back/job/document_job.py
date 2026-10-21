@@ -1,6 +1,5 @@
-"""Job that parses an uploaded file into a persistent DashAIDocument."""
+"""Job that parses an uploaded or downloaded file into a persistent document."""
 
-import hashlib
 import logging
 import os
 import shutil
@@ -13,13 +12,18 @@ from urllib.parse import unquote
 from kink import di, inject
 from sqlalchemy import exc
 
-from DashAI.back.dataloaders.classes.dataloader import (
-    DataKindMismatchError,
-    require_data_kind,
-)
 from DashAI.back.dataloaders.classes.document_dataloader import redact_params
 from DashAI.back.dependencies.database.models import DataDocument
 from DashAI.back.job.base_job import BaseJob, JobError
+from DashAI.back.units.context import ExecutionContext
+from DashAI.back.units.parse_document_unit import ParseDocumentUnit
+from DashAI.back.units.save_document_to_path_unit import SaveDocumentToPathUnit
+from DashAI.back.units.store_datafile_document_source_unit import (
+    StoreDatafileDocumentSourceUnit,
+)
+from DashAI.back.units.store_uploaded_document_source_unit import (
+    StoreUploadedDocumentSourceUnit,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
@@ -27,40 +31,26 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def _sha256(path: Path) -> str:
-    """Hash a file in 1 MiB chunks.
-
-    Parameters
-    ----------
-    path : pathlib.Path
-        The file to hash.
-
-    Returns
-    -------
-    str
-        The hexadecimal sha256 digest.
-    """
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 class DocumentJob(BaseJob):
-    """Parse an uploaded file with a document loader and store the result.
+    """Parse a file with a document loader and store the result.
 
     The ``DataDocument`` row is created beforehand by ``POST /api/v1/documents``
     and already holds the loader name and its validated parameters. The job
-    copies the upload to ``<DOCUMENTS_PATH>/<uuid>/source/``, parses it, saves
-    the document under ``<uuid>/document/`` and fills the row.
+    copies the source file to ``<DOCUMENTS_PATH>/<uuid>/source/``, parses it,
+    saves the document under ``<uuid>/document/`` and fills the row.
+
+    The source is either an upload or a file inside a completed hub download.
+    Each has its own unit to store it, and both publish the same keys, so the
+    parsing and saving units are shared.
 
     Parameters
     ----------
     kwargs : Dict[str, Any]
-        ``document_id`` (required), ``name`` (optional, for the job list), and
-        the upload fields ``file_path``, ``temp_dir`` and ``filename`` that
-        ``POST /api/v1/job/`` adds for multipart requests.
+        ``document_id`` (required) and ``name`` (optional, for the job list).
+        Uploads carry ``file_path``, ``temp_dir`` and ``filename``, which
+        ``POST /api/v1/job/`` adds for multipart requests. Hub imports carry
+        ``datafile_id`` and optionally ``selected_file``, the file inside the
+        download relative to its root.
     """
 
     @inject
@@ -177,20 +167,18 @@ class DocumentJob(BaseJob):
                 db.commit()
 
     def run(self) -> None:
-        """Store the upload, parse it and fill the document row.
+        """Store the source file, parse it and fill the document row.
 
         Raises
         ------
         JobError
-            If the upload, the row or the loader is missing, or parsing fails.
+            If the source, the row or the loader is missing, or parsing fails.
         """
-        from DashAI.back.dataloaders.classes.dashai_document import save_document
-
-        component_registry = di["component_registry"]
         session_factory = di["session_factory"]
         config = di["config"]
 
         document_id = self.kwargs.get("document_id")
+        datafile_id = self.kwargs.get("datafile_id")
         upload_path = self.kwargs.get("file_path")
         temp_dir = self.kwargs.get("temp_dir")
         raw_name = self.kwargs.get("filename") or (
@@ -198,12 +186,14 @@ class DocumentJob(BaseJob):
         )
         file_name = os.path.basename(unquote(raw_name))
         folder_path: Optional[Path] = None
+        ctx = ExecutionContext()
 
         try:
-            if not upload_path or not os.path.isfile(upload_path):
-                raise JobError("No file was uploaded for this document.")
-            if not file_name:
-                raise JobError("The uploaded file has no name.")
+            if datafile_id is None:
+                if not upload_path or not os.path.isfile(upload_path):
+                    raise JobError("No file was uploaded for this document.")
+                if not file_name:
+                    raise JobError("The uploaded file has no name.")
 
             with session_factory() as db:
                 document = db.get(DataDocument, document_id)
@@ -218,38 +208,43 @@ class DocumentJob(BaseJob):
                 document.set_status_as_started()
                 db.commit()
 
-            if not dataloader_name or dataloader_name not in component_registry:
-                raise JobError(
-                    f"Document loader '{dataloader_name}' is not registered."
+            if datafile_id is None:
+                store_source = StoreUploadedDocumentSourceUnit(
+                    upload_path=upload_path,
+                    file_name=file_name,
+                    path=str(folder_path / "source"),
                 )
-            loader_class = component_registry[dataloader_name]["class"]
-            try:
-                require_data_kind(loader_class, "document")
-            except DataKindMismatchError as e:
-                raise JobError(str(e)) from e
+            else:
+                store_source = StoreDatafileDocumentSourceUnit(
+                    datafile_id=datafile_id,
+                    selected_file=self.kwargs.get("selected_file"),
+                    path=str(folder_path / "source"),
+                )
+            parse_document = ParseDocumentUnit(
+                dataloader={"component": dataloader_name, "params": dataloader_params}
+            )
+            parse_document.validate(ctx)
 
             self.report_progress(0.1, "Storing source file")
-            source_dir = folder_path / "source"
-            source_dir.mkdir()
-            source_path = source_dir / file_name
-            shutil.copyfile(upload_path, source_path)
-            file_hash = _sha256(source_path)
+            store_source(ctx)
 
             self.report_progress(0.3, "Parsing document")
-            parsed = loader_class().load_document(str(source_path), dataloader_params)
+            parse_document(ctx)
 
             self.report_progress(0.8, "Saving document")
-            save_document(parsed, folder_path / "document")
+            SaveDocumentToPathUnit(path=str(folder_path / "document"))(ctx)
 
+            parsed = ctx.require("document")
+            source_path = Path(ctx.require("source_path"))
             with session_factory() as db:
                 document = db.get(DataDocument, document_id)
                 if document is None:
                     raise JobError(
                         f"Document with id {document_id} was deleted while parsing."
                     )
-                document.file_name = file_name
+                document.file_name = source_path.name
                 document.file_type = source_path.suffix.lower().lstrip(".")
-                document.file_hash = file_hash
+                document.file_hash = ctx.require("file_hash")
                 document.content_counts = {
                     content_type.display_name(): parsed.count(content_type)
                     for content_type in parsed.types
@@ -267,5 +262,6 @@ class DocumentJob(BaseJob):
             self._mark_failed(session_factory, folder_path)
             raise JobError(f"Error loading document: {e}") from e
         finally:
+            ctx.clear_cache()
             if temp_dir and os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir, ignore_errors=True)
