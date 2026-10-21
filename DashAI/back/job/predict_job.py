@@ -52,6 +52,27 @@ def _preprocessing_artifacts_path(model_session: ModelSession) -> Optional[str]:
     return artifacts_path
 
 
+def _input_columns_training_prepared_with(model_session: ModelSession) -> List[str]:
+    """The input columns the task was handed when the run's rows were carved.
+
+    A session that preprocesses lists in ``input_columns`` the columns its
+    converters produce, which the loaded rows do not have, so training
+    prepares with the raw refs instead (``SplitterScopeMixin._prepare``,
+    ``PreprocessingJob``). Without steps, the session's inputs are the raw
+    columns themselves.
+    """
+    if not (model_session.preprocessing and model_session.preprocessing.get("steps")):
+        return model_session.input_columns
+
+    from DashAI.back.preprocessing.column_ref import parse_column_refs
+
+    return [
+        ref.name
+        for ref in parse_column_refs(model_session.input_column_refs or [])
+        if ref.kind == "raw"
+    ]
+
+
 def _build_preview_rows(
     prepared_dataset: "DashAIDataset",
     input_columns: List[str],
@@ -491,12 +512,25 @@ class PredictJob(BaseJob):
                 # dataset read from disk from one typed in by hand.
                 if dataset_id:
                     LoadDatasetUnit(dataset_id=dataset_id)(ctx)
-                    # Narrowed on the raw rows, straight after the load and
-                    # before anything downstream reshapes them, and written
-                    # back under the same key: the saved prediction has to
-                    # cover the rows that were asked for and no others.
+                    # Narrowed straight after the load and before anything
+                    # downstream reshapes the rows, and written back under the
+                    # same key: the saved prediction has to cover the rows
+                    # that were asked for and no others. The run's indexes are
+                    # positions in the dataset the task prepared, which a task
+                    # may reorder (forecasting sorts by date), so they select
+                    # from that dataset and not from the loaded one. Preparing
+                    # keeps every column and value of the loaded rows, so what
+                    # follows still reads raw rows.
                     if row_indexes is not None:
-                        ctx.put("dataset", ctx.require("dataset").select(row_indexes))
+                        task = component_registry[model_session.task_name]["class"]()
+                        prepared = task.prepare_for_task(
+                            dataset=ctx.require("dataset"),
+                            input_columns=_input_columns_training_prepared_with(
+                                model_session
+                            ),
+                            output_columns=model_session.output_columns,
+                        )
+                        ctx.put("dataset", prepared.select(row_indexes))
                 else:
                     BuildManualInputUnit(
                         task_name=model_session.task_name,

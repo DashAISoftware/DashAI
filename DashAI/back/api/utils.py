@@ -108,3 +108,32 @@ def remove_path(path):
         shutil.rmtree(path)
     else:
         raise ValueError("file {} is not a file or dir.".format(path))
+
+
+def offered_components(component_registry, task_name: str, component_type: str):
+    """Name the components of one type that the registry offers a task.
+
+    The wizard builds every selector of a session from the same relation
+    (``GET /component/?related_component=<task>``), so asking it here is how an
+    endpoint refuses what the front would never have offered: a strategy, a
+    splitter or a model put together by hand for a task it does not serve.
+
+    Parameters
+    ----------
+    component_registry : ComponentRegistry
+        Registry that relates components to the tasks they serve.
+    task_name : str
+        The task, which must be registered.
+    component_type : str
+        The registry type to keep, such as ``"Splitter"`` or ``"Model"``.
+
+    Returns
+    -------
+    list of str
+        The names, sorted.
+    """
+    return sorted(
+        component["name"]
+        for component in component_registry.get_related_components(task_name)
+        if component.get("type") == component_type
+    )

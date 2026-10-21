@@ -432,7 +432,9 @@ def transform_by_split(
     preprocessor : SessionPreprocessor
         The fitted preprocessor of the run's session.
     dataset : DashAIDataset
-        The raw dataset the run was trained on.
+        The dataset the run was trained on, as its task prepared it: the
+        run's indexes are positions in that, not in the loaded rows, and a
+        task may reorder them. Not yet transformed.
     train_indexes, test_indexes, val_indexes : list of int
         The run's split indexes over ``dataset``.
 

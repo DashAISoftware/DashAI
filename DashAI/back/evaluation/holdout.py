@@ -14,6 +14,7 @@ class SinglePartitionEvaluationStrategy(BaseEvaluationStrategy):
     """
 
     KIND: str = "holdout"
+    SPLITTER_PARTITIONING = "holdout"
 
 
 class HoldoutEvaluationStrategy(SinglePartitionEvaluationStrategy):

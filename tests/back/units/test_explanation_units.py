@@ -18,6 +18,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     to_dashai_dataset,
 )
 from DashAI.back.job.base_job import JobError
+from DashAI.back.tasks.regression_task import RegressionTask
 from DashAI.back.units.build_global_explainer_unit import BuildGlobalExplainerUnit
 from DashAI.back.units.build_local_explainer_unit import BuildLocalExplainerUnit
 from DashAI.back.units.context import ExecutionContext, UnitContractError
@@ -468,12 +469,13 @@ def test_prepare_applies_the_persisted_preprocessor_before_the_split(
     registry, persisted_binarizer
 ):
     """The session's input columns are the converter's outputs, so they only
-    exist once ``final.pkl`` has run over the loaded rows. It runs before the
-    split is replayed, the way training saw the data."""
+    exist once ``final.pkl`` has run over the loaded rows. It runs on each part
+    of the replayed split, the way training saw the data."""
     ctx = _prepared_context(registry)
 
     _prepare_unit(
         input_columns=["bin_a", "b"],
+        input_column_refs=BINARIZED_REFS,
         preprocessing_artifacts_path=persisted_binarizer,
     )(ctx)
 
@@ -482,10 +484,8 @@ def test_prepare_applies_the_persisted_preprocessor_before_the_split(
     assert sum(len(split) for split in data_x.values()) == 6
     for split in data_x.values():
         assert split.column_names == ["bin_a", "b"]
-        # a equals b in the stored rows, so a row's bin_a is its b thresholded
-        # at 1. Checked row by row rather than against a fixed list: the unit
-        # splits twice and the second pass does not keep the rows in index
-        # order, which is inherited behaviour and not what this test is about.
+        # a equals b in the stored rows, so a row's bin_a is its b
+        # thresholded at 1.
         assert list(split["bin_a"]) == [int(value > 1) for value in split["b"]]
     assert ctx.require("data_y")["train"].column_names == ["target"]
 
@@ -500,6 +500,7 @@ def test_prepare_leaves_the_loaded_dataset_in_the_context_untouched(
 
     _prepare_unit(
         input_columns=["bin_a", "b"],
+        input_column_refs=BINARIZED_REFS,
         preprocessing_artifacts_path=persisted_binarizer,
     )(ctx)
 
@@ -516,6 +517,119 @@ def test_prepare_without_an_artifacts_path_applies_nothing(
     _prepare_unit()(ctx)
 
     assert ctx.require("data_x")["train"].column_names == ["a", "b"]
+
+
+# Positions out of order and interleaved across partitions, so a partition
+# that picks up another's rows, or loses its own, cannot go unnoticed.
+SCATTERED_SPLITS = {
+    "train_indexes": [5, 1, 6, 2],
+    "test_indexes": [0, 7],
+    "val_indexes": [3, 4],
+}
+PARTITIONS = {
+    "train": "train_indexes",
+    "test": "test_indexes",
+    "validation": "val_indexes",
+}
+# The session of the persisted Binarizer: b read raw, a only through bin_a.
+BINARIZED_REFS = [{"kind": "raw", "name": "b"}, {"kind": "group", "step": 0}]
+
+
+class ReversingRegressionTask(RegressionTask):
+    """A task whose preparation hands the rows back in reverse order."""
+
+    def prepare_for_task(self, dataset, input_columns, output_columns):
+        prepared = super().prepare_for_task(dataset, input_columns, output_columns)
+        return prepared.select(range(len(prepared) - 1, -1, -1))
+
+
+def _scattered_context():
+    ctx = ExecutionContext()
+    ctx.put("dataset", _dataset(rows=8))
+    ctx.put("model", RecordingModel())
+    ctx.put_ref("split_indexes", SCATTERED_SPLITS)
+    return ctx
+
+
+def _rows_of(split, column):
+    return sorted(split[column])
+
+
+@pytest.mark.parametrize("task", [RegressionTask, ReversingRegressionTask])
+def test_each_partition_holds_the_rows_of_the_prepared_dataset_at_its_indexes(
+    registry, task
+):
+    """The run's indexes are positions in the dataset the task prepared.
+
+    With a task that keeps the order, the unit used to cut the loaded rows,
+    hand the three parts to the task (which merges them back in alphabetical
+    order of their names, test first) and cut the merge again with the same
+    indexes, so a partition held rows of the others. With a task that
+    reorders, cutting before preparing picks other rows as well.
+    """
+    registry[task.__name__] = {"class": task}
+    ctx = _scattered_context()
+
+    _prepare_unit(task_name=task.__name__)(ctx)
+
+    prepared = task().prepare_for_task(_dataset(rows=8), ["a", "b"], ["target"])
+    data_x, data_y = ctx.require("data_x"), ctx.require("data_y")
+    for name, key in PARTITIONS.items():
+        expected = prepared.select(SCATTERED_SPLITS[key])
+        assert _rows_of(data_x[name], "a") == _rows_of(expected, "a"), name
+        assert len(data_y[name]) == len(expected), name
+
+
+def test_with_preprocessing_each_partition_holds_its_prepared_rows_transformed(
+    registry, persisted_binarizer
+):
+    """Prepared with the raw refs, cut, and transformed part by part.
+
+    The task is handed the columns training prepared with, the raw refs, since
+    the converter's outputs do not exist yet; then each part goes through
+    ``final.pkl``. Preparing after the transform would hand the task columns
+    the training never validated, and cutting before preparing reads the
+    loaded order.
+    """
+    registry["ReversingRegressionTask"] = {"class": ReversingRegressionTask}
+    ctx = _scattered_context()
+
+    _prepare_unit(
+        task_name="ReversingRegressionTask",
+        input_columns=["bin_a", "b"],
+        input_column_refs=BINARIZED_REFS,
+        preprocessing_artifacts_path=persisted_binarizer,
+    )(ctx)
+
+    prepared = ReversingRegressionTask().prepare_for_task(
+        _dataset(rows=8), ["b"], ["target"]
+    )
+    data_x = ctx.require("data_x")
+    for name, key in PARTITIONS.items():
+        expected = prepared.select(SCATTERED_SPLITS[key])
+        assert data_x[name].column_names == ["bin_a", "b"], name
+        assert _rows_of(data_x[name], "b") == _rows_of(expected, "b"), name
+        assert list(data_x[name]["bin_a"]) == [
+            int(value > 1) for value in data_x[name]["b"]
+        ], name
+
+
+@pytest.mark.parametrize(
+    "half",
+    [
+        {"input_column_refs": BINARIZED_REFS},
+        {"preprocessing_artifacts_path": "somewhere"},
+    ],
+    ids=["refs-only", "path-only"],
+)
+def test_the_preprocessing_path_and_the_refs_come_together(registry, half):
+    """One without the other is a wiring mistake, not "no preprocessing".
+
+    Without the refs the unit cannot know which columns training prepared
+    with; without the path it has nothing to apply.
+    """
+    with pytest.raises(JobError, match="come together"):
+        _prepare_unit(input_columns=["bin_a", "b"], **half)(_prepared_context(registry))
 
 
 # --- GenerateGlobalExplanationUnit --------------------------------------

@@ -24,6 +24,7 @@ class FullDatasetEvaluationStrategy(BaseEvaluationStrategy):
     """
 
     KIND: str = "full"
+    SPLITTER_PARTITIONING = None
     SCORED_SPLITS: tuple = (SplitEnum.FULL,)
 
     DESCRIPTION = MultilingualString(

@@ -26,6 +26,7 @@ class FoldEvaluationStrategy(BaseEvaluationStrategy):
     """
 
     KIND: str = "cv"
+    SPLITTER_PARTITIONING = "folds"
 
 
 class CrossValidationEvaluationStrategy(FoldEvaluationStrategy):

@@ -11,7 +11,10 @@ import json
 from typing import Any, Dict, List, Optional, Tuple, Type
 
 # Before fold splitters existed the payload named no splitter at all: every
-# split was a holdout split.
+# split was a holdout split. Sessions stored back then still mean this one, and
+# so does the empty payload of a strategy that carves nothing. It shuffles, so
+# the session API checks the resolved splitter against the task like any named
+# one, and a task that does not offer it gets a 422 instead of a shuffle.
 DEFAULT_SPLITTER_NAME = "HoldoutSplitter"
 
 INDEX_KEY_BY_SPLIT = {

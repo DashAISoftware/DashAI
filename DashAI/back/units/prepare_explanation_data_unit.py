@@ -14,6 +14,10 @@ from DashAI.back.job.base_job import JobError
 from DashAI.back.units.base_unit import BaseUnit
 from DashAI.back.units.context import ExecutionContext
 from DashAI.back.units.explanation_artifacts import load_persisted_preprocessor
+from DashAI.back.units.splitter_scope import (
+    input_column_refs_field,
+    persisted_preprocessing,
+)
 
 if TYPE_CHECKING:
     from DashAI.back.tasks.base_task import BaseTask
@@ -77,6 +81,7 @@ class PrepareExplanationDataSchema(BaseSchema):
             zh="模型需要预测的列名。",
         ),
     )  # type: ignore
+    input_column_refs: input_column_refs_field()  # type: ignore
 
 
 class PrepareExplanationDataUnit(BaseUnit):
@@ -87,6 +92,14 @@ class PrepareExplanationDataUnit(BaseUnit):
     the model ever saw. This one replays the row indexes the run recorded, so
     the explanation is about the model that exists.
 
+    Those indexes are positions in the dataset the task prepared, because that
+    is what training partitioned, and a task may reorder the rows (forecasting
+    sorts them by date). So the loaded dataset is prepared first, with the
+    columns training prepared with, and cut once afterwards. Cutting first and
+    preparing the parts was doubly wrong: it read the loaded order, and the
+    task merges a dict of parts back in alphabetical order of their names, so
+    the second cut handed each partition rows of the others.
+
     Features stay unprepared — models apply their own preprocessing inside
     ``predict``, and preparing beforehand would break the ones that replace
     their input columns with derived features — while targets are encoded,
@@ -94,13 +107,16 @@ class PrepareExplanationDataUnit(BaseUnit):
 
     Session preprocessing is another matter: converters the session fitted
     ahead of training (``PreprocessingJob``) are not part of the model, and
-    the input columns the session records are the names they produced. When
-    ``preprocessing_artifacts_path`` is supplied, the run's split is cut
-    first and the persisted ``final.pkl`` is applied to each part, so the
-    explainer's data is in the feature space the model was trained on. Cutting
-    first keeps the run's indexes valid when a step removes rows
-    (NanRemover), and no part is resampled, so no synthetic rows get in. The
-    transformed dataset stays local to this unit: ``dataset`` in the context
+    the input columns the session records are the names they produced. Such a
+    session supplies ``preprocessing_artifacts_path`` and
+    ``input_column_refs`` together. The task is then prepared with the raw
+    refs, as training did, since the converters' outputs do not exist yet;
+    the run's split is cut from the prepared rows and the persisted
+    ``final.pkl`` is applied to each part, so the explainer's data is in the
+    feature space the model was trained on. Cutting before transforming keeps
+    the run's indexes valid when a step removes rows (NanRemover), and no part
+    is resampled, so no synthetic rows get in. The transformed dataset stays
+    local to this unit: ``dataset`` in the context
     is left as it was loaded, since nothing downstream reads it and a unit
     that rewrote a key it requires would blur what it consumes and what it
     produces.
@@ -167,37 +183,39 @@ class PrepareExplanationDataUnit(BaseUnit):
         splits = ctx.require("split_indexes")
         input_columns = self.config["input_columns"]
         output_columns = self.config["output_columns"]
+        preprocessing = persisted_preprocessing(
+            self.config.get("preprocessing_artifacts_path"),
+            self.config.get("input_column_refs"),
+        )
 
         train_idx = splits["train_indexes"]
         test_idx = splits["test_indexes"]
         val_idx = splits["val_indexes"]
 
-        artifacts_path = self.config.get("preprocessing_artifacts_path")
-        if artifacts_path is not None:
+        # Prepared before anything is cut, with the columns training prepared
+        # with: the run's indexes are positions in what the task hands back.
+        prepared_dataset = task.prepare_for_task(
+            dataset=loaded_dataset,
+            input_columns=(
+                preprocessing.raw_input_names if preprocessing else input_columns
+            ),
+            output_columns=output_columns,
+        )
+
+        if preprocessing is not None:
             from DashAI.back.preprocessing.session_preprocessor import (
                 transform_by_split,
             )
 
-            # Split first, transform each part after: the run's indexes stay
+            # Cut first, transform each part after: the run's indexes stay
             # valid even if a step removes rows (NanRemover), and no
-            # resampled rows get in.
-            preprocessor = load_persisted_preprocessor(artifacts_path)
-            loaded_dataset, train_idx, test_idx, val_idx = transform_by_split(
-                preprocessor, loaded_dataset, train_idx, test_idx, val_idx
+            # resampled rows get in. The parts come back concatenated, with
+            # each one's new positions.
+            preprocessor = load_persisted_preprocessor(preprocessing.artifacts_path)
+            prepared_dataset, train_idx, test_idx, val_idx = transform_by_split(
+                preprocessor, prepared_dataset, train_idx, test_idx, val_idx
             )
 
-        loaded_dataset = split_dataset(
-            loaded_dataset,
-            train_indexes=train_idx,
-            test_indexes=test_idx,
-            val_indexes=val_idx,
-        )
-
-        prepared_dataset = task.prepare_for_task(
-            dataset=loaded_dataset,
-            input_columns=input_columns,
-            output_columns=output_columns,
-        )
         data = select_columns(prepared_dataset, input_columns, output_columns)
 
         data_x = split_dataset(

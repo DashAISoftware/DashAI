@@ -463,6 +463,49 @@ def test_a_prediction_on_a_partition_covers_exactly_its_rows(
     assert saved.select_columns(INPUT_COLUMNS).to_dict() == expected.to_dict()
 
 
+def test_a_prediction_on_a_partition_saves_what_the_whole_dataset_saves_for_it(
+    client, trained_run_id, dataset_1
+):
+    """Narrowing to a partition changes which rows are saved, and nothing else.
+
+    The rows of a partition are read from the dataset the task prepared, which
+    is where the run's indexes point. That is only safe if preparing keeps
+    every column, value and declared type of the loaded rows, and with a task
+    that does not reorder the file, the saved prediction is then the one a
+    prediction on the whole dataset saves for those rows. The whole dataset is
+    never prepared, so anything the preparation converted, a label type or a
+    column, shows up here as a difference.
+    """
+    whole_id = _create_prediction(client, trained_run_id, dataset_1.id)
+    PredictJob(prediction_id=whole_id).run()
+    partition_id = _create_prediction(
+        client, trained_run_id, dataset_1.id, split="test"
+    )
+    PredictJob(prediction_id=partition_id).run()
+
+    stored = {
+        name: _stored_prediction(client, prediction_id)
+        for name, prediction_id in (("whole", whole_id), ("partition", partition_id))
+    }
+    assert all(s["status"] == PredictionStatus.FINISHED for s in stored.values())
+    whole, partition = (
+        load_dataset(str(Path(stored[name]["results_path"]) / "dataset"))
+        for name in ("whole", "partition")
+    )
+
+    test_indexes = _run_split_indexes(client, trained_run_id)["test_indexes"]
+    assert partition.column_names == whole.column_names
+    assert {name: kind.to_string() for name, kind in partition.types.items()} == {
+        name: kind.to_string() for name, kind in whole.types.items()
+    }
+    assert partition.arrow_table.schema.equals(
+        whole.arrow_table.schema, check_metadata=True
+    )
+    assert partition.to_dict() == whole.select(test_indexes).to_dict()
+    # The labels are decoded to the species names, not left as class indexes.
+    assert all(isinstance(label, str) for label in partition[OUTPUT_COLUMN])
+
+
 def test_a_partition_the_run_does_not_have_ends_the_prediction_in_error(
     client, trained_run_id, dataset_1
 ):

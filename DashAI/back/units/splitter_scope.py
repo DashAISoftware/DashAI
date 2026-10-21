@@ -277,6 +277,42 @@ class PersistedPreprocessing(NamedTuple):
         return [ref.name for ref in self.input_refs if ref.kind == "raw"]
 
 
+def persisted_preprocessing(
+    artifacts_path: Optional[str], input_column_refs: Optional[List[dict]]
+) -> Optional[PersistedPreprocessing]:
+    """Pair the two optional fields, or None when the session has no steps.
+
+    They come together or not at all. A ref that names a converter's output
+    group only resolves against the fit that produced it, and a fitted
+    sequence with no refs leaves the model with no columns to read, nor the
+    task with the raw ones training prepared with. So one without the other
+    is a wiring mistake, and it is reported as one rather than read as "not
+    applicable".
+
+    A module function rather than only a mixin method because a unit outside
+    the splitter scope, the one that rebuilds a run's data for an
+    explanation, reads the same pair.
+    """
+    if artifacts_path is None and input_column_refs is None:
+        return None
+    if artifacts_path is None or input_column_refs is None:
+        raise JobError(
+            "preprocessing_artifacts_path and input_column_refs come "
+            "together: a session with preprocessing steps supplies both.",
+        )
+
+    from DashAI.back.preprocessing.column_ref import parse_column_refs
+
+    try:
+        input_refs = parse_column_refs(input_column_refs)
+    except Exception as e:
+        log.exception(e)
+        raise JobError(
+            f"Can not parse input column refs {input_column_refs}: {e}",
+        ) from e
+    return PersistedPreprocessing(artifacts_path=artifacts_path, input_refs=input_refs)
+
+
 class SplitterScopeMixin:
     """Prepare a dataset for a task and hand it to a splitter.
 
@@ -354,34 +390,8 @@ class SplitterScopeMixin:
     def _persisted_preprocessing(
         artifacts_path: Optional[str], input_column_refs: Optional[List[dict]]
     ) -> Optional[PersistedPreprocessing]:
-        """Pair the two optional fields, or None when the session has no steps.
-
-        They come together or not at all. A ref that names a converter's
-        output group only resolves against the fit that produced it, and a
-        fitted sequence with no refs leaves the model with no columns to read.
-        So one without the other is a wiring mistake, and it is reported as
-        one rather than read as "not applicable".
-        """
-        if artifacts_path is None and input_column_refs is None:
-            return None
-        if artifacts_path is None or input_column_refs is None:
-            raise JobError(
-                "preprocessing_artifacts_path and input_column_refs come "
-                "together: a session with preprocessing steps supplies both.",
-            )
-
-        from DashAI.back.preprocessing.column_ref import parse_column_refs
-
-        try:
-            input_refs = parse_column_refs(input_column_refs)
-        except Exception as e:
-            log.exception(e)
-            raise JobError(
-                f"Can not parse input column refs {input_column_refs}: {e}",
-            ) from e
-        return PersistedPreprocessing(
-            artifacts_path=artifacts_path, input_refs=input_refs
-        )
+        """Pair the two optional fields; see ``persisted_preprocessing``."""
+        return persisted_preprocessing(artifacts_path, input_column_refs)
 
     def _prepare(
         self,

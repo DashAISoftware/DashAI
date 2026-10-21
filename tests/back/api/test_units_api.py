@@ -98,6 +98,15 @@ def test_unit_schemas_describe_their_configuration(units):
         units["PrepareAndFoldUnit"]["schema"]["properties"]["splitter"]["parent"]
         == "FoldSplitter"
     )
+    # Rebuilding a run's data for an explanation reads the same refs, to
+    # prepare the task with the raw columns training prepared with. Its
+    # artifacts path is a runtime param, so it stays out of the form.
+    assert set(units["PrepareExplanationDataUnit"]["schema"]["properties"]) == {
+        "task_name",
+        "input_columns",
+        "output_columns",
+        "input_column_refs",
+    }
     # The target-free counterparts. Preparing has no output columns and no
     # splitter to pick, fitting has nothing to configure, and scoring only
     # names the metrics: the labels come from the model it is handed.
