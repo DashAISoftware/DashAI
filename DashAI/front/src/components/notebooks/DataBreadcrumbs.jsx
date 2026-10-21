@@ -13,14 +13,15 @@ export default function DataBreadcrumbs() {
   const location = useLocation();
   const params = useParams();
   const { t } = useTranslation(["datasets", "common"]);
-  const { datasets, notebooks, uploadDataloader } = useDatasetsAndNotebooks();
+  const { datasets, notebooks, documents, uploadDataloader } =
+    useDatasetsAndNotebooks();
 
-  const rootCrumb = { label: t("common:datasets"), path: "/app/data" };
+  const rootCrumb = { label: t("common:data"), path: "/app/data" };
 
   const getBreadcrumbs = () => {
     const path = location.pathname;
 
-    if (path.startsWith("/app/data/datasets/new/") && params.dataloaderName) {
+    if (path.startsWith("/app/data/new/") && params.dataloaderName) {
       const dataloaderLabel = uploadDataloader
         ? uploadDataloader.display_name || uploadDataloader.name
         : params.dataloaderName;
@@ -28,7 +29,7 @@ export default function DataBreadcrumbs() {
         rootCrumb,
         {
           label: t("datasets:label.selectDataloader"),
-          path: "/app/data/datasets/new",
+          path: "/app/data/new",
         },
         {
           label: dataloaderLabel,
@@ -38,7 +39,7 @@ export default function DataBreadcrumbs() {
       ];
     }
 
-    if (path.startsWith("/app/data/datasets/new")) {
+    if (path.startsWith("/app/data/new")) {
       return [
         rootCrumb,
         {
@@ -47,6 +48,12 @@ export default function DataBreadcrumbs() {
           current: true,
         },
       ];
+    }
+
+    if (path.startsWith("/app/data/documents/") && params.id) {
+      const item = documents.find((d) => d.id === Number(params.id));
+      const name = item?.name ?? `#${params.id}`;
+      return [rootCrumb, { label: name, path: null, current: true }];
     }
 
     if (path.startsWith("/app/data/notebooks/new")) {

@@ -21,6 +21,7 @@ import {
 } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 import ComponentDownloadControl from "../models/model/ComponentDownloadControl";
+import TagBadges from "../shared/TagBadges";
 import CredentialsDialog from "../credentials/CredentialsDialog";
 import {
   useCredentialStatuses,
@@ -133,6 +134,7 @@ function ComponentSelector({
       credentialsLoaded,
     );
     const requiresDownload = Boolean(component.metadata?.requires_download);
+    const tags = component.metadata?.tags ?? [];
     const needsDownload = requiresDownload && !component.downloaded;
     // The card is always selectable so its details show in the side bar; the
     // unmet download/credential requirements only dim the content as a hint.
@@ -206,6 +208,7 @@ function ComponentSelector({
             >
               {getDescription(component, t("noDescriptionAvailable"))}
             </Typography>
+            <TagBadges tags={tags} sx={{ mt: 2 }} />
           </Box>
           {/* Credential status and selection check share the top right corner. */}
           <Stack

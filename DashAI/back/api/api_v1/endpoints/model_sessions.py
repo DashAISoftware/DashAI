@@ -14,6 +14,7 @@ from DashAI.back.api.api_v1.schemas.model_sessions_params import (
     PreprocessingStructureParams,
 )
 from DashAI.back.api.utils import remove_path
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.dependencies.database.models import Dataset, ModelSession, Run
 from DashAI.back.job.preprocessing_job import PreprocessingJob
 from DashAI.back.preprocessing.column_ref import ConverterSequence, RawColumnRef
@@ -25,7 +26,6 @@ from DashAI.back.preprocessing.structure import (
 from DashAI.back.splitters.splits_payload import (
     META_KEYS,
     normalize_splits_payload,
-    schema_placeholder_defaults,
 )
 
 if TYPE_CHECKING:

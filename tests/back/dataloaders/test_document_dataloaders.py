@@ -1,0 +1,246 @@
+"""Tests for the document dataloaders."""
+
+import pytest
+from pydantic import ValidationError
+
+from DashAI.back.dataloaders.classes.document_dataloader import DocumentLoaderError
+from DashAI.back.dataloaders.classes.pdfminer_document_dataloader import (
+    PdfMinerDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.pdfplumber_document_dataloader import (
+    PdfPlumberDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.plain_text_document_dataloader import (
+    PlainTextDocumentDataLoader,
+)
+from DashAI.back.dataloaders.classes.pypdf_document_dataloader import (
+    PypdfDocumentDataLoader,
+)
+from DashAI.back.dependencies.config_builder import get_initial_components
+from DashAI.back.types.dashai_image import DashAIImage
+from DashAI.back.types.value_types import Text
+from tests.back.dataloaders.document_samples import (
+    HEADING_PAGES,
+    image_pdf_bytes,
+    write_layout_pdf,
+    write_mixed_pdf,
+    write_text_pdf,
+)
+
+PDF_LOADERS = [
+    PypdfDocumentDataLoader,
+    PdfPlumberDocumentDataLoader,
+    PdfMinerDocumentDataLoader,
+]
+LAYOUT_LOADERS = [PdfPlumberDocumentDataLoader, PdfMinerDocumentDataLoader]
+ALL_LOADERS = [*PDF_LOADERS, PlainTextDocumentDataLoader]
+
+
+@pytest.mark.parametrize("loader_class", PDF_LOADERS)
+def test_pdf_loaders_emit_one_text_item_per_page(tmp_path, loader_class):
+    pdf = write_text_pdf(tmp_path / "pages.pdf", ["Alpha", "", "Charlie"])
+    document = loader_class().load_document(pdf, {})
+    assert [
+        (item.type, item.content, item.page, item.position) for item in document.items()
+    ] == [(Text, "Alpha", 1, 0), (Text, "Charlie", 3, 1)]
+    assert document.metadata["n_pages"] == 3
+    assert document.metadata["file_type"] == "pdf"
+    assert document.metadata["dataloader"] == loader_class.__name__
+
+
+@pytest.mark.parametrize("loader_class", PDF_LOADERS)
+def test_page_granularity_keeps_a_whole_page_in_one_item(tmp_path, loader_class):
+    pdf = write_layout_pdf(tmp_path / "headings.pdf", HEADING_PAGES)
+    document = loader_class().load_document(pdf, {"granularity": "page"})
+    items = document.items()
+    assert [(item.page, item.kind) for item in items] == [
+        (1, "paragraph"),
+        (2, "paragraph"),
+    ]
+    assert "Introduction" in items[0].content
+    assert "A second paragraph." in items[0].content
+
+
+@pytest.mark.parametrize("loader_class", LAYOUT_LOADERS)
+def test_block_granularity_splits_pages_and_names_headings(tmp_path, loader_class):
+    pdf = write_layout_pdf(tmp_path / "headings.pdf", HEADING_PAGES)
+    document = loader_class().load_document(pdf, {})
+    assert [
+        (item.content, item.page, item.kind, item.attrs) for item in document.items()
+    ] == [
+        ("Introduction", 1, "heading", {"level": 1}),
+        ("First body line.\nstill the same block.", 1, "paragraph", {}),
+        ("A second paragraph.", 1, "paragraph", {}),
+        ("Method", 2, "heading", {"level": 1}),
+        ("Body on page two.", 2, "paragraph", {}),
+    ]
+
+
+@pytest.mark.parametrize("loader_class", LAYOUT_LOADERS)
+def test_blocks_stay_paragraphs_when_heading_detection_is_off(tmp_path, loader_class):
+    pdf = write_layout_pdf(tmp_path / "headings.pdf", HEADING_PAGES)
+    document = loader_class().load_document(pdf, {"detect_headings": False})
+    assert len(document.items()) == 5
+    assert {item.kind for item in document.items()} == {"paragraph"}
+
+
+def test_pypdf_blocks_follow_blank_lines_in_the_extracted_text(tmp_path, monkeypatch):
+    from pypdf import PdfReader
+
+    pdf = write_text_pdf(tmp_path / "one.pdf", ["ignored"])
+    monkeypatch.setattr(
+        PdfReader, "pages", property(lambda self: [_FakePage("One.\n\nTwo.\n")])
+    )
+    loader = PypdfDocumentDataLoader()
+    assert loader.load_document(pdf, {})[Text] == ["One.", "Two."]
+    assert loader.load_document(pdf, {"granularity": "page"})[Text] == ["One.\n\nTwo."]
+
+
+class _FakePage:
+    """A pypdf page stand in that returns a fixed text and no image."""
+
+    def __init__(self, text: str):
+        self._text = text
+        self.images = []
+
+    def extract_text(self) -> str:
+        return self._text
+
+
+@pytest.mark.parametrize("loader_class", PDF_LOADERS)
+def test_pdf_loaders_wrap_parse_errors(tmp_path, loader_class):
+    with pytest.raises(DocumentLoaderError):
+        loader_class().load_document(str(tmp_path / "missing.pdf"), {})
+
+
+def test_pypdf_loader_keeps_text_and_images_in_reading_order(tmp_path):
+    pdf = write_mixed_pdf(tmp_path / "mixed.pdf")
+    document = PypdfDocumentDataLoader().load_document(pdf, {"extract_images": True})
+    assert [(item.type, item.page, item.position) for item in document.items()] == [
+        (Text, 1, 0),
+        (DashAIImage, 1, 1),
+        (Text, 2, 2),
+    ]
+    assert document[Text] == ["Alpha", "Bravo"]
+    assert document[DashAIImage][0].to_pil().size == (8, 8)
+
+
+def test_pypdf_loader_ignores_images_by_default(tmp_path):
+    path = tmp_path / "image.pdf"
+    path.write_bytes(image_pdf_bytes())
+    document = PypdfDocumentDataLoader().load_document(str(path), {})
+    assert document.count(DashAIImage) == 0
+    assert document.metadata["dataloader_params"] == {
+        "strict": True,
+        "granularity": "block",
+        "extract_images": False,
+    }
+
+
+def test_pdfplumber_loader_puts_tables_after_their_page_text(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        PdfPlumberDocumentDataLoader,
+        "_read_pages",
+        lambda self, file_path, params: [
+            [("Page one", None), [["a", None], ["1", "2"]]],
+            [],
+            [("Page three", None)],
+        ],
+    )
+    document = PdfPlumberDocumentDataLoader().load_document(
+        str(tmp_path / "t.pdf"), {"extract_tables": True}
+    )
+    assert [(item.content, item.page, item.kind) for item in document.items()] == [
+        ("Page one", 1, "paragraph"),
+        ("a\t\n1\t2", 1, "table"),
+        ("Page three", 3, "paragraph"),
+    ]
+    assert document.items()[1].attrs == {
+        "rows": [["a", ""], ["1", "2"]],
+        "header": False,
+    }
+
+
+def test_pdfplumber_render_table_blanks_empty_cells():
+    rendered = PdfPlumberDocumentDataLoader.render_table([["a", None], ["", "b"]])
+    assert rendered == "a\t\n\tb"
+
+
+def test_plain_text_loader_emits_one_item_per_paragraph(tmp_path):
+    path = tmp_path / "notes.md"
+    path.write_bytes(b"# Title\n\nFirst line\nstill first.\n\n\n  \nSecond.\n")
+    document = PlainTextDocumentDataLoader().load_document(
+        str(path), {"split_paragraphs": True}
+    )
+    assert document[Text] == ["# Title", "First line\nstill first.", "Second."]
+    assert all(item.page is None for item in document.items())
+    assert document.metadata["n_pages"] is None
+
+
+def test_plain_text_loader_keeps_one_item_by_default(tmp_path):
+    path = tmp_path / "notes.txt"
+    path.write_bytes(b"One.\n\nTwo.\n")
+    document = PlainTextDocumentDataLoader().load_document(str(path), {})
+    assert document[Text] == ["One.\n\nTwo."]
+    assert document.metadata["dataloader_params"]["split_paragraphs"] is False
+
+
+def test_plain_text_loader_can_keep_the_whole_text_as_one_item(tmp_path):
+    path = tmp_path / "notes.md"
+    path.write_bytes(b"\n# Title\n\nFirst line\nstill first.\n\n\n  \nSecond.\n\n")
+    document = PlainTextDocumentDataLoader().load_document(
+        str(path), {"split_paragraphs": False}
+    )
+    assert document[Text] == ["# Title\n\nFirst line\nstill first.\n\n\n  \nSecond."]
+    assert [item.kind for item in document.items()] == ["paragraph"]
+
+
+def test_plain_text_loader_keeps_nothing_from_a_blank_file(tmp_path):
+    path = tmp_path / "blank.txt"
+    path.write_bytes(b"\n   \n")
+    loader = PlainTextDocumentDataLoader()
+    for split in (True, False):
+        document = loader.load_document(str(path), {"split_paragraphs": split})
+        assert document.items() == []
+
+
+def test_plain_text_loader_honours_and_reports_the_encoding(tmp_path):
+    path = tmp_path / "latin.txt"
+    path.write_bytes("Ñandú".encode("latin1"))
+    loader = PlainTextDocumentDataLoader()
+    assert loader.load_document(str(path), {"encoding": "latin1"})[Text] == ["Ñandú"]
+    with pytest.raises(DocumentLoaderError, match="utf-8"):
+        loader.load_document(str(path), {})
+
+
+def test_params_are_merged_with_defaults_and_validated(tmp_path):
+    pdf = write_text_pdf(tmp_path / "one.pdf", ["Alpha"])
+    document = PdfMinerDocumentDataLoader().load_document(pdf, {"line_margin": 0.1})
+    assert document.metadata["dataloader_params"] == {
+        "password": None,
+        "line_margin": 0.1,
+        "char_margin": 2.0,
+        "boxes_flow": 0.5,
+        "detect_vertical": False,
+        "granularity": "block",
+        "detect_headings": True,
+    }
+    with pytest.raises(ValidationError):
+        PdfMinerDocumentDataLoader().resolve_params({"boxes_flow": 5.0})
+
+
+def test_loaders_are_registered_document_kind_dataloaders():
+    components = get_initial_components()
+    for loader_class in ALL_LOADERS:
+        assert loader_class in components
+        assert loader_class.TYPE == "DataLoader"
+        assert loader_class.get_metadata()["data_kinds"] == ["document"]
+
+
+def test_loaders_do_not_depend_on_rag():
+    import sys
+
+    for loader_class in ALL_LOADERS:
+        source = sys.modules[loader_class.__module__].__file__
+        with open(source, encoding="utf-8") as handle:
+            assert "models.RAG" not in handle.read()

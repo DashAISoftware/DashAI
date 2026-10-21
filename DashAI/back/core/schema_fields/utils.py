@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Type
 
 from kink import inject
 
@@ -130,3 +130,30 @@ def fill_objects(
             component_class = component_registry[field_value["component"]]["class"]
             schema_params[field_name] = component_class(**field_value["params"])
     return schema_params
+
+
+def schema_placeholder_defaults(component_cls: "Type") -> Dict[str, Any]:
+    """Collect the placeholder value declared for each schema parameter.
+
+    The frontend seeds its form with these values, so filling them in makes a
+    partial payload (for example a manual split, which carries no
+    proportions, or a document upload that sends no loader parameters)
+    validate exactly as the form would have submitted it.
+
+    Parameters
+    ----------
+    component_cls : type
+        A component class exposing ``get_schema``.
+
+    Returns
+    -------
+    dict
+        Parameter name to placeholder value, skipping parameters that declare
+        no placeholder.
+    """
+    properties = component_cls.get_schema().get("properties", {})
+    return {
+        name: prop["placeholder"]
+        for name, prop in properties.items()
+        if "placeholder" in prop
+    }

@@ -18,7 +18,7 @@
     "translation": "translation"
   },
   "description": {
-    "datasets": "Create and manage the datasets registered in the application.",
+    "datasets": "Upload and manage the datasets and documents registered in the application.",
     "generative": "Interact with AI models to inference and generate new content.",
     "models": "Configure tasks, train and compare models in organized sessions.",
     "plugins": "Browse and manage plugins to extend dashAI's functionality."

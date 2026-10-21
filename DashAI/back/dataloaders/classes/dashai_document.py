@@ -15,6 +15,10 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     get_arrow_table,
 )
+from DashAI.back.dataloaders.classes.document_elements import (
+    default_kind,
+    validate_element,
+)
 from DashAI.back.types.dashai_data_type import DashAIDataType
 from DashAI.back.types.dashai_image import DashAIImage
 from DashAI.back.types.utils import save_types_in_arrow_metadata
@@ -23,7 +27,10 @@ from DashAI.back.types.value_types import Integer, Text
 CONTENT_COLUMN = "content"
 POSITION_COLUMN = "position"
 PAGE_COLUMN = "page"
+KIND_COLUMN = "kind"
+ATTRS_COLUMN = "attrs"
 REQUIRED_COLUMNS = (CONTENT_COLUMN, POSITION_COLUMN, PAGE_COLUMN)
+STORED_COLUMNS = REQUIRED_COLUMNS + (KIND_COLUMN, ATTRS_COLUMN)
 
 
 @dataclass
@@ -42,12 +49,20 @@ class DocumentItem:
     position : int, optional
         Index of the item in the document's reading order. Assigned by
         ``DashAIDocument``; ignored on input.
+    kind : str, optional
+        Structural element kind (see ``document_elements.ELEMENT_KINDS``);
+        ``None`` means ``"paragraph"`` for Text and ``"image"`` for images.
+    attrs : dict, optional
+        Attributes of the element kind, such as a heading ``level`` or the
+        ``rows`` of a table.
     """
 
     type: Type[DashAIDataType]
     content: Union[str, DashAIImage]
     page: Optional[int] = None
     position: Optional[int] = None
+    kind: Optional[str] = None
+    attrs: Optional[Dict[str, Any]] = None
 
 
 def content_file_stem(content_type: Type[DashAIDataType]) -> str:
@@ -85,6 +100,8 @@ def build_content_table(
     contents: List[Any],
     positions: List[int],
     pages: List[Optional[int]],
+    kinds: Optional[List[str]] = None,
+    attrs: Optional[List[Dict[str, Any]]] = None,
 ) -> pa.Table:
     """Build the Arrow table that stores one content type of a document.
 
@@ -98,18 +115,29 @@ def build_content_table(
         Reading-order index of each item.
     pages : list of int or None
         1-based page of each item.
+    kinds : list of str, optional
+        Element kind of each item; defaults to the kind of the type.
+    attrs : list of dict, optional
+        Element attributes of each item; defaults to empty dicts.
 
     Returns
     -------
     pa.Table
-        Table with ``content``, ``position`` and ``page`` columns and the
-        DashAI types stored in the schema metadata.
+        Table with ``content``, ``position``, ``page``, ``kind`` and
+        ``attrs`` (JSON) columns and the DashAI types in the schema metadata.
     """
+    count = len(contents)
+    if kinds is None:
+        kinds = [default_kind(content_type)] * count
+    if attrs is None:
+        attrs = [{}] * count
     schema = pa.schema(
         [
             pa.field(CONTENT_COLUMN, _content_arrow_type(content_type)),
             pa.field(POSITION_COLUMN, pa.int64(), nullable=False),
             pa.field(PAGE_COLUMN, pa.int64()),
+            pa.field(KIND_COLUMN, pa.string(), nullable=False),
+            pa.field(ATTRS_COLUMN, pa.string(), nullable=False),
         ]
     )
     table = pa.table(
@@ -117,6 +145,10 @@ def build_content_table(
             CONTENT_COLUMN: contents,
             POSITION_COLUMN: positions,
             PAGE_COLUMN: pages,
+            KIND_COLUMN: kinds,
+            ATTRS_COLUMN: [
+                json.dumps(value, sort_keys=True, ensure_ascii=False) for value in attrs
+            ],
         },
         schema=schema,
     )
@@ -124,8 +156,36 @@ def build_content_table(
         CONTENT_COLUMN: _content_dashai_type(content_type).to_string(),
         POSITION_COLUMN: Integer(pa.int64()).to_string(),
         PAGE_COLUMN: Integer(pa.int64()).to_string(),
+        KIND_COLUMN: Text(pa.string()).to_string(),
+        ATTRS_COLUMN: Text(pa.string()).to_string(),
     }
     return save_types_in_arrow_metadata(table, types)
+
+
+def _with_element_columns(content_type: type, table: pa.Table) -> pa.Table:
+    """Add default ``kind`` and ``attrs`` columns to a format 1 table.
+
+    Parameters
+    ----------
+    content_type : type
+        ``Text`` or ``DashAIImage``.
+    table : pa.Table
+        A content table, possibly saved before element kinds existed.
+
+    Returns
+    -------
+    pa.Table
+        The table unchanged when it already has both columns, else rebuilt
+        with ``paragraph`` / ``image`` kinds and empty attributes.
+    """
+    if KIND_COLUMN in table.column_names and ATTRS_COLUMN in table.column_names:
+        return table
+    return build_content_table(
+        content_type,
+        table.column(CONTENT_COLUMN).to_pylist(),
+        table.column(POSITION_COLUMN).to_pylist(),
+        table.column(PAGE_COLUMN).to_pylist(),
+    )
 
 
 class DashAIDocument(DashAIData):
@@ -192,11 +252,12 @@ class DashAIDocument(DashAIData):
         ------
         ValueError
             If a column is missing, the content column has the wrong Arrow
-            type, content or positions are null, an image has no bytes, or
-            a page is lower than 1.
+            type, content or positions are null, an image has no bytes, a
+            page is lower than 1, or an element kind or its attributes are
+            invalid.
         """
         name = content_type.display_name()
-        missing = [c for c in REQUIRED_COLUMNS if c not in table.column_names]
+        missing = [c for c in STORED_COLUMNS if c not in table.column_names]
         if missing:
             raise ValueError(f"{name} table is missing columns {missing}.")
         expected = _content_arrow_type(content_type)
@@ -218,11 +279,24 @@ class DashAIDocument(DashAIData):
             lowest = pc.min(pages).as_py()
             if lowest < 1:
                 raise ValueError(f"Invalid page {lowest!r}: pages start at 1.")
+        kinds = table.column(KIND_COLUMN)
+        attrs = table.column(ATTRS_COLUMN)
+        if kinds.null_count or attrs.null_count:
+            raise ValueError(f"{name} element kinds and attributes cannot be null.")
+        for kind, raw in zip(kinds.to_pylist(), attrs.to_pylist(), strict=True):
+            validate_element(kind, content_type, json.loads(raw))
 
     @classmethod
-    def _encode(cls, item: DocumentItem) -> Any:
-        """Validate one item and return its Arrow-ready content value."""
+    def _encode(cls, item: DocumentItem) -> Tuple[Any, str, Dict[str, Any]]:
+        """Validate one item and return its content value, kind and attrs."""
         cls._check_supported(item.type)
+        kind = item.kind or default_kind(item.type)
+        attrs = validate_element(kind, item.type, item.attrs)
+        return cls._encode_content(item), kind, attrs
+
+    @classmethod
+    def _encode_content(cls, item: DocumentItem) -> Any:
+        """Validate one item's page and content and return the Arrow value."""
         if item.page is not None and (
             not isinstance(item.page, int)
             or isinstance(item.page, bool)
@@ -262,13 +336,22 @@ class DashAIDocument(DashAIData):
         """
         buckets: Dict[type, Dict[str, List[Any]]] = {}
         for position, item in enumerate(items):
-            value = cls._encode(item)
+            value, kind, attrs = cls._encode(item)
             bucket = buckets.setdefault(
-                item.type, {"contents": [], "positions": [], "pages": []}
+                item.type,
+                {
+                    "contents": [],
+                    "positions": [],
+                    "pages": [],
+                    "kinds": [],
+                    "attrs": [],
+                },
             )
             bucket["contents"].append(value)
             bucket["positions"].append(position)
             bucket["pages"].append(item.page)
+            bucket["kinds"].append(kind)
+            bucket["attrs"].append(attrs)
         contents = {
             content_type: build_content_table(content_type, **bucket)
             for content_type, bucket in buckets.items()
@@ -336,7 +419,7 @@ class DashAIDocument(DashAIData):
         Returns
         -------
         list of DocumentItem
-            Items with ``position`` and ``page`` filled in.
+            Items with ``position``, ``page``, ``kind`` and ``attrs`` filled in.
         """
         result = []
         for content_type in self.types:
@@ -344,10 +427,12 @@ class DashAIDocument(DashAIData):
             contents = self[content_type]
             positions = table.column(POSITION_COLUMN).to_pylist()
             pages = table.column(PAGE_COLUMN).to_pylist()
+            kinds = table.column(KIND_COLUMN).to_pylist()
+            attrs = [json.loads(v) for v in table.column(ATTRS_COLUMN).to_pylist()]
             result.extend(
-                DocumentItem(content_type, content, page, position)
-                for content, position, page in zip(
-                    contents, positions, pages, strict=False
+                DocumentItem(content_type, content, page, position, kind, attr)
+                for content, position, page, kind, attr in zip(
+                    contents, positions, pages, kinds, attrs, strict=True
                 )
             )
         return sorted(result, key=lambda item: item.position)
@@ -370,8 +455,8 @@ class DashAIDocument(DashAIData):
         Returns
         -------
         DashAIDataset
-            Dataset with ``content``, ``position`` and ``page`` columns,
-            empty when the type is absent.
+            Dataset with ``content``, ``position``, ``page``, ``kind`` and
+            ``attrs`` columns, empty when the type is absent.
         """
         self._check_supported(content_type)
         return DashAIDataset(self._table_or_empty(content_type))
@@ -387,7 +472,8 @@ class DashAIDocument(DashAIData):
             ``Text`` or ``DashAIImage``.
         dataset : DashAIDataset
             New contents, with ``content``, ``position`` and ``page``
-            columns and the same positions as the current contents.
+            columns and the same positions as the current contents. Each
+            item keeps its current ``kind`` and ``attrs``.
 
         Returns
         -------
@@ -420,6 +506,8 @@ class DashAIDocument(DashAIData):
             table.column(CONTENT_COLUMN).to_pylist(),
             positions,
             table.column(PAGE_COLUMN).to_pylist(),
+            current.column(KIND_COLUMN).to_pylist(),
+            [json.loads(v) for v in current.column(ATTRS_COLUMN).to_pylist()],
         )
         contents = dict(self._contents)
         if rebuilt.num_rows:
@@ -430,7 +518,8 @@ class DashAIDocument(DashAIData):
 
 
 DOCUMENT_METADATA_FILE = "document.json"
-DOCUMENT_FORMAT_VERSION = 1
+DOCUMENT_FORMAT_VERSION = 2
+READABLE_FORMAT_VERSIONS = (1, 2)
 
 
 def save_document(document: DashAIDocument, path: Union[str, os.PathLike]) -> None:
@@ -493,7 +582,7 @@ def load_document(path: Union[str, os.PathLike]) -> DashAIDocument:
     with open(sidecar_path, "r", encoding="utf-8") as f:
         sidecar = json.load(f)
     version = sidecar.get("version")
-    if version != DOCUMENT_FORMAT_VERSION:
+    if version not in READABLE_FORMAT_VERSIONS:
         raise ValueError(
             f"Unsupported document format version {version!r} in {directory}."
         )
@@ -512,5 +601,87 @@ def load_document(path: Union[str, os.PathLike]) -> DashAIDocument:
             raise ValueError(
                 f"{file_path.name} holds {table.num_rows} items, expected {expected}."
             )
-        contents[content_type] = table
+        contents[content_type] = _with_element_columns(content_type, table)
     return DashAIDocument(contents, sidecar.get("metadata", {}))
+
+
+def _content_file(path: Union[str, os.PathLike], content_type: type) -> Path:
+    """Return the Arrow file that stores one content type of a saved document."""
+    DashAIDocument._check_supported(content_type)
+    return Path(path) / f"{content_file_stem(content_type)}.arrow"
+
+
+def read_content_columns(
+    path: Union[str, os.PathLike], content_type: type, with_content: bool = True
+) -> Dict[str, List[Any]]:
+    """Read one content type of a saved document without loading the others.
+
+    The file is memory mapped and only the requested columns are copied out,
+    so asking for positions and pages never copies image bytes.
+
+    Parameters
+    ----------
+    path : str or os.PathLike
+        Directory written by :func:`save_document`.
+    content_type : type
+        ``Text`` or ``DashAIImage``.
+    with_content : bool
+        Whether to include the ``content`` column.
+
+    Returns
+    -------
+    Dict[str, List[Any]]
+        Column name to Python values, ``attrs`` parsed into dicts; empty
+        lists when the type is absent.
+    """
+    names = (CONTENT_COLUMN,) if with_content else ()
+    names += (POSITION_COLUMN, PAGE_COLUMN)
+    file_path = _content_file(path, content_type)
+    if not file_path.exists():
+        return {name: [] for name in names + (KIND_COLUMN, ATTRS_COLUMN)}
+    with pa.memory_map(str(file_path), "r") as source:
+        table = pa.ipc.open_file(source).read_all()
+        columns = {name: table.column(name).to_pylist() for name in names}
+        count = table.num_rows
+        has_elements = KIND_COLUMN in table.column_names
+        kinds = table.column(KIND_COLUMN).to_pylist() if has_elements else None
+        attrs = table.column(ATTRS_COLUMN).to_pylist() if has_elements else None
+        del table
+    columns[KIND_COLUMN] = kinds or [default_kind(content_type)] * count
+    columns[ATTRS_COLUMN] = [json.loads(v) for v in attrs] if attrs else [{}] * count
+    return columns
+
+
+def read_content_at(
+    path: Union[str, os.PathLike], content_type: type, position: int
+) -> Optional[Any]:
+    """Read the content of a single item of a saved document.
+
+    Parameters
+    ----------
+    path : str or os.PathLike
+        Directory written by :func:`save_document`.
+    content_type : type
+        ``Text`` or ``DashAIImage``.
+    position : int
+        Reading order position of the item.
+
+    Returns
+    -------
+    Any or None
+        A string for ``Text``, a ``{"bytes", "path"}`` dict for images, or
+        None when no item of that type sits at ``position``.
+    """
+    file_path = _content_file(path, content_type)
+    if not file_path.exists():
+        return None
+    with pa.memory_map(str(file_path), "r") as source:
+        table = pa.ipc.open_file(source).read_all()
+        positions = table.column(POSITION_COLUMN).to_pylist()
+        value = (
+            table.column(CONTENT_COLUMN)[positions.index(position)].as_py()
+            if position in positions
+            else None
+        )
+        del table
+    return value

@@ -18,7 +18,7 @@
     "translation": "tradução"
   },
   "description": {
-    "datasets": "Crie e gerencie os conjuntos de dados registrados na aplicação.",
+    "datasets": "Envie e gerencie os conjuntos de dados e documentos registrados na aplicação.",
     "generative": "Interaja com modelos de IA para inferência e gere novo conteúdo.",
     "models": "Configure tarefas, treine e compare modelos em sessões organizadas.",
     "plugins": "Explore e gerencie plugins para estender a funcionalidade do dashAI."

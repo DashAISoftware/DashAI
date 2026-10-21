@@ -1,5 +1,7 @@
+import json
 import shutil
 import time
+import uuid
 from pathlib import Path
 
 import pytest
@@ -105,3 +107,57 @@ def create_dataset_1(client) -> Dataset:
 
         db.refresh(iris_dataset_entry)
     return iris_dataset_entry
+
+
+@pytest.fixture(name="upload_document")
+def fixture_upload_document(client):
+    """Return a helper that creates a document and runs its DocumentJob.
+
+    The test client puts the job queue in immediate mode, so the job has run
+    when the upload request returns.
+
+    Parameters
+    ----------
+    client : fastapi.testclient.TestClient
+        The module scoped API client.
+
+    Returns
+    -------
+    Callable[..., dict]
+        ``upload(content, file_name, dataloader, dataloader_params, name)``
+        returning the document as ``GET /api/v1/documents/{id}`` serves it.
+    """
+
+    def _upload(
+        content: bytes,
+        file_name: str = "notes.txt",
+        dataloader: str = "PlainTextDocumentDataLoader",
+        dataloader_params: dict = None,
+        name: str = None,
+    ) -> dict:
+        created = client.post(
+            "/api/v1/documents/",
+            json={
+                "name": name or f"doc_{uuid.uuid4().hex[:8]}",
+                "file_name": file_name,
+                "dataloader": dataloader,
+                "dataloader_params": dataloader_params or {},
+            },
+        )
+        assert created.status_code == 201, created.text
+        document_id = created.json()["id"]
+        enqueued = client.post(
+            "/api/v1/job/",
+            data={
+                "job_type": "DocumentJob",
+                "kwargs": json.dumps({"document_id": document_id}),
+            },
+            files={"file": (file_name, content, "application/octet-stream")},
+            headers={"filename": file_name},
+        )
+        assert enqueued.status_code == 201, enqueued.text
+        fetched = client.get(f"/api/v1/documents/{document_id}")
+        assert fetched.status_code == 200, fetched.text
+        return fetched.json()
+
+    return _upload

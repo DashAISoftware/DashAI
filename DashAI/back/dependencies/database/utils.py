@@ -201,6 +201,7 @@ def find_entity_by_huey_id(huey_id: str) -> dict:
 
     from DashAI.back.dependencies.database.models import (
         Converter,
+        DataDocument,
         Dataset,
         Explorer,
         GlobalExplainer,
@@ -231,6 +232,18 @@ def find_entity_by_huey_id(huey_id: str) -> dict:
                 "created_at": dataset.created,
                 "last_modified": dataset.last_modified,
                 "status": dataset.status,
+            }
+        data_document = (
+            db.query(DataDocument).filter(DataDocument.huey_id == huey_id).first()
+        )
+        if data_document:
+            return {
+                "entity_type": "document",
+                "entity_id": data_document.id,
+                "entity_name": data_document.name,
+                "created_at": data_document.created,
+                "last_modified": data_document.last_modified,
+                "status": data_document.status,
             }
 
         explorer = db.query(Explorer).filter(Explorer.huey_id == huey_id).first()

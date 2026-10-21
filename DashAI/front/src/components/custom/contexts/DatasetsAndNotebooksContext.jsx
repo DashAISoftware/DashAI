@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useSharedDatasets } from "../../../contexts/DatasetsContext";
 import { useNotebooks } from "../../../hooks/datasets/useNotebooks";
 import { useDownloads } from "../../../hooks/datasets/useDownloads";
+import { useDocuments } from "../../../hooks/datasets/useDocuments";
 
 const DatasetsAndNotebooksContext = createContext();
 
@@ -11,8 +12,10 @@ export const useDatasetsAndNotebooks = () =>
   useContext(DatasetsAndNotebooksContext);
 
 export const OptionsEnum = Object.freeze({
+  DATA: "data",
   DATASET: "dataset",
   NOTEBOOK: "notebook",
+  DOCUMENT: "document",
   NEW: "new",
 });
 
@@ -62,9 +65,22 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     addNotebookOptimistically,
     removeNotebooksByDatasetId,
   } = useNotebooks({ t });
+  const {
+    documents,
+    selectedDocumentId,
+    fetchDocuments,
+    selectDocument,
+    clearSelectedDocument,
+    deleteDocumentById,
+    editDocument,
+    moveDocumentToFolder,
+    addDocumentOptimistically,
+    startDocumentPolling,
+    refreshDocument,
+  } = useDocuments({ t });
 
   // Derived once from the URL present at mount so a direct navigation to
-  // .../datasets/new (or .../notebooks/new) renders the right step on the
+  // .../data/new (or .../notebooks/new) renders the right step on the
   // very first paint, instead of flashing the default "new" landing menu
   // for a frame while DatasetsContent's location-sync effect catches up.
   const initialPath =
@@ -73,8 +89,8 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     "/app/data/notebooks/new",
   )
     ? OptionsEnum.NOTEBOOK
-    : initialPath.startsWith("/app/data/datasets/new")
-      ? OptionsEnum.DATASET
+    : initialPath.startsWith("/app/data/new")
+      ? OptionsEnum.DATA
       : OptionsEnum.NEW;
   const initialStep = initialSelectedOption === OptionsEnum.NEW ? 0 : 1;
 
@@ -144,6 +160,17 @@ export const DatasetsAndNotebooksProvider = ({ children }) => {
     setUploadDataloader,
     openFolderIds,
     setOpenFolderIds,
+    documents,
+    selectedDocumentId,
+    fetchDocuments,
+    selectDocument,
+    clearSelectedDocument,
+    deleteDocumentById,
+    editDocument,
+    moveDocumentToFolder,
+    addDocumentOptimistically,
+    startDocumentPolling,
+    refreshDocument,
   };
 
   return (

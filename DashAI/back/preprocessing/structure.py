@@ -12,6 +12,7 @@ to reject a chain that would reference a column that no longer exists.
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from DashAI.back.converters.dataset_columns import plan_new_column_names
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.preprocessing.column_ref import ConverterStep
 from DashAI.back.preprocessing.structure_types import (
     BlockItem,
@@ -25,7 +26,6 @@ from DashAI.back.preprocessing.structure_types import (
     known_width,
     type_fields,
 )
-from DashAI.back.splitters.splits_payload import schema_placeholder_defaults
 
 
 class StructureError(Exception):

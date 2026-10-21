@@ -40,7 +40,7 @@ export default function DatasetPredictionPanel({
 
   const handleUploadNewDataset = () => {
     onClose();
-    navigate("/app/data/datasets/new");
+    navigate("/app/data/new");
   };
 
   const handleRunRef = useRef(null);

@@ -367,7 +367,7 @@ function FolderSection({
         }}
         content={t(
           "datasets:label.confirmDeleteFolderContent",
-          'Are you sure you want to delete the folder "{{name}}"? Datasets inside will be moved to no folder.',
+          'Are you sure you want to delete the folder "{{name}}"? The data inside will be moved out of the folder.',
           { name: folderName },
         )}
       />
@@ -391,6 +391,9 @@ export default function DatasetFolderList({
   getItemDescription,
   getDeleteConfirmationContent,
   getDeleteConfirmationWarning,
+  selectItemsTooltip,
+  getBulkDeleteConfirmationContent,
+  getBulkDeleteConfirmationWarning,
   title,
   openFolderIds = {},
   setOpenFolderIds,
@@ -614,10 +617,13 @@ export default function DatasetFolderList({
             </Tooltip>
             {onBulkDelete && (
               <Tooltip
-                title={t(
-                  "datasets:label.selectDatasetsToDelete",
-                  "Select datasets to delete",
-                )}
+                title={
+                  selectItemsTooltip ??
+                  t(
+                    "datasets:label.selectDatasetsToDelete",
+                    "Select datasets to delete",
+                  )
+                }
               >
                 <span>
                   <IconButton
@@ -784,15 +790,23 @@ export default function DatasetFolderList({
         open={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
         onConfirm={handleBulkDeleteConfirm}
-        content={t(
-          "datasets:label.confirmBulkDeleteDatasets",
-          "Are you sure you want to delete the {{count}} selected datasets? This action cannot be undone.",
-          { count: selectedIds.size },
-        )}
-        warning={t(
-          "datasets:label.confirmDeleteDatasetLinkedWarning",
-          "All notebooks and sessions linked to this dataset will also be deleted.",
-        )}
+        content={
+          getBulkDeleteConfirmationContent
+            ? getBulkDeleteConfirmationContent(selectedIds.size)
+            : t(
+                "datasets:label.confirmBulkDeleteDatasets",
+                "Are you sure you want to delete the {{count}} selected datasets? This action cannot be undone.",
+                { count: selectedIds.size },
+              )
+        }
+        warning={
+          getBulkDeleteConfirmationWarning
+            ? getBulkDeleteConfirmationWarning([...selectedIds])
+            : t(
+                "datasets:label.confirmDeleteDatasetLinkedWarning",
+                "All notebooks and sessions linked to this dataset will also be deleted.",
+              )
+        }
       />
     </Box>
   );

@@ -15,8 +15,8 @@ from DashAI.back.converters.hugging_face.tokenizer import TokenizerConverter
 from DashAI.back.converters.segmentation.sam3_segment_converter import (
     SAM3SegmentConverter,
 )
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.preprocessing.structure_types import BlockItem, ColumnItem
-from DashAI.back.splitters.splits_payload import schema_placeholder_defaults
 
 
 def _build(cls, **params):

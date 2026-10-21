@@ -11,6 +11,7 @@ from DashAI.back.core.schema_fields import (
     string_field,
 )
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.dataloaders.classes.dataloader import require_data_kind
 from DashAI.back.job.base_job import JobError
 from DashAI.back.units.base_unit import BaseUnit
 from DashAI.back.units.context import ExecutionContext
@@ -142,7 +143,9 @@ class LoadDatafileDatasetUnit(BaseUnit):
         readers = component_registry.registry.get("DataLoader", {})
         if dataloader_name not in readers:
             raise JobError(f"DataLoader '{dataloader_name}' not found in registry.")
-        dataloader = readers[dataloader_name]["class"]()
+        dataloader_class = readers[dataloader_name]["class"]
+        require_data_kind(dataloader_class, "dataset")
+        dataloader = dataloader_class()
 
         log.debug("Loading hub dataset from %s using %s", source, dataloader_name)
         ctx.put(

@@ -14,6 +14,7 @@ from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.converters.dataset_columns import (
     rebuild_dataset_with_transformed_columns,
 )
+from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     to_dashai_dataset,
     transform_dataset_with_schema,
@@ -26,7 +27,6 @@ from DashAI.back.preprocessing.structure_types import (
     RowsNotSupportedError,
     type_fields,
 )
-from DashAI.back.splitters.splits_payload import schema_placeholder_defaults
 
 N_ROWS = 30
 

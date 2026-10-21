@@ -414,11 +414,11 @@ class CSVDataLoader(BaseDataLoader):
         ),
     )
     DISPLAY_NAME: str = MultilingualString(
-        en="CSV Data Loader",
-        es="Cargador de Datos CSV",
-        pt="Carregador de Dados CSV",
-        de="CSV Datenlader",
-        zh="CSV数据加载器",
+        en="CSV",
+        es="CSV",
+        pt="CSV",
+        de="CSV",
+        zh="CSV",
     )
 
     def _check_params(
