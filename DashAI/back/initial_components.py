@@ -20,6 +20,7 @@ from DashAI.back.converters.hugging_face.text_embedding import (
     TEXT_EMBEDDING_CONVERTERS,
 )
 from DashAI.back.converters.hugging_face.tokenizer import TokenizerConverter
+from DashAI.back.converters.hugging_face.translation import TRANSLATION_CONVERTERS
 
 # Imbalanced_learn
 from DashAI.back.converters.imbalanced_learn.random_under_sampler_converter import (
@@ -922,6 +923,7 @@ def get_initial_components():
         SAM3SegmentConverter,
         TFIDFConverter,
         TokenizerConverter,
+        *TRANSLATION_CONVERTERS,
         BagOfWordsConverter,
         VarianceThreshold,
         SimpleImputer,

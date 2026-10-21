@@ -17,6 +17,7 @@ from DashAI.back.converters.dataset_columns import (
 from DashAI.back.converters.hugging_face.text_embedding import (
     TEXT_EMBEDDING_CONVERTERS,
 )
+from DashAI.back.converters.hugging_face.translation import TRANSLATION_CONVERTERS
 from DashAI.back.core.schema_fields.utils import schema_placeholder_defaults
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     to_dashai_dataset,
@@ -51,6 +52,7 @@ SCHEMA = {
 # overrides get direct unit tests instead.
 NEEDS_DOWNLOAD = {
     *(cls.__name__ for cls in TEXT_EMBEDDING_CONVERTERS),
+    *(cls.__name__ for cls in TRANSLATION_CONVERTERS),
     "TokenizerConverter",
     "ImageEmbeddingConverter",
     "SAM3SegmentConverter",
