@@ -228,11 +228,19 @@ class ExplainerJob(BaseJob):
 
                 LoadDatasetUnit(dataset_id=model_session.dataset_id)(ctx)
 
+                # The refs travel only with the path, and only to this unit: it
+                # prepares the task with the raw ones, the columns training
+                # prepared with, since the run's indexes point into that.
                 prepare = PrepareExplanationDataUnit(
                     task_name=model_session.task_name,
                     input_columns=input_columns,
                     output_columns=output_columns,
                     **preprocessing,
+                    **(
+                        {"input_column_refs": model_session.input_column_refs or []}
+                        if preprocessing
+                        else {}
+                    ),
                 )
                 # Resolving the task outside the wrapper below keeps a missing
                 # task reported as a registry problem rather than a generic
