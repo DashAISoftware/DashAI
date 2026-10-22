@@ -1,8 +1,11 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Tuple
 
 from DashAI.back.models.RAG.documents import Chunk
 from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
+
+log = logging.getLogger(__name__)
 
 
 class CompositeRetriever(BaseRetriever, ABC):
@@ -66,6 +69,34 @@ class CompositeRetriever(BaseRetriever, ABC):
             instances.
         """
         return list(self._children)
+
+    def close(self) -> None:
+        """Release every child's resources and this composite's own.
+
+        Each child is closed in order when it exposes a ``close`` hook. A
+        child's close failure is logged as a warning and isolated: the
+        remaining children and the base ``close`` still run, so one broken
+        child cannot leave the others holding resources.
+
+        Returns
+        -------
+        None
+            Nothing.
+        """
+        for child in self._children:
+            close = getattr(child, "close", None)
+            if not callable(close):
+                continue
+            try:
+                close()
+            except Exception:
+                log.warning(
+                    "Error closing %s child retriever %s.",
+                    type(self).__name__,
+                    type(child).__name__,
+                    exc_info=True,
+                )
+        super().close()
 
     @abstractmethod
     def retrieve(self, query, **kwargs) -> Tuple[List[Chunk], Dict[str, Any]]:

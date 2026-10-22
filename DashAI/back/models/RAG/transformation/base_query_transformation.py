@@ -114,6 +114,19 @@ class BaseQueryTransformation(ConfigObject):
         """
         return dict(getattr(cls, "metadata", {}))
 
+    def close(self) -> None:
+        """Release resources owned by this transformer.
+
+        Lifecycle hook called by the pipeline when the transformation stage
+        ends. The default implementation does nothing; subclasses holding a
+        model override it and must keep the call idempotent.
+
+        Returns
+        -------
+        None
+            Nothing.
+        """
+
     def transform(
         self,
         message: str,

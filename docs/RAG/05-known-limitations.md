@@ -38,6 +38,48 @@
   beyond that interleave. The stored trace also carries one node per query, so
   the process output grows with the query count.
 
+- **LLM stages are not resident simultaneously, but a nested retriever can
+  exceed one model.** Each top-level stage's model is a lazy proxy: it loads
+  when its stage starts and is closed as soon as the stage ends, so peak memory
+  is the largest **top-level** stage — the generation model, the retriever LLM
+  and the transformer are never resident at the same time. A **nested**
+  LLM-evaluated retriever can keep its parent and child evaluation LLMs live
+  simultaneously, so peak can exceed one model in that configuration. The
+  trade-off is reloading weights per turn/stage whenever the same checkpoint is
+  used more than once. `context_window` still dominates the KV-cache footprint —
+  a Phi-4-mini at a 20k-token window already spends ≈ 2.5 GiB — so a single
+  large GGUF can still fail to fit. The GGUF loader raises an actionable error
+  naming the model, device and context window and suggesting CPU, a lower
+  `context_window` or a smaller checkpoint; llama.cpp's free-memory report in
+  that error is best-effort. HuggingFace download/network failures are reported
+  as download failures, not as insufficient memory, and a missing or partial
+  GGUF file raises a file-specific "missing/incomplete, re-download" error.
+  `is_downloaded` likewise requires a matching GGUF file on disk.
+
+- **The pure factory path still builds nested LLMs eagerly.** Calling
+  `RAGModelsFactory.create_retriever()` directly — or using `RetrieverFactory`
+  on its own — resolves nested LLMs when the retriever is constructed instead of
+  deferring them. The production path goes through `RetrieverSetupService`,
+  which wraps each LLM stage in the lazy resolver, so use the setup service for
+  VRAM-constrained deployments.
+
+- **Lazy plugin LLMs must expose function-calling support on the class.** The
+  lazy wrappers capture the capability from the component class, not from an
+  instance, so a plugin LLM used lazily has to implement
+  `supports_function_calling()` as a classmethod or set
+  `SUPPORTS_FUNCTION_CALLING` on the class. An instance-only implementation is
+  invisible to the wrapper.
+
+- **GPU embedding models and cross-encoders are not released by the retriever
+  close hooks.** The lazy lifecycle covers the stage LLMs; a dense embedding
+  model or a GPU cross-encoder stays on the device for the life of the
+  retriever. On a small GPU prefer the CPU variants for those components.
+
+- **Nested LLM parameters are validated during assembly.** Deferring
+  construction does not defer validation: a transformer's or retriever's nested
+  LLM is checked against its `SCHEMA` while the pipeline is assembled, so bad
+  parameters fail before any weights load.
+
 ## Concurrency
 
 - **`get_or_create_chunk_set()`** uses a SELECT-then-INSERT pattern without a
@@ -55,6 +97,11 @@
 - **Huey consumer runs in-process.** In dev mode it spawns as a subprocess; in
   PyInstaller bundles it runs as a daemon thread. Both models limit
   parallelism.
+
+- **`RAGJob` cleans up on every failure path.** Setup, generation and output
+  persistence failures all release the pipeline models and clear the process
+  progress before the job is marked errored, so a failed turn leaves neither
+  loaded weights nor a stale progress payload behind.
 
 ## Unused Components
 

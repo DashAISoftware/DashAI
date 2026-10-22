@@ -253,10 +253,12 @@ class RetrieverSetupService:
         Returns
         -------
         RetrievalLLMServiceResult
-            The lookup-or-create result exposing ``db_record_id`` and ``model``.
+            The lookup-or-create result exposing ``db_record_id`` and a lazy
+            proxy for ``model``. The real backend is constructed on first use
+            and released when the retriever's stage ends.
         """
         service = RetrievalLLMService(self._db, self._registry)
-        return service.get_or_create(component_name, params)
+        return service.get_or_create_lazy(component_name, params)
 
     # ── Private: Unit ──────────────────────────────────────────────────
 

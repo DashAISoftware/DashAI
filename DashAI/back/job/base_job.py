@@ -1,10 +1,37 @@
 """Base Job abstract class."""
 
 import logging
+import traceback
 from abc import ABCMeta, abstractmethod
 from typing import Final, Optional
 
 logger = logging.getLogger(__name__)
+
+
+def _release_frames(error: BaseException) -> None:
+    """Drop the local variables that an exception chain's tracebacks pin.
+
+    A model that fails inside ``from_pretrained`` or ``generate`` leaves its
+    weights reachable from the traceback frames (``self`` in ``generate``, the
+    half-moved pipeline in ``.to()``). The job worker is persistent, so those
+    weights would keep their VRAM until the exception object dies. File and
+    line information is kept, so the traceback still logs normally.
+
+    Parameters
+    ----------
+    error : BaseException
+        The failure (typically captured in a job's ``except BaseException``)
+        whose ``__cause__`` / ``__context__`` chain should be released.
+    """
+    pending = [error]
+    seen = set()
+    while pending:
+        current = pending.pop()
+        if current is None or id(current) in seen:
+            continue
+        seen.add(id(current))
+        traceback.clear_frames(current.__traceback__)
+        pending.extend([current.__cause__, current.__context__])
 
 
 class BaseJob(metaclass=ABCMeta):

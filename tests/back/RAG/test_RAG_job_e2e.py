@@ -24,7 +24,11 @@ from DashAI.back.dependencies.database.models import (
     ProcessData,
 )
 from DashAI.back.job.base_job import JobError
-from DashAI.back.job.RAG_job import RAGJob
+from DashAI.back.job.RAG_job import (
+    _JOB_ERROR_DETAIL_MAX_CHARS,
+    RAGJob,
+    _job_error,
+)
 from DashAI.back.models.RAG.prompts.generation.default_RAG_generation_prompt import (
     TEMPLATES,
 )
@@ -382,9 +386,17 @@ class TestRAGJobErrorRecovery:
                 client, params, name_suffix="broken_gen"
             )
 
-            # Run the job — an unknown component must raise JobError
-            with pytest.raises(JobError, match="pipeline setup|Error during"):
+            # Run the job — an unknown component must raise JobError and the
+            # JobError must preserve the underlying cause, otherwise the UI
+            # only ever shows the generic prefix.
+            with pytest.raises(
+                JobError, match="pipeline setup|Error during"
+            ) as excinfo:
                 RAGJob(generative_process_id=process_id).run()
+            assert "NonExistentLLM_999" in str(excinfo.value), (
+                "Expected the JobError to preserve the underlying cause, "
+                f"got: {excinfo.value}"
+            )
 
             session_factory = client.app.container["session_factory"]
             with session_factory() as db:
@@ -395,6 +407,58 @@ class TestRAGJobErrorRecovery:
         finally:
             with contextlib.suppress(OSError):
                 os.remove(path)
+
+
+# ===================================================================
+# Job error helper
+# ===================================================================
+
+
+class TestJobErrorHelper:
+    """Direct unit tests for ``_job_error`` (no database required)."""
+
+    def test_short_detail_preserved_verbatim(self):
+        """A short cause is appended verbatim after the prefix."""
+        error = TypeError("component NonExistentLLM_999 not found")
+
+        exc = _job_error("Error during RAG pipeline execution", error)
+
+        assert isinstance(exc, JobError)
+        assert str(exc) == (
+            "Error during RAG pipeline execution: component "
+            "NonExistentLLM_999 not found"
+        )
+
+    def test_over_limit_detail_is_truncated(self):
+        """An over-limit cause is bounded and ends with an ellipsis."""
+        error = RuntimeError("x" * (_JOB_ERROR_DETAIL_MAX_CHARS + 500))
+
+        exc = _job_error("Error during RAG pipeline setup", error)
+
+        detail = str(exc).removeprefix("Error during RAG pipeline setup: ")
+        assert detail.endswith("…")
+        # The retained content is capped at the limit; only the trailing
+        # ellipsis is added on top of it.
+        assert detail[:-1] == "x" * _JOB_ERROR_DETAIL_MAX_CHARS
+        assert len(detail) <= _JOB_ERROR_DETAIL_MAX_CHARS + len("…")
+
+    def test_empty_detail_returns_bare_prefix(self):
+        """A whitespace-only cause yields the bare prefix."""
+        exc = _job_error(
+            "Error processing and saving RAG generation output",
+            RuntimeError("   \n"),
+        )
+
+        assert str(exc) == "Error processing and saving RAG generation output"
+
+    def test_output_stage_prefix_reachable(self):
+        """The save-output stage uses the same cause-preserving helper."""
+        exc = _job_error(
+            "Error processing and saving RAG generation output",
+            ValueError("boom"),
+        )
+
+        assert str(exc) == ("Error processing and saving RAG generation output: boom")
 
 
 # ===================================================================

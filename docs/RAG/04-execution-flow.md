@@ -106,9 +106,13 @@ delegates to `RAGJob`, which:
    retriever → LLM → prompt, then the optional transformer only when
    `query_transformation` is configured
    (`RAGModelsFactory.create_query_transformation`). The indexing half
-   (`build_index`) stops before the LLM, so a document-only index never loads
-   generation weights. Chunk sets and fitted retrievers are reused when their
-   signature already exists, so only a changed configuration pays to re-index.
+   (`build_index`) stops before the generation LLM, and every LLM is a lazy
+   proxy — the generation model, the transformation model and an
+   LLM-evaluated retriever's evaluation model are configured but not loaded, so
+   assembly never loads LLM weights (retriever embedding models may still be built or loaded during indexing). Their parameters are still schema-validated
+   during assembly, so a bad nested configuration fails there. Chunk sets and
+   fitted retrievers are reused when their signature already exists, so only a
+   changed configuration pays to re-index.
 3. Runs `RAGPipeline.generate()` with a progress reporter that persists each
    stage payload on the process's `progress` column (best-effort: a failed write
    is logged and swallowed, never failing the turn), then hands the output to
@@ -133,6 +137,27 @@ delegates to `RAGJob`, which:
    (default 3, capped at 10, counting the first) before the stage fails.
    Configuration errors such as `NotImplementedError` are not retried, and the
    text fallback route is never retried.
+   **LLM lifecycle.** Every stage LLM is a lazy proxy that loads on stage
+   entry and is closed on stage exit:
+
+   - the transformer's model loads during `_resolve_queries` and is closed as
+     soon as the transformation timing is taken;
+   - the retriever's evaluation LLM loads on the first query of the retrieval
+     stage and is closed when retrieval ends (composite retrievers close every
+     child, including nested LLM-evaluated ones);
+   - the generation LLM loads after the prompt is built and is closed right
+     after generation.
+
+   An outer `finally` releases all three again as a safety net, so an early
+   failure cannot leak a model, and cleanup errors never replace the stage
+   error. Peak memory is the largest **top-level** stage model rather than the
+   sum of the stages — the generation model, the retriever LLM and the
+   transformer are never resident at the same time. Stage timings include the
+   first-use model construction inside that stage and exclude that stage's
+   teardown; `total_ms` includes all teardowns. A nested LLM-evaluated retriever
+   can still keep its parent and child evaluation models live together; see
+   [known limitations](./05-known-limitations.md). The proxies survive the turn,
+   so the next turn reloads whichever models it needs.
 
    `process_output()` serializes five typed rows in pipeline-chronological order
    — the `Queries` list, the chunk map (`Dict`), the retrieval `Trace` (per-query

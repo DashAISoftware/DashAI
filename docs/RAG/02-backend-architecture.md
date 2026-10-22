@@ -142,12 +142,15 @@ paths.
   `config.query_transformation` is not `None`, and returns a `RAGPipeline`
   instance.
 
-The split exists because `LLMService.get_or_create` *instantiates* the
-generation model: indexing that went through `build_pipeline` would load LLM
-weights it never uses. The transformation stage follows the same rule — its
-nested `llm_model` is instantiated only in `build_pipeline`, so `build_index()`
-never loads any LLM. `build_pipeline` delegates rather than repeating the
-steps, so the two paths cannot drift.
+The split exists so indexing never loads generation weights. It is also LLM-free
+in its own right: every RAG LLM is obtained as a
+[`LazyLLM`](#lazy-llms-and-per-stage-release) proxy, so the configuration record
+is resolved and committed while the backend itself is constructed on first use.
+`build_index()` sets up the retriever — an LLM-evaluated retriever's evaluation
+model is a proxy too — without loading it; `build_pipeline()` adds the
+generation LLM, the prompt and the optional transformer, and still constructs no
+LLM model. `build_pipeline` delegates rather than repeating the steps, so the two
+paths cannot drift.
 
 No validation logic — that lives in `SessionValidationService`.
 
@@ -191,6 +194,14 @@ Session-scoped prompt copies.
 Lookup-or-create of LLM records in `rag_generation_model` table via
 `parameters_hash` (same deterministic hash as PromptService). Replaces the
 DB logic that was in `LLMFactory`.
+
+`get_or_create_lazy()` performs the same normalization, lookup/creation,
+validation and commit, but returns a `LazyLLM` proxy instead of an instance:
+the real backend is constructed on the first `generate` /
+`generate_function_call` and released by `close()`. The eager
+`get_or_create()` remains for callers that need an instance immediately.
+`RetrievalLLMService` inherits the lazy path for LLM-evaluated retrievers,
+persisting into its own `rag_retrieval_model` table.
 
 ### RetrieverDBService
 
@@ -256,7 +267,10 @@ class PromptFactory:
 
 ### LLMFactory
 
-Same pattern — resolves registry, instantiates, returns.
+Same pattern — resolves registry, instantiates, returns. RAG setup paths do not
+call it eagerly: they use `LLMService.get_or_create_lazy()` (or `fill_objects`
+with `lazy_model_classes`), so assembly resolves configuration without loading
+LLM weights.
 
 ### ChunkingModelFactory
 
@@ -297,6 +311,11 @@ class `SCHEMA`, fills nested component objects via `fill_objects`, and
 instantiates the transformer. An unknown name raises
 `RAGComponentNotFoundError`; a registered class that is not a transformer
 raises `RAGTransformationConfigError`.
+
+The nested `prompt` is instantiated eagerly, but `fill_objects` is called with
+`lazy_model_classes=(TextToTextGenerationTaskModel,)`, so the nested
+`llm_model` becomes a `LazyLLM`. Its backend is constructed on the first
+`transform()` and released when the transformation stage closes.
 
 The unified `RAGModelsFactory` exposes it as
 `create_query_transformation(component, params)`, which is what
@@ -408,6 +427,39 @@ class RAGPipeline(BaseGenerativeModel):
 
 No DB access, no factory calls, no wiring — purely assigns attributes.
 
+### Lazy LLMs and per-stage release
+
+All three stage LLMs are `LazyLLM` proxies: the query-transformation model, the
+retriever's evaluation model and the generation model. Their configuration is
+resolved and validated during assembly — the component `SCHEMA` is checked with
+the effective parameters, without loading any weights — but the real backend is
+constructed on first use and released when its stage ends:
+
+- **Transformation** — `_resolve_queries` loads the transformer's LLM if it
+  needs it; `query_transformation.close()` runs once `transformation_ms` has
+  been taken.
+- **Retrieval** — the retriever's evaluation LLM loads on its first query;
+  `retriever.close()` runs once `retrieval_ms` has been taken. Composite
+  retrievers close every child, and LLM-evaluated retrievers close their own
+  evaluation LLM before delegating to the base.
+- **Generation** — the generation LLM loads on `_generate_answer` and is closed
+  once `generation_ms` (and `total_ms`) have been taken.
+
+An outer `finally` releases all three again as a safety net, so an early failure
+cannot leak a loaded model. Releases are idempotent and suppress cleanup
+errors, so teardown never masks the stage failure. The proxies survive the call:
+closing drops the real backend, and the next stage or turn reconstructs it.
+These are the **top-level** stage LLMs, so the generation model, the retriever's
+evaluation model and the transformer are never resident simultaneously; peak
+memory is the largest top-level model, not the sum of all three. Stage timings
+include the first-use model construction inside that stage and exclude that
+stage's teardown; `total_ms` includes all teardowns.
+
+The hooks live on `BaseRetriever` / `CompositeRetriever` /
+`LLMEvaluatedRetriever` and `BaseQueryTransformation` /
+`LLMQueryTransformation`. Their defaults are no-ops; subclasses holding a model
+extend them.
+
 ### Generation Flow
 
 `generate(input_data, progress_callback=None)`:
@@ -419,13 +471,15 @@ No DB access, no factory calls, no wiring — purely assigns attributes.
    transformer runs (rewriting → 1 query, expansion/decomposition → n queries);
    a `RAGTransformationError` is wrapped in `RAGPipelineRuntimeError`, and an
    empty result also raises `RAGPipelineRuntimeError`. The resolved list is
-   always non-empty and is what retrieval runs over.
+   always non-empty and is what retrieval runs over. The transformer is closed
+   after its timing is taken.
 3. Per-query retrieve through the single `multi_query_retrieval` path. Every
    retriever's `retrieve()` returns a `(chunks, trace)` tuple, so this step
    collects one trace node per query (`{"query", "retriever"}`) and merges the
    per-query chunk lists round-robin by `merge_round_robin`, de-duplicating by
    `(document_id, document_position)`; a one-element list is effectively a
-   no-op, preserving its content and order.
+   no-op, preserving its content and order. The retriever is closed after its
+   timing is taken.
 4. `_build_chunk_references(chunks)` → format chunks into text + dict. The
    dict keys come from the shared `trace_utils.chunk_ref` helper, so the trace
    nodes' chunk references and the `Dict` row keys are byte-identical.
@@ -433,6 +487,7 @@ No DB access, no factory calls, no wiring — purely assigns attributes.
    placeholder stays optional: it is `None` when no transformation ran, and
    otherwise the transformed queries joined with `"; "`.
 6. `llm_model.generate(history + [{"role": "user", "content": prompt}])` → response.
+   The generation LLM is closed after its timing is taken.
 7. Return `RAGGenerationOutput(message, chunks, queries, trace, timings)`.
 
 The optional `progress_callback` receives one small payload per stage:
@@ -486,7 +541,10 @@ on `GenerativeProcess.progress` and commits, so a polling frontend sees the
 current stage. Reporting is best-effort: any failure
 is logged as a warning and swallowed, because a transient DB error must never
 fail the chat turn (the pipeline itself does not catch reporter exceptions).
-The process's `progress` is cleared on finish and on error.
+The process's `progress` is cleared on finish and on error. Cleanup runs on
+every failure path too — setup, generation and output persistence all release
+the pipeline models and clear the process progress before the job is marked
+errored.
 
 ## RAGIndexJob
 

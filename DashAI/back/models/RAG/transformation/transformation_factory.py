@@ -18,6 +18,9 @@ from DashAI.back.models.RAG.exceptions import (
 from DashAI.back.models.RAG.transformation.base_query_transformation import (
     BaseQueryTransformation,
 )
+from DashAI.back.models.text_to_text_generation_model import (
+    TextToTextGenerationTaskModel,
+)
 
 
 @dataclass(frozen=True)
@@ -88,6 +91,10 @@ class TransformationFactory:
             )
 
         validated = model_class.SCHEMA.model_validate(params)
-        resolved = fill_objects(validated, self._registry)
+        resolved = fill_objects(
+            validated,
+            self._registry,
+            lazy_model_classes=(TextToTextGenerationTaskModel,),
+        )
         model = model_class(**resolved)
         return TransformationFactoryResult(model=model)

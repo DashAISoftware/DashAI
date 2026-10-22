@@ -166,19 +166,29 @@ class PipelineStageTimings:
     retrievers) run inside their stage timer, so the transformation/retrieval
     durations include any reporter overhead they incur.
 
+    Stage timings include the first-use construction of that stage's lazy
+    model, because the load happens inside the timed call. Each stage's own
+    teardown is excluded: the timer is taken before ``_release`` runs.
+    ``total_ms`` is taken after the generation stage's teardown, so it covers
+    every teardown in addition to all stage work.
+
     Attributes
     ----------
     transformation_ms : float
-        Duration of the ``_resolve_queries`` call. Exactly ``0.0`` when the
-        query transformation stage is disabled.
+        Duration of the ``_resolve_queries`` call, including any first-use
+        model construction, excluding that stage's teardown. Exactly ``0.0``
+        when the query transformation stage is disabled.
     retrieval_ms : float
-        Duration of the ``_retrieve`` call, including the per-query retrieves
-        and the round-robin merge.
+        Duration of the ``_retrieve`` call, including the per-query retrieves,
+        the round-robin merge and any retriever model construction, excluding
+        that stage's teardown.
     generation_ms : float
         Duration of prompt building (``_build_prompt``) plus the LLM call
-        (``_generate_answer``).
+        (``_generate_answer``), including the LLM's first-use construction and
+        excluding its teardown.
     total_ms : float
-        Duration of the whole ``generate()`` call, from entry to return.
+        Duration of the whole ``generate()`` call, from entry through the
+        generation stage's teardown to return.
     """
 
     transformation_ms: float
@@ -472,6 +482,11 @@ class RAGPipeline(BaseGenerativeModel):
 
     Orchestrates: document loading → chunk-set creation → chunking →
     retrieval → prompt formatting → LLM generation.
+
+    The stage LLMs (query transformation, retrieval evaluation and generation)
+    are lazy proxies. Each one is constructed on first use inside its own stage
+    and released when that stage ends, so the peak memory is the largest single
+    model rather than the sum of all three.
     """
 
     COMPATIBLE_COMPONENTS: List[str] = ["RAGTask"]
@@ -550,8 +565,10 @@ class RAGPipeline(BaseGenerativeModel):
             chunks: Mapping of document IDs to their chunk dicts.
             prompt_model: The prompt template model.
             chunking_model: The chunking model instance.
-            retriever: The retriever model instance.
-            llm_model: The text generation (LLM) model instance.
+            retriever: The retriever model instance. An LLM-evaluated retriever
+                holds its own lazy proxy, which the retrieval stage releases.
+            llm_model: The text generation model, normally a lazy proxy whose
+                real backend is constructed on first generation.
             query_transformation: Optional query transformation stage. When
                 None, the current message is used directly as the search query.
         """
@@ -877,6 +894,29 @@ class RAGPipeline(BaseGenerativeModel):
                 f"Failed during LLM generation: {str(e)}"
             ) from e
 
+    @staticmethod
+    def _release(stage_model: Any) -> None:
+        """Release a stage model without letting cleanup mask a failure.
+
+        Parameters
+        ----------
+        stage_model : Any
+            Model or component that may expose a ``close`` lifecycle hook.
+
+        Returns
+        -------
+        None
+            Nothing. A missing hook is ignored and a close error is logged as a
+            warning, so teardown never replaces the stage's own failure.
+        """
+        close = getattr(stage_model, "close", None)
+        if not callable(close):
+            return
+        try:
+            close()
+        except Exception:
+            log.warning("Error closing RAG stage model.", exc_info=True)
+
     def generate(
         self,
         input_data: Tuple[Dict[str, str], ...],
@@ -888,6 +928,13 @@ class RAGPipeline(BaseGenerativeModel):
         message when the transformation stage is disabled, or a single rewrite)
         goes through the same per-query retrieval and merge as an n-element
         list.
+
+        Every stage's LLM is lazy: the stage loads it on first use and closes
+        it as soon as the stage's timing has been taken. The transformation,
+        retrieval and generation models are therefore never resident at the
+        same time, and the proxies remain reusable for the next call. Each
+        stage's timing includes its first-use model construction and excludes
+        its teardown; ``total_ms`` includes every teardown.
 
         Args:
             input_data: Chat-format input with history as earlier entries
@@ -909,48 +956,74 @@ class RAGPipeline(BaseGenerativeModel):
         """
         with progress_scope(progress_callback):
             started_at = time.perf_counter()
-            input_message, history = self._extract_input(input_data)
-            if self.query_transformation is not None:
-                report_progress(RAG_PROGRESS_STAGE_TRANSFORMING)
-            transformation_started_at = time.perf_counter()
-            resolved = self._resolve_queries(input_message, history)
-            transformation_ms = (
-                time.perf_counter() - transformation_started_at
-            ) * 1000.0
-            report_progress(
-                RAG_PROGRESS_STAGE_RETRIEVING,
-                message=resolved.message,
-                justification=resolved.justification,
-                **{RAG_PROGRESS_QUERIES_KEY: list(resolved.queries)},
-            )
-            retrieval_started_at = time.perf_counter()
-            chunks, trace = self._retrieve(resolved.queries)
-            retrieval_ms = (time.perf_counter() - retrieval_started_at) * 1000.0
-            # Report BEFORE taking the generation start timestamp: the reporter
-            # may open a DB session and commit, and that overhead must not be
-            # charged to generation_ms (which measures only prompt build + LLM).
-            # Progress events emitted by nested LLM components do run inside
-            # their own stage timer; see PipelineStageTimings.
-            report_progress(RAG_PROGRESS_STAGE_GENERATING)
-            generation_started_at = time.perf_counter()
-            prompt, chunk_dict = self._build_prompt(
-                input_message, chunks, resolved.transformed_queries
-            )
-            raw_message = self._generate_answer(history, prompt)
-            generation_ms = (time.perf_counter() - generation_started_at) * 1000.0
-            total_ms = (time.perf_counter() - started_at) * 1000.0
-            timings = PipelineStageTimings(
-                transformation_ms=(
-                    0.0 if self.query_transformation is None else transformation_ms
-                ),
-                retrieval_ms=retrieval_ms,
-                generation_ms=generation_ms,
-                total_ms=total_ms,
-            )
-            return RAGGenerationOutput(
-                message=raw_message,
-                chunks=chunk_dict,
-                queries=resolved.queries,
-                trace=trace,
-                timings=timings,
-            )
+            try:
+                input_message, history = self._extract_input(input_data)
+                if self.query_transformation is not None:
+                    report_progress(RAG_PROGRESS_STAGE_TRANSFORMING)
+                transformation_started_at = time.perf_counter()
+                try:
+                    resolved = self._resolve_queries(input_message, history)
+                finally:
+                    transformation_ms = (
+                        time.perf_counter() - transformation_started_at
+                    ) * 1000.0
+                    # Teardown happens after the stage timing, so releasing
+                    # weights is not charged to transformation_ms; any first-use
+                    # model construction inside the stage is included.
+                    if self.query_transformation is not None:
+                        self._release(self.query_transformation)
+                report_progress(
+                    RAG_PROGRESS_STAGE_RETRIEVING,
+                    message=resolved.message,
+                    justification=resolved.justification,
+                    **{RAG_PROGRESS_QUERIES_KEY: list(resolved.queries)},
+                )
+                retrieval_started_at = time.perf_counter()
+                try:
+                    chunks, trace = self._retrieve(resolved.queries)
+                finally:
+                    retrieval_ms = (time.perf_counter() - retrieval_started_at) * 1000.0
+                    self._release(self.retriever)
+                # Report BEFORE taking the generation start timestamp: the
+                # reporter may open a DB session and commit, and that overhead
+                # must not be charged to generation_ms (which measures only
+                # prompt build + LLM). Progress events emitted by nested LLM
+                # components do run inside their own stage timer; see
+                # PipelineStageTimings.
+                report_progress(RAG_PROGRESS_STAGE_GENERATING)
+                generation_started_at = time.perf_counter()
+                try:
+                    prompt, chunk_dict = self._build_prompt(
+                        input_message, chunks, resolved.transformed_queries
+                    )
+                    raw_message = self._generate_answer(history, prompt)
+                finally:
+                    generation_ms = (
+                        time.perf_counter() - generation_started_at
+                    ) * 1000.0
+                    # Take total_ms after the generation teardown so it covers
+                    # every stage's release, not just their work.
+                    self._release(self.llm_model)
+                    total_ms = (time.perf_counter() - started_at) * 1000.0
+                timings = PipelineStageTimings(
+                    transformation_ms=(
+                        0.0 if self.query_transformation is None else transformation_ms
+                    ),
+                    retrieval_ms=retrieval_ms,
+                    generation_ms=generation_ms,
+                    total_ms=total_ms,
+                )
+                return RAGGenerationOutput(
+                    message=raw_message,
+                    chunks=chunk_dict,
+                    queries=resolved.queries,
+                    trace=trace,
+                    timings=timings,
+                )
+            finally:
+                # Safety net: an early failure (input parsing, a reporter, a
+                # stage) must not leave a loaded model behind. Releases are
+                # idempotent, so already-closed stages are no-ops.
+                self._release(self.query_transformation)
+                self._release(self.retriever)
+                self._release(self.llm_model)

@@ -306,6 +306,29 @@ class LLMQueryTransformation(BaseQueryTransformation):
                 f"{MAX_FUNCTION_CALL_TRIALS}, got {self.function_call_max_trials!r}."
             )
 
+    def close(self) -> None:
+        """Release the transformation LLM, when it exposes a ``close`` hook.
+
+        A failure while closing the model is suppressed so cleanup never masks
+        the transformation failure that ended the stage. The call is idempotent
+        when the model is a :class:`~DashAI.back.models.lazy_llm.LazyLLM`.
+
+        Returns
+        -------
+        None
+            Nothing.
+        """
+        close = getattr(self.llm_model, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                logger.warning(
+                    "Error closing %s's transformation LLM.",
+                    type(self).__name__,
+                    exc_info=True,
+                )
+
     def transform(
         self,
         message: str,

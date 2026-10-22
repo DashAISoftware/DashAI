@@ -32,6 +32,7 @@ from DashAI.back.dependencies.database.models import (
     GenerativeSession,
     ProcessData,
 )
+from DashAI.back.job import RAG_job as rag_job_module
 from DashAI.back.job.base_job import JobError
 from DashAI.back.job.generative_job import GenerativeJob
 from DashAI.back.job.RAG_job import RAGJob, _make_progress_reporter
@@ -598,7 +599,7 @@ class TestProgressErrorPath:
                 client, params, "Broken message"
             )
 
-            with pytest.raises(JobError, match="RAG model generation"):
+            with pytest.raises(JobError, match="RAG pipeline execution"):
                 _run_with_capture(client, process_id)
 
             assert _PROGRESS_CAPTURE == [{"stage": "generating"}]
@@ -611,3 +612,74 @@ class TestProgressErrorPath:
         finally:
             with contextlib.suppress(OSError):
                 os.remove(path)
+
+
+# ===================================================================
+# cleanup runs on every failure path
+# ===================================================================
+
+
+def _patch_cleanup(monkeypatch: pytest.MonkeyPatch) -> list:
+    """Record the job's cleanup steps in the order they run."""
+    calls: list = []
+    monkeypatch.setattr(
+        rag_job_module, "_release_frames", lambda failure: calls.append("frames")
+    )
+    monkeypatch.setattr(rag_job_module.gc, "collect", lambda: calls.append("gc"))
+    monkeypatch.setattr(
+        rag_job_module, "_empty_accelerator_cache", lambda: calls.append("empty_cache")
+    )
+    return calls
+
+
+class TestCleanupOnFailure:
+    def test_generation_failure_runs_cleanup_and_keeps_cause(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ):
+        """A failing ``model.generate`` still releases frames, gc and cache."""
+        tag = uuid.uuid4().hex[:8]
+        suffix = f"_cleanup_gen_{tag}"
+        doc_id = _create_test_document(client, suffix=suffix)
+        path = write_test_doc_file(suffix, RAG_E2E_DOC_TEXT)
+        try:
+            params = _session_params([doc_id], False)
+            params["generation_model"] = {
+                "component": "FailingProgressGenerationLLM",
+                "params": {"broken_marker": "cleanup_gen"},
+            }
+            _session_id, process_id = _create_session_process(
+                client, params, "Cleanup message"
+            )
+            calls = _patch_cleanup(monkeypatch)
+
+            with pytest.raises(JobError, match="RAG pipeline execution") as exc_info:
+                _run_with_capture(client, process_id)
+
+            assert exc_info.value.__cause__ is not None
+            assert "failing generation LLM exploded" in str(exc_info.value.__cause__)
+            assert isinstance(exc_info.value.__cause__.__cause__, RuntimeError), (
+                "Expected the original stub failure to remain in the cause chain."
+            )
+            # The final three entries are the job's cleanup, in order. Earlier
+            # "gc" entries come from the pipeline's per-stage LazyLLM closes.
+            assert calls[-3:] == ["frames", "gc", "empty_cache"]
+
+            session_factory = client.app.container["session_factory"]
+            with session_factory() as db:
+                process = db.get(GenerativeProcess, process_id)
+                assert process.status == RunStatus.ERROR, process.status
+                assert process.progress is None
+        finally:
+            with contextlib.suppress(OSError):
+                os.remove(path)
+
+    def test_setup_failure_runs_cleanup(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ):
+        """A missing process fails in setup but cleanup still runs."""
+        calls = _patch_cleanup(monkeypatch)
+
+        with pytest.raises(JobError, match="not found"):
+            RAGJob(generative_process_id=999999).run()
+
+        assert calls == ["frames", "gc", "empty_cache"]

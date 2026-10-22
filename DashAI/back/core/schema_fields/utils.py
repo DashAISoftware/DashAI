@@ -75,6 +75,8 @@ def normalize_payload(data):
 def fill_objects(
     schema_instance: "BaseSchema",
     component_registry: "ComponentRegistry" = lambda di: di["component_registry"],
+    *,
+    lazy_model_classes: tuple[type, ...] = (),
 ) -> dict:
     """Fills in the schema instance, replacing the component fields with the
     target component. Returns the dumped dictionary of the schema instance.
@@ -104,6 +106,15 @@ def fill_objects(
     schema_instance : BaseSchema
         An instance of a component schema, constructed using the user's
         parameters.
+    component_registry : ComponentRegistry
+        Registry used to resolve component names to their classes.
+    lazy_model_classes : tuple of type, optional
+        Component classes that must be wrapped in a lazy proxy instead of being
+        instantiated. Only component references whose class is a subclass of an
+        entry are deferred; every other reference keeps the eager behavior.
+        The deferred component's ``SCHEMA`` is still validated here, so invalid
+        parameters fail during assembly rather than on first use. Empty by
+        default, which preserves every existing caller.
 
     Returns
     -------
@@ -128,7 +139,28 @@ def fill_objects(
             set(field_value.keys())
         ):
             component_class = component_registry[field_value["component"]]["class"]
-            schema_params[field_name] = component_class(**field_value["params"])
+            if lazy_model_classes and issubclass(component_class, lazy_model_classes):
+                # Imported locally to avoid a schema-fields -> models cycle.
+                from DashAI.back.models.lazy_llm import LazyLLM
+
+                factory_params = dict(field_value["params"])
+                # Mirror ``LLMFactory.create``: validate the parameters now so a
+                # bad nested configuration fails during assembly, while the
+                # constructor itself still runs lazily on first use.
+                if (
+                    hasattr(component_class, "SCHEMA")
+                    and component_class.SCHEMA is not None
+                ):
+                    component_class.SCHEMA(**factory_params)
+                schema_params[field_name] = LazyLLM(
+                    lambda cls=component_class, p=factory_params: cls(**p),
+                    label=field_value["component"],
+                    supports_function_calling=(
+                        component_class.supports_function_calling()
+                    ),
+                )
+            else:
+                schema_params[field_name] = component_class(**field_value["params"])
     return schema_params
 
 

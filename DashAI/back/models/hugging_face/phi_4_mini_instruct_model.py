@@ -8,6 +8,10 @@ from DashAI.back.core.schema_fields import (
     schema_field,
 )
 from DashAI.back.core.utils import MultilingualString
+from DashAI.back.models.hugging_face.gguf_text_generation_base import (
+    _release_llama_model,
+)
+from DashAI.back.models.hugging_face.llama_utils import load_llama_or_raise
 from DashAI.back.models.text_to_text_generation_model import (
     TextToTextGenerationTaskModel,
 )
@@ -418,11 +422,44 @@ class Phi4MiniInstructModel(TextToTextGenerationTaskModel):
     )
 
     def __init__(self, **kwargs):
+        """Load the Phi 4 Mini Instruct checkpoint via llama.cpp.
+
+        The checkpoint is fetched from the HuggingFace hub with
+        ``Llama.from_pretrained`` and loaded using the requested quantization.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            model_name : str
+                HuggingFace repository holding the GGUF checkpoint.
+            quantization : str, optional
+                GGUF filename to load. Default ``"Phi-4-mini-instruct.Q8_0.gguf"``.
+            max_tokens : int, optional
+                Maximum number of new tokens to generate per response. Default 100.
+            temperature : float, optional
+                Sampling temperature in [0.0, 1.0]. Default 0.7.
+            frequency_penalty : float, optional
+                Token-frequency penalty in [0.0, 2.0]. Default 0.1.
+            context_window : int, optional
+                Total token budget for a single forward pass. Default 512.
+            device : str, optional
+                Target device from ``LLAMA_DEVICE_ENUM``. CPU runs in RAM only;
+                a GPU label enables full GPU offload via ``n_gpu_layers=-1``.
+
+        Raises
+        ------
+        RuntimeError
+            If ``llama-cpp-python`` is not installed, or if llama.cpp fails to
+            download or load the checkpoint. The latter carries the repo/file,
+            device, context window, a device-specific hint and the captured log
+            excerpt.
+        """
         try:
             from llama_cpp import Llama
         except ImportError as e:
             raise RuntimeError(
-                "llama-cpp-python is not installed. Please install it to use QwenModel."
+                "llama-cpp-python is not installed. "
+                "Please install it to use Phi4MiniInstructModel."
             ) from e
 
         kwargs = self.validate_and_transform(kwargs)
@@ -433,16 +470,42 @@ class Phi4MiniInstructModel(TextToTextGenerationTaskModel):
         self.frequency_penalty = kwargs.pop("frequency_penalty", 0.1)
         self.n_ctx = kwargs.pop("context_window", 512)
 
-        use_gpu = LLAMA_DEVICE_TO_IDX.get(kwargs.get("device")) >= 0
+        device_val = kwargs.get("device")
+        use_gpu = LLAMA_DEVICE_TO_IDX.get(device_val) >= 0
 
-        self.model = Llama.from_pretrained(
-            repo_id=self.model_name,
-            filename=self.quantization,
-            verbose=True,
-            n_ctx=self.n_ctx,
-            n_gpu_layers=-1 if use_gpu else 0,
-            main_gpu=LLAMA_DEVICE_TO_IDX.get(kwargs.get("device")) if use_gpu else 0,
+        self.model = load_llama_or_raise(
+            lambda: Llama.from_pretrained(
+                repo_id=self.model_name,
+                filename=self.quantization,
+                verbose=True,
+                n_ctx=self.n_ctx,
+                n_gpu_layers=-1 if use_gpu else 0,
+                main_gpu=LLAMA_DEVICE_TO_IDX.get(device_val) if use_gpu else 0,
+            ),
+            model_label=type(self).__name__,
+            model_path=f"{self.model_name} ({self.quantization})",
+            device=device_val,
+            context_window=self.n_ctx,
         )
+
+    def close(self) -> None:
+        """Release the llama.cpp backend and reclaim its accelerator memory.
+
+        The backend is closed explicitly, its reference dropped, and the CUDA
+        cache cleared when available. The call is idempotent and never raises:
+        a backend close failure is logged as a warning so cleanup cannot mask
+        the failure that ended the stage.
+
+        Returns
+        -------
+        None
+            Nothing.
+        """
+        model = getattr(self, "model", None)
+        self.model = None
+        if model is None:
+            return
+        _release_llama_model(model, type(self).__name__)
 
     def generate(self, prompt: list[dict[str, str]]) -> List[str]:
         output = self.model.create_chat_completion(

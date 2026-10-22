@@ -147,6 +147,31 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
         """Return the round and pool budget paths."""
         return {"max_iters": "max_iters", "max_chunks": "max_chunks"}
 
+    def close(self) -> None:
+        """Release the evaluation LLM and nested LLM-evaluated children.
+
+        The LLM is closed when it exposes a ``close`` hook; a failure while
+        closing it is suppressed so cleanup never masks the retrieval failure
+        that ended the stage. Nested composites are released through the
+        composite base, which also covers deeper LLM-evaluated descendants.
+
+        Returns
+        -------
+        None
+            Nothing.
+        """
+        close = getattr(self.llm_model, "close", None)
+        if callable(close):
+            try:
+                close()
+            except Exception:
+                log.warning(
+                    "Error closing %s's evaluation LLM.",
+                    type(self).__name__,
+                    exc_info=True,
+                )
+        super().close()
+
     @property
     def retrieval_top_k(self) -> int:
         """Return the pool cap (``max_chunks``)."""

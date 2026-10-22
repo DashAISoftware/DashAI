@@ -27,6 +27,7 @@ from DashAI.back.dependencies.database.models import (
     RAGRetriever,
 )
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
+from DashAI.back.models.lazy_llm import LazyLLM
 from DashAI.back.models.RAG.documents import Chunk, RAGDocument
 from DashAI.back.models.RAG.prompts.evaluation import (
     CustomRetrievalSufficiencyPrompt,
@@ -69,9 +70,11 @@ class StubFactoryLLM(TextToTextGenerationTaskModel):
     """Minimal text-to-text model used as a resolvable ``llm_model``."""
 
     SCHEMA = _EmptyLLMSchema
+    construction_count = 0
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialise with an empty parameter set."""
+        type(self).construction_count += 1
         self.parameters: Dict[str, Any] = {}
 
     def generate(self, input: Any) -> List[Any]:
@@ -411,14 +414,27 @@ def test_setup_service_builds_depth_retriever_and_persists_bridge(client: TestCl
             "prompt": _prompt_ref(),
         }
 
+        before = StubFactoryLLM.construction_count
         result = service.setup("LLMEvaluatedDepthRetriever", params)
 
         assert isinstance(result.model, LLMEvaluatedDepthRetriever)
-        assert isinstance(result.model.llm_model, StubFactoryLLM)
+        assert isinstance(result.model.llm_model, LazyLLM)
+        assert result.model.llm_model.is_loaded is False
+        assert StubFactoryLLM.construction_count == before
         assert isinstance(result.model.prompt, RetrievalSufficiencyPrompt)
         bridge = db.query(RAGRetriever).get(result.db_record_id)
         assert bridge is not None
         assert bridge.class_name == "LLMEvaluatedDepthRetriever"
+
+        # The DB-backed configuration still exists; the model loads on use.
+        assert result.db_record_id > 0
+        result.model.retrieve("query")
+        assert StubFactoryLLM.construction_count == before + 1
+        assert result.model.llm_model.is_loaded is True
+
+        # Closing the composite releases its evaluation LLM.
+        result.model.close()
+        assert result.model.llm_model.is_loaded is False
 
 
 def test_setup_service_parallel_retriever_unchanged(client: TestClient):

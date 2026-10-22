@@ -22,6 +22,10 @@ from DashAI.back.dependencies.database.models import (
 from DashAI.back.dependencies.database.models import (
     RAGPipeline as PipelineDBModel,
 )
+from DashAI.back.models.lazy_llm import LazyLLM
+from DashAI.back.models.RAG.prompts.evaluation.default_retrieval_sufficiency_prompt import (  # noqa: E501
+    TEMPLATES as SUFFICIENCY_TEMPLATES,
+)
 from DashAI.back.models.RAG.prompts.generation.default_RAG_generation_prompt import (
     TEMPLATES,
 )
@@ -58,10 +62,30 @@ class StubLLMSetup(TextToTextGenerationTaskModel):
         return ["setup stub answer"]
 
 
+class CountingLLMSetupSchema(BaseSchema):
+    """Empty schema for the counting setup stub."""
+
+
+class CountingLLMSetup(TextToTextGenerationTaskModel):
+    """Counting stub that also answers an LLM-evaluated retriever's verdict."""
+
+    SCHEMA = CountingLLMSetupSchema
+    construction_count = 0
+
+    def __init__(self, **kwargs):
+        type(self).construction_count += 1
+        self.parameters = {}
+
+    def generate(self, prompt):
+        return ['{"sufficient": true}']
+
+
 @pytest.fixture(scope="module", autouse=True)
 def register_stub_llm_setup(client: TestClient) -> None:
-    """Register StubLLMSetup in the component registry."""
-    client.app.container["component_registry"].register_component(StubLLMSetup)
+    """Register the setup stubs in the component registry."""
+    registry = client.app.container["component_registry"]
+    registry.register_component(StubLLMSetup)
+    registry.register_component(CountingLLMSetup)
 
 
 # ---------------------------------------------------------------------------
@@ -164,8 +188,93 @@ class TestSetupServiceBuildPipeline:
                 assert pipeline.session_id == session_id
                 assert doc_id in pipeline.documents
                 assert pipeline.retriever is not None
-                assert pipeline.llm_model is not None
+                assert isinstance(pipeline.llm_model, LazyLLM)
+                assert pipeline.llm_model.is_loaded is False
                 assert pipeline.prompt_model is not None
+        finally:
+            with contextlib.suppress(OSError):
+                os.remove(path)
+
+    def test_build_pipeline_defers_every_llm(self, client: TestClient):
+        """Assembly loads no LLM, including an LLM-evaluated retriever's."""
+        tag = uuid.uuid4().hex[:8]
+        suffix = f"_lazy_{tag}"
+        doc_id = _create_test_document(client, suffix=suffix)
+        path = write_test_doc_file(suffix, RAG_E2E_DOC_TEXT)
+
+        try:
+            session_factory = client.app.container["session_factory"]
+            registry = client.app.container["component_registry"]
+            config_app = client.app.container["config"]
+
+            with session_factory() as db:
+                session_id = _create_session(db, f"setup_lazy_{tag}", [doc_id])
+                pipeline_config = RAGPipelineConfig.from_kwargs(
+                    session_id=session_id,
+                    db=db,
+                    component_registry=registry,
+                    env_RAG_path=config_app["RAG_PATH"],
+                    documents=[doc_id],
+                    prompt={
+                        "component": "DefaultRAGGenerationPrompt",
+                        "params": {"language": "en", "template": TEMPLATES["en"]},
+                    },
+                    chunking_model={
+                        "component": "CharacterChunkModel",
+                        "params": {"chunk_size": 200, "chunk_overlap": 20},
+                    },
+                    retriever_model={
+                        "component": "LLMEvaluatedDepthRetriever",
+                        "params": {
+                            "children": [
+                                {
+                                    "component": "BM25Retriever",
+                                    "params": bm25_retriever_params(),
+                                }
+                            ],
+                            "max_iters": 2,
+                            "max_chunks": 5,
+                            "llm_model": {
+                                "component": "CountingLLMSetup",
+                                "params": {"role": "retrieval"},
+                            },
+                            "prompt": {
+                                "component": "DefaultRetrievalSufficiencyPrompt",
+                                "params": {
+                                    "language": "en",
+                                    "template": SUFFICIENCY_TEMPLATES["en"],
+                                },
+                            },
+                        },
+                    },
+                    generation_model={
+                        "component": "CountingLLMSetup",
+                        "params": {"role": "generation"},
+                    },
+                )
+
+                CountingLLMSetup.construction_count = 0
+                setup_service = SetupService(db, registry, config_app["RAG_PATH"])
+                pipeline = setup_service.build_pipeline(pipeline_config)
+
+                # Neither the generation LLM nor the retriever's evaluation LLM
+                # is constructed while the pipeline is assembled.
+                assert CountingLLMSetup.construction_count == 0
+                assert isinstance(pipeline.llm_model, LazyLLM)
+                assert pipeline.llm_model.is_loaded is False
+                retriever_llm = pipeline.retriever.llm_model
+                assert isinstance(retriever_llm, LazyLLM)
+                assert retriever_llm.is_loaded is False
+
+                # The retriever's LLM loads when it evaluates...
+                pipeline.retriever.retrieve("Tell me about DashAI")
+                assert CountingLLMSetup.construction_count == 1
+                assert retriever_llm.is_loaded is True
+
+                # ...and its close hook releases it again.
+                pipeline.retriever.close()
+                assert retriever_llm.is_loaded is False
+                assert pipeline.llm_model.is_loaded is False
         finally:
             with contextlib.suppress(OSError):
                 os.remove(path)

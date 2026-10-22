@@ -15,6 +15,7 @@ import pytest
 
 from DashAI.back.core.schema_fields import BaseSchema
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
+from DashAI.back.models.lazy_llm import LazyLLM
 from DashAI.back.models.RAG.prompts.transformation import (
     CustomQueryDecompositionPrompt,
     CustomQueryExpansionPrompt,
@@ -45,8 +46,10 @@ class TransformationStubLLM(TextToTextGenerationTaskModel):
     """Stub LLM that answers according to the technique named in the prompt."""
 
     SCHEMA = TransformationStubLLMSchema
+    construction_count = 0
 
     def __init__(self, **kwargs):
+        type(self).construction_count += 1
         self.parameters = dict(kwargs)
 
     def generate(self, prompt):
@@ -196,6 +199,38 @@ class TestTechniqueMetadata:
 
 class TestFactoryBuildsTransformers:
     """``TransformationFactory`` resolves nested prompt/LLM instances."""
+
+    def test_factory_leaves_the_llm_lazy(self, registry):
+        """The nested LLM is a proxy; the prompt is a real instance."""
+        params = {
+            "prompt": {
+                "component": "DefaultQueryRewritingPrompt",
+                "params": {"language": "en"},
+            },
+            "llm_model": {
+                "component": "TransformationStubLLM",
+                "params": {"stub_marker": "lazy"},
+            },
+            "history_window": 1,
+            "function_call_max_trials": DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+        }
+        before = TransformationStubLLM.construction_count
+
+        model = TransformationFactory(registry).create("LLMQueryRewriter", params).model
+
+        assert isinstance(model.llm_model, LazyLLM)
+        assert model.llm_model.is_loaded is False
+        assert isinstance(model.prompt, DefaultQueryRewritingPrompt)
+        assert not isinstance(model.prompt, dict)
+        assert TransformationStubLLM.construction_count == before
+
+        output = model.transform("¿Qué es DashAI?", [])
+        assert output.queries == ["rewritten query"]
+        assert model.llm_model.is_loaded is True
+        assert TransformationStubLLM.construction_count == before + 1
+
+        model.close()
+        assert model.llm_model.is_loaded is False
 
     def test_rewriter_end_to_end(self, registry):
         params = {

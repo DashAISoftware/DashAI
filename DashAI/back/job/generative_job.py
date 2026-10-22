@@ -1,5 +1,4 @@
 import logging
-import traceback
 from typing import TYPE_CHECKING, Any
 
 from kink import inject
@@ -11,7 +10,7 @@ from DashAI.back.dependencies.database.models import (
     GenerativeSession,
     ProcessData,
 )
-from DashAI.back.job.base_job import BaseJob, JobError
+from DashAI.back.job.base_job import BaseJob, JobError, _release_frames
 from DashAI.back.job.RAG_job import RAGJob
 from DashAI.back.models.base_generative_model import BaseGenerativeModel
 from DashAI.back.tasks.base_generative_task import BaseGenerativeTask
@@ -21,26 +20,6 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import sessionmaker
 
 log = logging.getLogger(__name__)
-
-
-def _release_frames(error: BaseException) -> None:
-    """Drop the local variables that an exception chain's tracebacks pin.
-
-    A model that fails inside ``from_pretrained`` or ``generate`` leaves its
-    weights reachable from the traceback frames (``self`` in ``generate``, the
-    half-moved pipeline in ``.to()``). The job worker is persistent, so those
-    weights would keep their VRAM until the exception object dies. File and
-    line information is kept, so the traceback still logs normally.
-    """
-    pending = [error]
-    seen = set()
-    while pending:
-        current = pending.pop()
-        if current is None or id(current) in seen:
-            continue
-        seen.add(id(current))
-        traceback.clear_frames(current.__traceback__)
-        pending.extend([current.__cause__, current.__context__])
 
 
 class GenerativeJob(BaseJob):
@@ -137,6 +116,10 @@ class GenerativeJob(BaseJob):
         session_factory = di["session_factory"]
         config = di["config"]
 
+        # Resolve the task in a short-lived session and close it before the RAG
+        # run: RAGJob opens its own sessions and must not inherit a connection
+        # held open for the whole LLM turn.
+        rag_job: RAGJob | None = None
         with session_factory() as db:
             process = db.get(
                 GenerativeProcess, self.kwargs.get("generative_process_id")
@@ -146,9 +129,10 @@ class GenerativeJob(BaseJob):
                 if session is not None:
                     task_class = component_registry[session.task_name]["class"]
                     if issubclass(task_class, RAGTask):
-                        RAG_job = RAGJob(**self.kwargs)
-                        RAG_job.run()
-                        return
+                        rag_job = RAGJob(**self.kwargs)
+        if rag_job is not None:
+            rag_job.run()
+            return
 
         model = None
         generative_process = None

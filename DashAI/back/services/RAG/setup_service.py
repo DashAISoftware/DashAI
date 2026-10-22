@@ -66,7 +66,9 @@ class SetupService:
 
     Does NOT execute ``generate()`` — only assembly.  Each sub-component
     is built via the corresponding service class so that DB persistence
-    and model instantiation are handled consistently.
+    and model instantiation are handled consistently. LLMs are the
+    exception: they are configured as lazy proxies and only instantiated
+    when their stage first needs them.
 
     This service receives **pre-validated** configuration (use
     :class:`RAGSessionValidationService` for parameter validation).
@@ -109,9 +111,9 @@ class SetupService:
         4. Create the chunking model and persist chunks
         5. Setup the retriever (dense embedding / sparse / composite)
 
-        This stops short of the generation model on purpose:
-        :meth:`LLMService.get_or_create` *instantiates* the LLM, and indexing
-        must never load model weights it will not use.
+        This stops short of the generation model on purpose: indexing must
+        never load model weights it will not use. Every LLM built by the
+        pipeline is lazy, so even the full assembly never loads one.
 
         Every step is content-addressed, so calling this when nothing changed
         is a cheap no-op that reuses the cached chunk set and retriever.
@@ -196,10 +198,15 @@ class SetupService:
         Sequence
         --------
         1-5. Build the index (delegated to :meth:`build_index`)
-        6. Get or create the LLM record
+        6. Get or create the LLM record and a lazy proxy for it
         7. Resolve the prompt component and persist it
         8. Update the pipeline DB record with FK component IDs
         9. Build and return the ``RAGPipeline`` instance
+
+        The generation and transformation models are lazy proxies: their
+        configuration (including the DB row) is resolved here, but the real
+        weights are constructed on first use and released at the end of their
+        pipeline stage.
 
         Parameters
         ----------
@@ -220,7 +227,7 @@ class SetupService:
         """
         index = self.build_index(config)
 
-        llm_result = self._llm.get_or_create(
+        llm_result = self._llm.get_or_create_lazy(
             config.generation_model.component,
             config.generation_model.params,
         )

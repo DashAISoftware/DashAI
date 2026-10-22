@@ -207,9 +207,9 @@ def _mark_download_required_components_present(app) -> None:
 
     Every GGUF text-generation checkpoint (Llama32_1BInstruct, Qwen25_15BInstruct,
     etc.) requires a download, so session creation would otherwise be rejected
-    with HTTP 409. Following the pattern in ``tests/back/api/conftest.py``, an
-    empty file inside ``<COMPONENT_PATH>/<ClassName>/<repo-leaf>`` is enough for
-    ``HFDownloadableMixin.is_downloaded`` to report the component as present.
+    with HTTP 409. GGUF components require a file matching ``GGUF_PATTERN`` (a
+    non-empty directory is no longer enough); other download-required
+    components are satisfied by a ``config.json`` placeholder.
     """
     registry = app.container["component_registry"]
     components_root = Path(app.container["config"]["COMPONENT_PATH"])
@@ -227,7 +227,13 @@ def _mark_download_required_components_present(app) -> None:
                 components_root / component_class.__name__ / repo_id.split("/")[-1]
             )
             repo_dir.mkdir(parents=True, exist_ok=True)
-            (repo_dir / "config.json").write_text("{}", encoding="utf-8")
+            pattern = getattr(component_class, "GGUF_PATTERN", None)
+            if pattern:
+                (repo_dir / pattern.replace("*", "placeholder")).write_text(
+                    "weights", encoding="utf-8"
+                )
+            else:
+                (repo_dir / "config.json").write_text("{}", encoding="utf-8")
 
 
 def remove_dir_with_retry(directory, max_attempts=5, sleep_seconds=1):

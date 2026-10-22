@@ -417,6 +417,19 @@ class BaseRetriever(ConfigObject, ABC):
         state (``_fit()``, ``_init_embedding()``).  Default is a no-op.
         """
 
+    def close(self) -> None:
+        """Release resources owned by this retriever.
+
+        Lifecycle hook called by the pipeline when the retrieval stage ends.
+        The default implementation does nothing; subclasses holding a model
+        override it and must keep the call idempotent.
+
+        Returns
+        -------
+        None
+            Nothing.
+        """
+
     @abstractmethod
     def retrieve(self, query, **kwargs) -> Tuple[List[Chunk], Dict[str, Any]]:
         """Retrieve the top-k chunks most relevant to the query.
