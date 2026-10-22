@@ -286,6 +286,8 @@ from DashAI.back.models.hugging_face.phi_4_mini_instruct_model import (
 from DashAI.back.models.hugging_face.pixart_sigma_model import PixArtSigma
 from DashAI.back.models.hugging_face.qwen_model import (
     Qwen25_05BInstruct,
+    Qwen25_3BInstruct,
+    Qwen25_7BInstruct,
     Qwen25_15BInstruct,
 )
 from DashAI.back.models.hugging_face.roberta_transformer import RobertaTransformer
@@ -619,6 +621,8 @@ def get_initial_components():
         PixArtSigma,
         Qwen25_05BInstruct,
         Qwen25_15BInstruct,
+        Qwen25_3BInstruct,
+        Qwen25_7BInstruct,
         OpusMtRoaEnTransformer,
         RandomForestClassifier,
         RobertaTransformer,
