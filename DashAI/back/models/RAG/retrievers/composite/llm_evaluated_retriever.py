@@ -34,6 +34,10 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PROGRESS_MESSAGE_KEY,
     RAG_PROGRESS_STAGE_RETRIEVING,
 )
+from DashAI.back.models.RAG.RAG_defaults import (
+    DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+    MAX_FUNCTION_CALL_TRIALS,
+)
 from DashAI.back.models.RAG.retrievers.composite.composite_retriever import (
     CompositeRetriever,
 )
@@ -56,6 +60,7 @@ _PARAM_MAX_ITERS = "max_iters"
 _PARAM_MAX_CHUNKS = "max_chunks"
 _PARAM_PROMPT = "prompt"
 _PARAM_LLM_MODEL = "llm_model"
+_PARAM_FUNCTION_CALL_MAX_TRIALS = "function_call_max_trials"
 
 
 class LLMEvaluatedRetriever(CompositeRetriever, ABC):
@@ -73,6 +78,9 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
             the pool. Required — no artificial default is assumed.
         llm_model: The :class:`TextToTextGenerationTaskModel` used to judge the
             pool. Required — no artificial default is assumed.
+        function_call_max_trials: Maximum number of function-call attempts, the
+            first call included. Defaults to
+            :data:`DEFAULT_FUNCTION_CALL_MAX_TRIALS`.
         EXPECTED_FUNCTION: The function name a function-calling model must call.
         FUNCTION_DESCRIPTION: Human-readable description of that function.
         FUNCTION_PARAMETERS: JSON schema of the function's arguments.
@@ -95,6 +103,8 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
         **kwargs
             Must contain ``children`` (handled by the composite base),
             ``max_iters``, ``max_chunks``, ``prompt`` and ``llm_model``.
+            ``function_call_max_trials`` is optional and defaults to
+            :data:`DEFAULT_FUNCTION_CALL_MAX_TRIALS`.
 
         Raises
         ------
@@ -102,11 +112,17 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
             If ``max_iters``, ``max_chunks``, ``prompt`` or ``llm_model`` is
             absent.
         RAGRetrieverCompositeValidationError
-            If ``max_iters`` or ``max_chunks`` is not a positive integer.
+            If ``max_iters``, ``max_chunks`` or ``function_call_max_trials`` is
+            not a positive integer.
         """
         super().__init__(**kwargs)
         self.max_iters = self._pop_positive_int(_PARAM_MAX_ITERS)
         self.max_chunks = self._pop_positive_int(_PARAM_MAX_CHUNKS)
+        self.function_call_max_trials = self._pop_positive_int(
+            _PARAM_FUNCTION_CALL_MAX_TRIALS,
+            default=DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+            maximum=MAX_FUNCTION_CALL_TRIALS,
+        )
         self.prompt = self._pop_required(_PARAM_PROMPT)
         self.llm_model = self._pop_required(_PARAM_LLM_MODEL)
         self._evaluator = RetrievalEvaluator(
@@ -115,6 +131,7 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
             self.EXPECTED_FUNCTION,
             self.FUNCTION_DESCRIPTION,
             self.FUNCTION_PARAMETERS,
+            self.function_call_max_trials,
         )
 
     REPRESENTATION = MultilingualString(
@@ -135,13 +152,24 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
         """Return the pool cap (``max_chunks``)."""
         return self.max_chunks
 
-    def _pop_positive_int(self, key: str) -> int:
-        """Pop a required positive integer parameter from ``self.params``.
+    def _pop_positive_int(
+        self,
+        key: str,
+        *,
+        default: int | None = None,
+        maximum: int | None = None,
+    ) -> int:
+        """Pop a positive integer parameter from ``self.params``.
 
         Parameters
         ----------
         key : str
             Parameter name.
+        default : int | None, optional
+            Value used when the parameter is absent. ``None`` keeps the
+            parameter required and raises instead.
+        maximum : int | None, optional
+            Optional inclusive upper bound.
 
         Returns
         -------
@@ -151,18 +179,27 @@ class LLMEvaluatedRetriever(CompositeRetriever, ABC):
         Raises
         ------
         RAGRetrieverMissingParameterError
-            If the parameter is absent.
+            If the parameter is absent and no default was given.
         RAGRetrieverCompositeValidationError
-            If the value is not a positive integer.
+            If the value is not a positive integer within the optional bound.
         """
         if key not in self.params:
-            raise RAGRetrieverMissingParameterError(
-                f"'{key}' is required to build an LLM-evaluated retriever."
-            )
-        value = self.params.pop(key)
-        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            if default is None:
+                raise RAGRetrieverMissingParameterError(
+                    f"'{key}' is required to build an LLM-evaluated retriever."
+                )
+            value = default
+        else:
+            value = self.params.pop(key)
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or value < 1
+            or (maximum is not None and value > maximum)
+        ):
+            bounds = ">= 1" if maximum is None else f"between 1 and {maximum}"
             raise RAGRetrieverCompositeValidationError(
-                f"'{key}' must be a positive integer, got {value!r}."
+                f"'{key}' must be an integer {bounds}, got {value!r}."
             )
         return value
 

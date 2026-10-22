@@ -127,7 +127,13 @@ delegates to `RAGJob`, which:
    payload, and LLM-evaluated retrievers emit further `retrieving` updates
    after each valid verdict. Those retriever updates omit `queries`; they are
    status updates, not a new query list. When the model supplies no narrative,
-   the stage-only payloads are unchanged.
+   the stage-only payloads are unchanged. On the function-calling route, a
+   malformed or unusable function call — including arguments that cannot be
+   parsed — is retried up to `function_call_max_trials` total attempts
+   (default 3, capped at 10, counting the first) before the stage fails.
+   Configuration errors such as `NotImplementedError` are not retried, and the
+   text fallback route is never retried.
+
    `process_output()` serializes five typed rows in pipeline-chronological order
    — the `Queries` list, the chunk map (`Dict`), the retrieval `Trace` (per-query
    retriever node trees whose chunk refs join the `Dict` keys), the `Timings`

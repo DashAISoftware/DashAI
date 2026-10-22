@@ -154,6 +154,33 @@ class RetrieverEvaluationValidationService:
                 prompt_ref["params"] = {**prompt_defaults, **prompt_params}
         retriever_ref["params"] = merged
 
+    def apply_defaults_recursive(self, value: Any) -> None:
+        """Apply defaults to every LLM-evaluated retriever found in ``value``.
+
+        A composite retriever can nest an LLM-evaluated retriever as one of its
+        children. Defaults must be resolved for those nested references too, so
+        a persisted configuration stays complete instead of relying on the
+        retriever constructor to fill the gaps at run time.
+
+        Parameters
+        ----------
+        value : Any
+            A ``{component, params}`` reference, a params container, or a list
+            of either. Mutated in place when an LLM-evaluated ref is found.
+        """
+        if isinstance(value, dict):
+            component = value.get("component")
+            if (
+                isinstance(component, str)
+                and component in LLM_EVALUATED_RETRIEVER_NAMES
+            ):
+                self.apply_defaults(value)
+            for child in value.values():
+                self.apply_defaults_recursive(child)
+        elif isinstance(value, list):
+            for child in value:
+                self.apply_defaults_recursive(child)
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------

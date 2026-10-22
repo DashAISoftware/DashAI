@@ -10,6 +10,7 @@ def int_field(
     le: Optional[int] = None,
     lt: Optional[int] = None,
     multiple_of: Optional[int] = None,
+    strict: bool = False,
 ) -> Type[int]:
     """Function to create a pydantic-like integer type.
 
@@ -33,6 +34,10 @@ def int_field(
         from the same declaration. Reach for it instead of writing "must be a
         multiple of N" in the description: image sizes for the diffusion models
         said exactly that in five languages and nothing checked it.
+    strict: bool, optional
+        When ``True``, only real integers are accepted: booleans, numeric
+        strings and floats are rejected instead of being coerced. Defaults to
+        ``False`` to preserve the historical lax validation.
 
     Returns
     -------
@@ -52,4 +57,7 @@ def int_field(
     ValidationError
         If the value of the field is not a multiple of ``multiple_of``.
     """
-    return Annotated[int, Field(ge=ge, gt=gt, le=le, lt=lt, multiple_of=multiple_of)]
+    return Annotated[
+        int,
+        Field(ge=ge, gt=gt, le=le, lt=lt, multiple_of=multiple_of, strict=strict),
+    ]

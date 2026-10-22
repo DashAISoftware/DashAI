@@ -13,13 +13,21 @@ from types import MappingProxyType
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
+from pydantic import ValidationError
 
 from DashAI.back.models.RAG.documents import Chunk, RAGDocument, TextSegment
-from DashAI.back.models.RAG.exceptions.retriever import RAGRetrieverEvaluationError
+from DashAI.back.models.RAG.exceptions import (
+    RAGRetrieverCompositeValidationError,
+    RAGRetrieverEvaluationError,
+)
 from DashAI.back.models.RAG.progress_utils import progress_scope
 from DashAI.back.models.RAG.RAG_constants import (
     RAG_PROGRESS_JUSTIFICATION_KEY,
     RAG_PROGRESS_MESSAGE_KEY,
+)
+from DashAI.back.models.RAG.RAG_defaults import (
+    DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+    MAX_FUNCTION_CALL_TRIALS,
 )
 from DashAI.back.models.RAG.retrievers.base_retriever import BaseRetriever
 from DashAI.back.models.RAG.retrievers.composite.evaluation_output import (
@@ -191,7 +199,10 @@ class _FunctionCallingScriptedLLM(TextToTextGenerationTaskModel):
             raise self._error
         if not self._results:
             raise AssertionError("No scripted function call left.")
-        return self._results.pop(0)
+        result = self._results.pop(0)
+        if isinstance(result, Exception):
+            raise result
+        return result
 
 
 class _RecordingPrompt:
@@ -233,6 +244,7 @@ def _depth(
     prompt: _RecordingPrompt,
     max_iters: int,
     max_chunks: int,
+    function_call_max_trials: int = 1,
 ) -> LLMEvaluatedDepthRetriever:
     """Construct a depth retriever directly."""
     return LLMEvaluatedDepthRetriever(
@@ -241,6 +253,7 @@ def _depth(
         max_chunks=max_chunks,
         prompt=prompt,
         llm_model=llm,
+        function_call_max_trials=function_call_max_trials,
     )
 
 
@@ -250,6 +263,7 @@ def _ensemble(
     prompt: _RecordingPrompt,
     max_iters: int,
     max_chunks: int,
+    function_call_max_trials: int = 1,
 ) -> LLMEvaluatedEnsembleRetriever:
     """Construct an ensemble retriever directly."""
     return LLMEvaluatedEnsembleRetriever(
@@ -258,6 +272,7 @@ def _ensemble(
         max_chunks=max_chunks,
         prompt=prompt,
         llm_model=llm,
+        function_call_max_trials=function_call_max_trials,
     )
 
 
@@ -1204,6 +1219,235 @@ def test_function_calling_not_implemented_is_actionable():
         match="reports function calling support",
     ):
         _fc_depth(llm).retrieve("q")
+
+
+def test_function_calling_not_implemented_is_not_retried():
+    """A configuration error is attempted exactly once, even with trials left."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _FunctionCallingScriptedLLM(error=NotImplementedError("not here"))
+    retriever = _depth(
+        child,
+        llm,
+        _RecordingPrompt(),
+        max_iters=2,
+        max_chunks=10,
+        function_call_max_trials=3,
+    )
+
+    with pytest.raises(
+        RAGRetrieverEvaluationError,
+        match="reports function calling support",
+    ):
+        retriever.retrieve("q")
+
+    assert len(llm.fc_calls) == 1
+
+
+def test_depth_retries_function_call_after_backend_error():
+    """A backend failure is retried until a valid call is produced."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _FunctionCallingScriptedLLM(
+        [
+            RuntimeError("backend exploded"),
+            FunctionCallResult("evaluate_retrieval_sufficiency", {"sufficient": True}),
+        ]
+    )
+    retriever = _depth(
+        child,
+        llm,
+        _RecordingPrompt(),
+        max_iters=2,
+        max_chunks=10,
+        function_call_max_trials=2,
+    )
+
+    pool, trace = retriever.retrieve("q")
+
+    assert len(pool) == 2
+    assert trace["rounds"][0]["verdict"] is True
+    assert len(llm.fc_calls) == 2
+
+
+def test_retriever_function_call_max_trials_defaults_to_three():
+    """Direct construction defaults to three and both schemas expose it."""
+    child = _FakeChild(_chunks(3), top_k=3)
+    depth = LLMEvaluatedDepthRetriever(
+        children=[child],
+        max_iters=2,
+        max_chunks=5,
+        prompt=_RecordingPrompt(),
+        llm_model=_ScriptedLLM([]),
+    )
+    ensemble = LLMEvaluatedEnsembleRetriever(
+        children=[child, _FakeChild(_chunks(3), top_k=3)],
+        max_iters=2,
+        max_chunks=5,
+        prompt=_RecordingPrompt(),
+        llm_model=_ScriptedLLM([]),
+    )
+
+    assert depth.function_call_max_trials == DEFAULT_FUNCTION_CALL_MAX_TRIALS == 3
+    assert ensemble.function_call_max_trials == 3
+    for retriever in (LLMEvaluatedDepthRetriever, LLMEvaluatedEnsembleRetriever):
+        prop = retriever.get_schema()["properties"]["function_call_max_trials"]
+        assert prop["placeholder"] == 3
+
+
+def _retriever_schema_params(retriever: type) -> Dict[str, Any]:
+    """Return a complete schema payload for a retriever, minus the trials field."""
+    children = [{"component": "_FakeChild", "params": {"top_k": 3}}]
+    if retriever is LLMEvaluatedEnsembleRetriever:
+        children.append({"component": "_FakeChild", "params": {"top_k": 3}})
+    return {
+        "children": children,
+        "max_chunks": 5,
+        "max_iters": 2,
+        "prompt": {
+            "component": "DefaultRetrievalSufficiencyPrompt",
+            "params": {"language": "en"},
+        },
+        "llm_model": {"component": "Qwen25_15BInstruct", "params": {}},
+    }
+
+
+@pytest.mark.parametrize(
+    "retriever", [LLMEvaluatedDepthRetriever, LLMEvaluatedEnsembleRetriever]
+)
+def test_retriever_schema_defaults_trials_when_omitted(retriever: type):
+    """A persisted config from before the parameter existed validates."""
+    validated = retriever.SCHEMA.model_validate(_retriever_schema_params(retriever))
+
+    assert validated.function_call_max_trials == DEFAULT_FUNCTION_CALL_MAX_TRIALS
+
+
+@pytest.mark.parametrize(
+    "retriever", [LLMEvaluatedDepthRetriever, LLMEvaluatedEnsembleRetriever]
+)
+@pytest.mark.parametrize(
+    "value", [0, -1, None, True, "3", 3.0, MAX_FUNCTION_CALL_TRIALS + 1]
+)
+def test_retriever_schema_rejects_invalid_trials(retriever: type, value: Any):
+    """The schema enforces the same bounds and strict type as the constructor."""
+    params = _retriever_schema_params(retriever)
+    params["function_call_max_trials"] = value
+
+    with pytest.raises(ValidationError):
+        retriever.SCHEMA.model_validate(params)
+
+
+def test_depth_retries_function_call_after_malformed_arguments():
+    """A malformed JSON arguments payload is retried until a valid call."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _FunctionCallingScriptedLLM(
+        [
+            FunctionCallResult("evaluate_retrieval_sufficiency", "not json"),
+            FunctionCallResult("evaluate_retrieval_sufficiency", {"sufficient": True}),
+        ]
+    )
+    retriever = _depth(
+        child,
+        llm,
+        _RecordingPrompt(),
+        max_iters=2,
+        max_chunks=10,
+        function_call_max_trials=2,
+    )
+
+    pool, trace = retriever.retrieve("q")
+
+    assert len(pool) == 2
+    assert trace["rounds"][0]["verdict"] is True
+    assert len(llm.fc_calls) == 2
+
+
+def test_depth_exhausts_function_call_trials_and_raises():
+    """All configured attempts are used before the last error is raised."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _FunctionCallingScriptedLLM(
+        [
+            FunctionCallResult("evaluate_retrieval_sufficiency", "not json"),
+            FunctionCallResult("evaluate_retrieval_sufficiency", "still not json"),
+        ]
+    )
+    retriever = _depth(
+        child,
+        llm,
+        _RecordingPrompt(),
+        max_iters=2,
+        max_chunks=10,
+        function_call_max_trials=2,
+    )
+
+    with pytest.raises(RAGRetrieverEvaluationError):
+        retriever.retrieve("q")
+
+    assert len(llm.fc_calls) == 2
+
+
+def test_ensemble_retries_planning_function_call():
+    """A malformed planning call is retried before consulting the children."""
+    child0 = _FakeChild(_chunks(5, document_id=1), top_k=2)
+    child1 = _FakeChild(_chunks(5, document_id=2), top_k=2)
+    llm = _FunctionCallingScriptedLLM(
+        [
+            FunctionCallResult("evaluate_retrieval_sufficiency", "not json"),
+            FunctionCallResult(
+                "evaluate_retrieval_sufficiency",
+                {"sufficient": False, "call_retrievers": {1: 2}},
+            ),
+        ]
+    )
+    retriever = _ensemble(
+        [child0, child1],
+        llm,
+        _RecordingPrompt(),
+        max_iters=1,
+        max_chunks=10,
+        function_call_max_trials=2,
+    )
+
+    pool, _ = retriever.retrieve("q")
+
+    assert len(pool) == 2
+    assert child0.retrieve_calls == [2]
+    assert len(llm.fc_calls) == 2
+
+
+def test_text_route_does_not_retry():
+    """The text route is single-shot even with trials left."""
+    child = _FakeChild(_chunks(5), top_k=5, default_size=2)
+    llm = _ScriptedLLM(["not json at all", '{"sufficient": true}'])
+    retriever = _depth(
+        child,
+        llm,
+        _RecordingPrompt(),
+        max_iters=2,
+        max_chunks=10,
+        function_call_max_trials=3,
+    )
+
+    with pytest.raises(RAGRetrieverEvaluationError):
+        retriever.retrieve("q")
+
+    assert len(llm.calls) == 1
+
+
+@pytest.mark.parametrize("value", [0, -1, True, "3", 3.5, MAX_FUNCTION_CALL_TRIALS + 1])
+def test_invalid_function_call_max_trials_rejected(value: Any):
+    """Non-positive or non-integer values fail at construction."""
+    child = _FakeChild(_chunks(3), top_k=3)
+
+    with pytest.raises(
+        RAGRetrieverCompositeValidationError, match="function_call_max_trials"
+    ):
+        LLMEvaluatedDepthRetriever(
+            children=[child],
+            max_iters=2,
+            max_chunks=5,
+            prompt=_RecordingPrompt(),
+            llm_model=_ScriptedLLM([]),
+            function_call_max_trials=value,
+        )
 
 
 def test_text_route_uses_generate_and_never_function_calling():

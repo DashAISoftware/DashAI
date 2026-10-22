@@ -30,8 +30,10 @@ from DashAI.back.models.RAG.RAG_constants import (
     RAG_PROGRESS_MESSAGE_KEY,
 )
 from DashAI.back.models.RAG.RAG_defaults import (
+    DEFAULT_FUNCTION_CALL_MAX_TRIALS,
     DEFAULT_MAX_CHUNKS,
     DEFAULT_MAX_ITERS,
+    MAX_FUNCTION_CALL_TRIALS,
     default_function_calling_llm,
     default_hybrid_retriever,
     default_retrieval_sufficiency_prompt,
@@ -64,6 +66,8 @@ class LLMEvaluatedDepthRetrieverSchema(BaseSchema):
         prompt: The retrieval-sufficiency prompt component.
         llm_model: The text-to-text model that judges sufficiency. Defaults to
             the default RAG function-calling LLM; the value is fully modifiable.
+        function_call_max_trials: Maximum number of function-call attempts, the
+            first call included.
     """
 
     children: schema_field(
@@ -119,6 +123,41 @@ class LLMEvaluatedDepthRetrieverSchema(BaseSchema):
             zh="最大检索轮数。最后一轮不评估，因此最多有该数量减一次 LLM 调用。",
         ),
     )  # type: ignore
+
+    function_call_max_trials: schema_field(
+        int_field(ge=1, le=MAX_FUNCTION_CALL_TRIALS, strict=True),
+        placeholder=DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+        description=MultilingualString(
+            en="Maximum number of function-call attempts, including the first."
+            " When the model returns an unusable call or unparseable JSON"
+            " arguments, the call is retried until this limit is reached."
+            " Only applies to models with function calling.",
+            es="Número máximo de intentos de llamada a funciones, incluido el"
+            " primero. Cuando el modelo devuelve una llamada inutilizable o"
+            " argumentos JSON no analizables, la llamada se reintenta hasta"
+            " alcanzar este límite. Solo se aplica a modelos con llamada a"
+            " funciones.",
+            pt="Número máximo de tentativas de chamada de função, incluindo a"
+            " primeira. Quando o modelo retorna uma chamada inutilizável ou"
+            " argumentos JSON não analisáveis, a chamada é repetida até atingir"
+            " esse limite. Aplica-se apenas a modelos com chamada de função.",
+            de="Maximale Anzahl von Funktionsaufrufversuchen, einschließlich des"
+            " ersten. Wenn das Modell einen unbrauchbaren Aufruf oder nicht"
+            " analysierbare JSON-Argumente liefert, wird der Aufruf bis zu"
+            " diesem Limit wiederholt. Gilt nur für Modelle mit"
+            " Funktionsaufrufen.",
+            zh="函数调用尝试的最大次数，包括首次调用。当模型返回不可用的调用"
+            "或无法解析的 JSON 参数时，会重试调用直到达到此限制。仅适用于"
+            "支持函数调用的模型。",
+        ),
+        alias=MultilingualString(
+            en="Function call max trials",
+            es="Máximo de intentos de llamada a funciones",
+            pt="Máximo de tentativas de chamada de função",
+            de="Max. Funktionsaufrufversuche",
+            zh="函数调用最大尝试次数",
+        ),
+    ) = DEFAULT_FUNCTION_CALL_MAX_TRIALS  # type: ignore
 
     prompt: schema_field(
         component_field(parent="RetrievalSufficiencyPrompt"),

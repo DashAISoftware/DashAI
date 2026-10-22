@@ -38,6 +38,13 @@ DEFAULT_FUNCTION_CALLING_LLM_CONTEXT_WINDOW = DEFAULT_RAG_CONTEXT_WINDOW
 DEFAULT_MAX_CHUNKS = 10
 DEFAULT_MAX_ITERS = 3
 
+#: Default maximum number of function-call attempts (first call included).
+DEFAULT_FUNCTION_CALL_MAX_TRIALS = 3
+
+#: Upper bound for the configurable function-call attempts, so a typo cannot
+#: turn a single RAG turn into an effectively unbounded LLM retry loop.
+MAX_FUNCTION_CALL_TRIALS = 10
+
 #: Default retrieval-sufficiency prompt component.
 DEFAULT_SUFFICIENCY_PROMPT_COMPONENT = "DefaultRetrievalSufficiencyPrompt"
 

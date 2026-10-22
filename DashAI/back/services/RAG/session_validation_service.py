@@ -371,7 +371,11 @@ class SessionValidationService:
             self._retriever_evaluation_validator.validate(ref)
 
     def _apply_retriever_evaluation_defaults(self, normalized: dict[str, Any]) -> None:
-        """Fill an LLM-evaluated retriever's omitted nested params from schemas.
+        """Fill every LLM-evaluated retriever's omitted nested params.
+
+        The LLM-evaluated retriever does not have to be the top-level
+        ``retriever_model``: it can be nested inside another composite, so the
+        defaults pass walks the whole retriever tree.
 
         Parameters
         ----------
@@ -379,10 +383,8 @@ class SessionValidationService:
             Normalised parameters dict, mutated in place when applicable.
         """
         ref = normalized.get(RAG_PARAM_RETRIEVER_MODEL)
-        if isinstance(ref, dict) and ref.get("component") in (
-            LLM_EVALUATED_RETRIEVER_NAMES
-        ):
-            self._retriever_evaluation_validator.apply_defaults(ref)
+        if isinstance(ref, dict):
+            self._retriever_evaluation_validator.apply_defaults_recursive(ref)
 
     def _validate_component_params(self, normalized: dict[str, Any]) -> list[str]:
         """Validate every ``{component, params}`` against its own schema.

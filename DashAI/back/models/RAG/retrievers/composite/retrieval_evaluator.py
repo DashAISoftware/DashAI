@@ -8,6 +8,7 @@ chunk/document text: the prompt component owns all rendering.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Sequence
 
 from DashAI.back.models.RAG.documents import Chunk
@@ -31,6 +32,8 @@ from DashAI.back.models.RAG.retrievers.retrieval_contracts import (
 )
 from DashAI.back.models.text_to_text_generation_model import FunctionCallResult
 
+logger = logging.getLogger(__name__)
+
 
 class RetrievalEvaluator:
     """Owns the prompt, the LLM and the function-call verdict contract.
@@ -47,6 +50,10 @@ class RetrievalEvaluator:
         Human-readable description of that function.
     function_parameters : Dict[str, Any]
         JSON schema of the function's arguments.
+    function_call_max_trials : int
+        Maximum number of function-call attempts, the first call included.
+        Only the function-calling route is retried; the text route is
+        single-shot.
     """
 
     def __init__(
@@ -56,12 +63,14 @@ class RetrievalEvaluator:
         expected_function: str,
         function_description: str,
         function_parameters: Dict[str, Any],
+        function_call_max_trials: int,
     ) -> None:
         self._prompt = prompt
         self._llm_model = llm_model
         self._expected_function = expected_function
         self._function_description = function_description
         self._function_parameters = function_parameters
+        self._function_call_max_trials = function_call_max_trials
 
     @staticmethod
     def _chunk_payload(chunks: Sequence[Chunk]) -> List[ChunkPayload]:
@@ -178,7 +187,46 @@ class RetrievalEvaluator:
         RAGRetrieverEvaluationError
             If no function spec is declared, the backend fails, the model
             reports support without implementing it, or the returned call
-            violates the contract.
+            violates the contract. Retried up to
+            ``function_call_max_trials`` attempts; the last error is raised
+            once the attempts are exhausted.
+        """
+        spec = self._function_call_spec()
+        messages = [{"role": "user", "content": prompt_text}]
+        try:
+            for attempt in range(1, self._function_call_max_trials):
+                try:
+                    return self._attempt_function_call(messages, spec)
+                except RAGRetrieverEvaluationError as err:
+                    logger.warning(
+                        "Function-calling attempt %d of %d failed for %s; retrying: %s",
+                        attempt,
+                        self._function_call_max_trials,
+                        type(self._llm_model).__name__,
+                        err,
+                    )
+            return self._attempt_function_call(messages, spec)
+        except NotImplementedError as err:
+            # A model that claims function-calling support without implementing
+            # it is a configuration error, not a transient malformed response:
+            # never retry it.
+            raise RAGRetrieverEvaluationError(
+                f"{type(self._llm_model).__name__} reports function calling "
+                "support but does not implement generate_function_call."
+            ) from err
+
+    def _function_call_spec(self) -> Dict[str, Any]:
+        """Return the function spec exposed to the function-calling backend.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The ``name``/``description``/``parameters`` specification.
+
+        Raises
+        ------
+        RAGRetrieverEvaluationError
+            If the evaluator declares no function spec.
         """
         if (
             not self._expected_function
@@ -191,21 +239,48 @@ class RetrievalEvaluator:
                 "description and parameters or use a model without function "
                 "calling."
             )
-        spec = {
+        return {
             "name": self._expected_function,
             "description": self._function_description,
             "parameters": self._function_parameters,
         }
+
+    def _attempt_function_call(
+        self, messages: List[Dict[str, str]], spec: Dict[str, Any]
+    ) -> RetrievalVerdict:
+        """Perform one function-call attempt and validate its result.
+
+        Parameters
+        ----------
+        messages : List[Dict[str, str]]
+            The chat messages sent verbatim on every attempt.
+        spec : Dict[str, Any]
+            The evaluation function specification.
+
+        Returns
+        -------
+        RetrievalVerdict
+            The validated verdict.
+
+        Raises
+        ------
+        NotImplementedError
+            If the model reports support but implements no function-calling
+            method. Never retried; the caller converts it to a
+            ``RAGRetrieverEvaluationError``.
+        RAGRetrieverEvaluationError
+            If the backend reports a malformed call or the returned call
+            violates the contract.
+        """
         try:
             result = self._llm_model.generate_function_call(
-                messages=[{"role": "user", "content": prompt_text}],
+                messages=messages,
                 functions=[spec],
             )
-        except NotImplementedError as err:
-            raise RAGRetrieverEvaluationError(
-                f"{type(self._llm_model).__name__} reports function calling "
-                "support but does not implement generate_function_call."
-            ) from err
+        except NotImplementedError:
+            # NotImplementedError subclasses RuntimeError; re-raise it so the
+            # caller can classify it as a non-retryable configuration error.
+            raise
         except (ValueError, RuntimeError) as err:
             raise RAGRetrieverEvaluationError(
                 f"Function calling failed: {err}"

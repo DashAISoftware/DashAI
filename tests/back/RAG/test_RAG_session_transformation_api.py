@@ -153,6 +153,7 @@ class TestCreateWithTransformation:
         assert response.status_code == 201, response.text
         stored = response.json()["parameters"]["query_transformation"]
         assert stored["params"]["history_window"] == 2
+        assert stored["params"]["function_call_max_trials"] == 3
 
     def test_create_defaults_transformation_llm_context_window(
         self, client: TestClient

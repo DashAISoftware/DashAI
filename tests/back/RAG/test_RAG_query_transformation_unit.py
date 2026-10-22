@@ -11,6 +11,7 @@ import json
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 
 from DashAI.back.core.schema_fields import BaseSchema
 from DashAI.back.core.schema_fields.defaults import resolve_component_defaults
@@ -29,6 +30,10 @@ from DashAI.back.models.RAG.prompts.transformation import (
     QueryDecompositionPrompt,
     QueryExpansionPrompt,
     QueryRewritingPrompt,
+)
+from DashAI.back.models.RAG.RAG_defaults import (
+    DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+    MAX_FUNCTION_CALL_TRIALS,
 )
 from DashAI.back.models.RAG.transformation import (
     BaseQueryTransformation,
@@ -104,17 +109,29 @@ def _reset_captures():
 REWRITE_JSON = '{"name": "rewrite_query", "arguments": {"query": " rewritten "}}'
 
 
-def _rewriter(response, history_window=2, llm_model=None):
+def _rewriter(
+    response,
+    history_window=2,
+    llm_model=None,
+    function_call_max_trials=DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+):
     return LLMQueryRewriter(
         prompt=DefaultQueryRewritingPrompt(language="en"),
         llm_model=llm_model
         if llm_model is not None
         else StubTransformationLLM(response=response),
         history_window=history_window,
+        function_call_max_trials=function_call_max_trials,
     )
 
 
-def _expander(response, n=3, history_window=2, llm_model=None):
+def _expander(
+    response,
+    n=3,
+    history_window=2,
+    llm_model=None,
+    function_call_max_trials=DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+):
     return LLMQueryExpander(
         prompt=DefaultQueryExpansionPrompt(language="en"),
         llm_model=llm_model
@@ -122,10 +139,17 @@ def _expander(response, n=3, history_window=2, llm_model=None):
         else StubTransformationLLM(response=response),
         n_queries=n,
         history_window=history_window,
+        function_call_max_trials=function_call_max_trials,
     )
 
 
-def _decomposer(response, cap=None, history_window=2, llm_model=None):
+def _decomposer(
+    response,
+    cap=None,
+    history_window=2,
+    llm_model=None,
+    function_call_max_trials=DEFAULT_FUNCTION_CALL_MAX_TRIALS,
+):
     return LLMQueryDecomposer(
         prompt=DefaultQueryDecompositionPrompt(language="en"),
         llm_model=llm_model
@@ -133,6 +157,7 @@ def _decomposer(response, cap=None, history_window=2, llm_model=None):
         else StubTransformationLLM(response=response),
         max_subqueries=cap,
         history_window=history_window,
+        function_call_max_trials=function_call_max_trials,
     )
 
 
@@ -521,6 +546,29 @@ class FunctionCallingStubLLM(TextToTextGenerationTaskModel):
         return self.result
 
 
+class SequencedFunctionCallingStubLLM(TextToTextGenerationTaskModel):
+    """Stub LLM replaying queued function-call results or exceptions in order."""
+
+    SCHEMA = _EmptySchema
+    SUPPORTS_FUNCTION_CALLING = True
+
+    def __init__(self, *, entries, **kwargs):
+        self._entries = list(entries)
+        self.call_count = 0
+
+    def generate(self, prompt):
+        raise AssertionError("generate() must not be called on the FC path")
+
+    def generate_function_call(self, messages, functions):
+        self.call_count += 1
+        if not self._entries:
+            raise AssertionError("No scripted function call left.")
+        entry = self._entries.pop(0)
+        if isinstance(entry, Exception):
+            raise entry
+        return entry
+
+
 class _CapabilityOnlyStubLLM(TextToTextGenerationTaskModel):
     """Stub that claims function-calling support but implements no method."""
 
@@ -665,6 +713,122 @@ class TestFunctionCallingRoute:
     def test_unsupported_function_calling_method_raises_config_error(self):
         with pytest.raises(RAGTransformationConfigError, match="does not implement"):
             _expander(None, llm_model=_CapabilityOnlyStubLLM()).transform("hi", [])
+
+
+class TestFunctionCallRetries:
+    """``function_call_max_trials`` bounds only the function-calling route."""
+
+    def test_function_call_max_trials_default_is_three(self):
+        for technique in (LLMQueryRewriter, LLMQueryExpander, LLMQueryDecomposer):
+            prop = technique.get_schema()["properties"]["function_call_max_trials"]
+            assert prop["placeholder"] == DEFAULT_FUNCTION_CALL_MAX_TRIALS == 3
+
+        rewriter = LLMQueryRewriter(
+            prompt=DefaultQueryRewritingPrompt(language="en"),
+            llm_model=StubTransformationLLM(response=[REWRITE_JSON]),
+        )
+        assert rewriter.function_call_max_trials == 3
+
+    def test_function_calling_retries_after_unparseable_arguments(self):
+        stub = SequencedFunctionCallingStubLLM(
+            entries=[
+                FunctionCallResult(name="expand_query", arguments="not json"),
+                FunctionCallResult(name="expand_query", arguments={"queries": ["a"]}),
+            ]
+        )
+
+        result = _expander(None, llm_model=stub, function_call_max_trials=2).transform(
+            "hi", []
+        )
+
+        assert result.queries == ["a"]
+        assert stub.call_count == 2
+
+    def test_function_calling_retries_after_wrong_function_name(self):
+        stub = SequencedFunctionCallingStubLLM(
+            entries=[
+                FunctionCallResult(name="other_fn", arguments={"queries": ["bad"]}),
+                FunctionCallResult(name="expand_query", arguments={"queries": ["a"]}),
+            ]
+        )
+
+        result = _expander(None, llm_model=stub, function_call_max_trials=2).transform(
+            "hi", []
+        )
+
+        assert result.queries == ["a"]
+        assert stub.call_count == 2
+
+    def test_function_calling_retries_after_backend_error(self):
+        stub = SequencedFunctionCallingStubLLM(
+            entries=[
+                RuntimeError("backend exploded"),
+                FunctionCallResult(name="expand_query", arguments={"queries": ["a"]}),
+            ]
+        )
+
+        result = _expander(None, llm_model=stub, function_call_max_trials=2).transform(
+            "hi", []
+        )
+
+        assert result.queries == ["a"]
+        assert stub.call_count == 2
+
+    def test_function_calling_exhausts_trials_and_raises_last_error(self):
+        stub = SequencedFunctionCallingStubLLM(
+            entries=[
+                FunctionCallResult(name="expand_query", arguments="not json"),
+                FunctionCallResult(name="other_fn", arguments={"queries": ["a"]}),
+            ]
+        )
+
+        with pytest.raises(RAGTransformationOutputError, match="instead of"):
+            _expander(None, llm_model=stub, function_call_max_trials=2).transform(
+                "hi", []
+            )
+
+        assert stub.call_count == 2
+
+    def test_text_route_does_not_retry(self):
+        llm = CapturingStubLLM(response=["not json"])
+
+        with pytest.raises(RAGTransformationOutputError):
+            _rewriter(None, llm_model=llm, function_call_max_trials=3).transform(
+                "hi", []
+            )
+
+        assert len(CapturingStubLLM.received) == 1
+
+    @pytest.mark.parametrize(
+        "value", [0, -1, True, "3", 3.5, MAX_FUNCTION_CALL_TRIALS + 1]
+    )
+    def test_invalid_function_call_max_trials_rejected(self, value):
+        with pytest.raises(
+            RAGTransformationConfigError, match="function_call_max_trials"
+        ):
+            LLMQueryRewriter(
+                prompt=DefaultQueryRewritingPrompt(language="en"),
+                llm_model=StubTransformationLLM(response=[REWRITE_JSON]),
+                function_call_max_trials=value,
+            )
+
+    @pytest.mark.parametrize(
+        "value", [0, -1, None, True, "3", 3.0, MAX_FUNCTION_CALL_TRIALS + 1]
+    )
+    def test_schema_rejects_invalid_trials(self, value):
+        params = {
+            "prompt": {
+                "component": "DefaultQueryExpansionPrompt",
+                "params": {"language": "en"},
+            },
+            "llm_model": {"component": "Qwen25_15BInstruct", "params": {}},
+            "history_window": 2,
+            "n_queries": 3,
+            "function_call_max_trials": value,
+        }
+
+        with pytest.raises(ValidationError):
+            LLMQueryExpander.SCHEMA.model_validate(params)
 
 
 class FakeLlama:

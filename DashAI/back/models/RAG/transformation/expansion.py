@@ -55,6 +55,13 @@ class LLMQueryExpanderSchema(LLMQueryTransformationSchema):
             de="Anzahl der Anfragen, die das Modell erzeugen muss.",
             zh="模型必须生成的查询数量。",
         ),
+        alias=MultilingualString(
+            en="Number of queries",
+            es="Número de consultas",
+            pt="Número de consultas",
+            de="Anzahl der Anfragen",
+            zh="查询数量",
+        ),
     )
 
 

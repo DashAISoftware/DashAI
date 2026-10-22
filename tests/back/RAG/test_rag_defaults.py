@@ -17,6 +17,7 @@ from DashAI.back.models.RAG.embeddings.dense.sentence_transformer_embedding impo
     SentenceTransformerEmbedding,
 )
 from DashAI.back.models.RAG.RAG_defaults import (
+    DEFAULT_FUNCTION_CALL_MAX_TRIALS,
     DEFAULT_FUNCTION_CALLING_LLM_CONTEXT_WINDOW,
     DEFAULT_MAX_CHUNKS,
     DEFAULT_MAX_ITERS,
@@ -262,6 +263,10 @@ class TestLLMEvaluatedRetrieverPlaceholders:
             self._placeholder(LLMEvaluatedDepthRetriever, "max_iters")
             == DEFAULT_MAX_ITERS
         )
+        assert (
+            self._placeholder(LLMEvaluatedDepthRetriever, "function_call_max_trials")
+            == DEFAULT_FUNCTION_CALL_MAX_TRIALS
+        )
 
     def test_ensemble_retriever_placeholders(self):
         assert self._placeholder(LLMEvaluatedEnsembleRetriever, "children") == [
@@ -283,6 +288,10 @@ class TestLLMEvaluatedRetrieverPlaceholders:
         assert (
             self._placeholder(LLMEvaluatedEnsembleRetriever, "max_iters")
             == DEFAULT_MAX_ITERS
+        )
+        assert (
+            self._placeholder(LLMEvaluatedEnsembleRetriever, "function_call_max_trials")
+            == DEFAULT_FUNCTION_CALL_MAX_TRIALS
         )
 
     def test_placeholders_are_independent_copies(self):

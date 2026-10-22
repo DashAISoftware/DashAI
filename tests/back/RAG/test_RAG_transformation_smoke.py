@@ -23,6 +23,7 @@ from DashAI.back.models.RAG.prompts.transformation import (
     DefaultQueryExpansionPrompt,
     DefaultQueryRewritingPrompt,
 )
+from DashAI.back.models.RAG.RAG_defaults import DEFAULT_FUNCTION_CALL_MAX_TRIALS
 from DashAI.back.models.RAG.transformation import (
     BaseQueryTransformation,
     LLMQueryDecomposer,
@@ -207,6 +208,7 @@ class TestFactoryBuildsTransformers:
                 "params": {"stub_marker": "rw"},
             },
             "history_window": 1,
+            "function_call_max_trials": DEFAULT_FUNCTION_CALL_MAX_TRIALS,
         }
         result = TransformationFactory(registry).create("LLMQueryRewriter", params)
         model = result.model
@@ -235,6 +237,7 @@ class TestFactoryBuildsTransformers:
             },
             "history_window": 2,
             "n_queries": 2,
+            "function_call_max_trials": DEFAULT_FUNCTION_CALL_MAX_TRIALS,
         }
         result = TransformationFactory(registry).create("LLMQueryExpander", params)
         output = result.model.transform("hello", [])
@@ -252,10 +255,29 @@ class TestFactoryBuildsTransformers:
             },
             "history_window": 2,
             "max_subqueries": None,
+            "function_call_max_trials": DEFAULT_FUNCTION_CALL_MAX_TRIALS,
         }
         result = TransformationFactory(registry).create("LLMQueryDecomposer", params)
         output = result.model.transform("complex question", [])
         assert output.queries == ["s1", "s2", "s3"]
+
+    def test_factory_accepts_pre_feature_params_without_trials(self, registry):
+        """Persisted params from before the parameter existed still validate."""
+        params = {
+            "prompt": {
+                "component": "DefaultQueryRewritingPrompt",
+                "params": {"language": "en"},
+            },
+            "llm_model": {
+                "component": "TransformationStubLLM",
+                "params": {"stub_marker": "legacy"},
+            },
+            "history_window": 1,
+        }
+
+        model = TransformationFactory(registry).create("LLMQueryRewriter", params).model
+
+        assert model.function_call_max_trials == DEFAULT_FUNCTION_CALL_MAX_TRIALS
 
 
 # ===================================================================

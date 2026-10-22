@@ -71,6 +71,7 @@ _RETRIEVER_SCHEMA = {
             },
         },
         "top_k": {"placeholder": 5},
+        "function_call_max_trials": {"placeholder": 3},
     }
 }
 
@@ -324,3 +325,17 @@ class TestApplyDefaults:
         ref = _ref(retriever=retriever)
         _service().apply_defaults(ref)
         assert ref["params"]["top_k"] == 5
+        assert ref["params"]["function_call_max_trials"] == 3
+
+    def test_recursive_defaults_fill_nested_llm_evaluated_children(self):
+        nested = _ref()
+        parent = {
+            "component": "ParallelRetriever",
+            "params": {"merge_strategy": "round_robin", "children": [nested]},
+        }
+
+        _service().apply_defaults_recursive(parent)
+
+        assert nested["params"]["function_call_max_trials"] == 3
+        assert nested["params"]["top_k"] == 5
+        assert nested["params"]["llm_model"]["params"]["max_tokens"] == 100

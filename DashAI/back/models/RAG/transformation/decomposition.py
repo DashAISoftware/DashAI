@@ -61,6 +61,13 @@ class LLMQueryDecomposerSchema(LLMQueryTransformationSchema):
             " für kein Limit.",
             zh="子查询数量的可选上限。留空表示不限制。",
         ),
+        alias=MultilingualString(
+            en="Max sub-queries",
+            es="Subconsultas máximas",
+            pt="Subconsultas máximas",
+            de="Maximale Teilfragen",
+            zh="最大子查询数",
+        ),
     ) = None
 
 

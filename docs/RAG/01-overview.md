@@ -192,6 +192,12 @@ converter enforces `type`, `required` and `minItems` but not numeric `minimum`,
 so the runtime validator remains the authoritative guard for `top_k >= 1` and
 child indices `>= 0`.
 
+Both retrievers share the `function_call_max_trials` parameter (default `3`,
+capped at `10`), the maximum total number of function-call attempts including
+the first: on the function-calling route an unusable call or arguments that
+cannot be parsed are retried until the limit is reached, then the stage fails
+loudly. The text route is not retried.
+
 ### Model Type Classification
 
 **Bi-encoders** encode queries and documents independently into dense vectors, then
@@ -312,16 +318,18 @@ they have no `retrieval_factor`.
 
 ### Query Transformation Models
 
-| Class                | Technique / parameters                                                             | File                                                     |
-| -------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `LLMQueryRewriter`   | rewriting (always one query); `prompt`, `llm_model`, `history_window` (default 2)  | `DashAI/back/models/RAG/transformation/rewriting.py`     |
-| `LLMQueryExpander`   | expansion (up to `n_queries`, default 3); `prompt`, `llm_model`, `history_window`  | `DashAI/back/models/RAG/transformation/expansion.py`     |
-| `LLMQueryDecomposer` | decomposition (`max_subqueries` optional); `prompt`, `llm_model`, `history_window` | `DashAI/back/models/RAG/transformation/decomposition.py` |
+| Class                | Technique / parameters                                                                                                     | File                                                     |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `LLMQueryRewriter`   | rewriting (always one query); `prompt`, `llm_model`, `history_window` (default 2), `function_call_max_trials` (default 3, max 10)  | `DashAI/back/models/RAG/transformation/rewriting.py`     |
+| `LLMQueryExpander`   | expansion (up to `n_queries`, default 3); `prompt`, `llm_model`, `history_window`, `function_call_max_trials` (default 3, max 10)  | `DashAI/back/models/RAG/transformation/expansion.py`     |
+| `LLMQueryDecomposer` | decomposition (`max_subqueries` optional); `prompt`, `llm_model`, `history_window`, `function_call_max_trials` (default 3, max 10) | `DashAI/back/models/RAG/transformation/decomposition.py` |
 
-All three share the base schema (`prompt`, `llm_model`, `history_window`);
-expansion adds `n_queries` and decomposition adds `max_subqueries`. They
-route through function calling when the configured model supports it, otherwise
-through a tolerant text parser. The base contract
+All three share the base schema (`prompt`, `llm_model`, `history_window`,
+`function_call_max_trials` default 3, max 10); expansion adds `n_queries` and
+decomposition adds `max_subqueries`. `function_call_max_trials` only affects the
+function-calling route described below. They route through function calling when
+the configured model supports it, otherwise through a tolerant text parser. The
+base contract
 (`BaseQueryTransformation.transform(message, history)`) lives in
 `DashAI/back/models/RAG/transformation/base_query_transformation.py` and the
 shared LLM implementation in `.../llm_query_transformation.py`.

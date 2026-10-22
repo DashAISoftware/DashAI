@@ -23,6 +23,12 @@ import { resolveDefaults } from "../../../../utils/schema";
 const LANGUAGES = ["en", "es", "pt"];
 
 /**
+ * Transformer params that keep their specialized controls instead of being
+ * rendered by the generic schema form: the prompt and the nested LLM model.
+ */
+const TRANSFORMER_EXCLUDED_FIELDS = ["prompt", "llm_model"];
+
+/**
  * Decide which of the transformation LLM's parameter values a form submission
  * must persist.
  *
@@ -67,11 +73,14 @@ function llmParamsToPersist(carriedParams, seedDefaults, values) {
 /**
  * Full-reference editor for the query transformation stage.
  *
- * Mirrors `RetrieverAdvancedModal`'s dialog conventions. The nested LLM's
- * parameters are rendered from the backend schema by `FormSchema`, exactly like
- * the generator's advanced configuration, so no parameter is hand-rolled and
- * every field the schema declares stays in sync with the server. The option
- * lists are loaded by the picker and passed down, so this stays presentational.
+ * Mirrors `RetrieverAdvancedModal`'s dialog conventions. Both the transformer's
+ * own scalar parameters and the nested LLM's parameters are rendered from the
+ * backend schema by `FormSchema`, exactly like the generator's advanced
+ * configuration, so no parameter is hand-rolled and every field the schema
+ * declares stays in sync with the server. The prompt and the LLM model keep
+ * their specialized select controls and are excluded from the generic form.
+ * The option lists are loaded by the picker and passed down, so this stays
+ * presentational.
  *
  * @param {object}   props
  * @param {boolean}  props.open - Whether the dialog is open.
@@ -121,14 +130,22 @@ export default function QueryTransformationAdvancedModal({
     [prompts, technique],
   );
 
-  /** Sets a scalar parameter, dropping it when cleared so the server can fill it. */
-  const setScalar = (key, value) =>
+  /**
+   * Merges the transformer's scalar schema values into the stage params.
+   * `prompt` and `llm_model` are edited by their own controls, so they are left
+   * untouched; a cleared scalar is dropped so the backend re-resolves it.
+   */
+  const handleTransformerFormSubmit = (values) =>
     setParams((prev) => {
       const next = { ...prev };
-      if (value === "" || value === null || value === undefined) {
-        delete next[key];
-      } else {
-        next[key] = value;
+      for (const key of Object.keys(values)) {
+        if (TRANSFORMER_EXCLUDED_FIELDS.includes(key)) continue;
+        const value = values[key];
+        if (value === "" || value === null || value === undefined) {
+          delete next[key];
+        } else {
+          next[key] = value;
+        }
       }
       return next;
     });
@@ -141,12 +158,20 @@ export default function QueryTransformationAdvancedModal({
         delete next[key];
         return next;
       }
+      // A -> B -> A must not lose A's saved params: switching away replaced the
+      // live map, so restore the original component's carried values when the
+      // user returns to it. A different model starts empty and lets the
+      // backend resolve its own defaults.
+      const originalLlmParams =
+        key === "llm_model" && model?.params?.llm_model?.component === name
+          ? model.params.llm_model.params
+          : undefined;
       next[key] = {
         component: name,
         params:
           prev[key]?.component === name
             ? prev[key].params
-            : { ...(emptyParams || {}) },
+            : { ...(originalLlmParams ?? emptyParams ?? {}) },
       };
       return next;
     });
@@ -158,7 +183,9 @@ export default function QueryTransformationAdvancedModal({
   // map means the backend must keep re-resolving the defaults it owns. The
   // baseline is read from the `model` prop (the pre-edit source of truth) and
   // re-captured on every dialog open, so a previously saved empty ref can
-  // never be misremembered as a carried one.
+  // never be misremembered as a carried one. If the user switched to a
+  // different LLM, nothing is carried for it: its untouched placeholders must
+  // not be pinned over the backend's own overrides.
   useEffect(() => {
     if (!llmComponent) {
       carriedParamsRef.current = {};
@@ -168,7 +195,11 @@ export default function QueryTransformationAdvancedModal({
       return undefined;
     }
 
-    const carried = model?.params?.llm_model?.params || {};
+    const originalLlmComponent = model?.params?.llm_model?.component;
+    const carried =
+      originalLlmComponent === llmComponent
+        ? model?.params?.llm_model?.params || {}
+        : {};
     carriedParamsRef.current = carried;
     seedDefaultsRef.current = {};
     setSeededCarried(carried);
@@ -195,13 +226,24 @@ export default function QueryTransformationAdvancedModal({
   );
 
   // Prefer the ref's own values when it carried any (so a saved
-  // context_window is never lost); otherwise the schema placeholders. The form
-  // waits for those defaults so the first render already shows real values.
+  // context_window is never lost); otherwise the schema placeholders. The
+  // carried baseline is used rather than only the live params because
+  // switching away and back resets the live map, while the original values
+  // must still be restored. The form waits for those defaults so the first
+  // render already shows real values.
   const llmInitialValues = useMemo(() => {
     if (!llmComponent) return {};
-    if (hasCarriedParams) return params.llm_model?.params || {};
+    if (hasCarriedParams) {
+      return { ...seededCarried, ...(params.llm_model?.params || {}) };
+    }
     return seedDefaults || {};
-  }, [llmComponent, hasCarriedParams, params.llm_model?.params, seedDefaults]);
+  }, [
+    llmComponent,
+    hasCarriedParams,
+    seededCarried,
+    params.llm_model?.params,
+    seedDefaults,
+  ]);
 
   const llmFormReady =
     Boolean(llmComponent) && (hasCarriedParams || seedDefaults !== null);
@@ -248,6 +290,7 @@ export default function QueryTransformationAdvancedModal({
         <IconButton
           onClick={onClose}
           size="small"
+          aria-label={t("generative:rag.advanced.close")}
           sx={{ color: "text.secondary" }}
         >
           <CloseIcon />
@@ -333,54 +376,17 @@ export default function QueryTransformationAdvancedModal({
             </TextField>
           )}
 
-          <TextField
-            size="small"
-            type="number"
-            label={t("generative:rag.config.queryTransformation.historyWindow")}
-            placeholder="2"
-            value={params.history_window ?? ""}
-            inputProps={{ min: 0 }}
-            onChange={(event) =>
-              setScalar(
-                "history_window",
-                event.target.value === "" ? "" : Number(event.target.value),
-              )
-            }
-          />
-
-          {technique === "expansion" && (
-            <TextField
-              size="small"
-              type="number"
-              label={t("generative:rag.config.queryTransformation.nQueries")}
-              placeholder="3"
-              value={params.n_queries ?? ""}
-              inputProps={{ min: 1 }}
-              onChange={(event) =>
-                setScalar(
-                  "n_queries",
-                  event.target.value === "" ? "" : Number(event.target.value),
-                )
-              }
-            />
-          )}
-
-          {technique === "decomposition" && (
-            <TextField
-              size="small"
-              type="number"
-              label={t(
-                "generative:rag.config.queryTransformation.maxSubqueries",
-              )}
-              value={params.max_subqueries ?? ""}
-              inputProps={{ min: 1 }}
-              onChange={(event) =>
-                setScalar(
-                  "max_subqueries",
-                  event.target.value === "" ? "" : Number(event.target.value),
-                )
-              }
-            />
+          {model?.component && (
+            <FormSchemaContainer key={`transformer-form-${model.component}`}>
+              <FormSchema
+                autoSave
+                hideButtons
+                model={model.component}
+                initialValues={model?.params || {}}
+                excludeFields={TRANSFORMER_EXCLUDED_FIELDS}
+                onFormSubmit={handleTransformerFormSubmit}
+              />
+            </FormSchemaContainer>
           )}
         </Stack>
       </DialogContent>
