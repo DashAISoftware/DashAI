@@ -5,11 +5,7 @@ import FormSchemaFieldWithOptions from "./FormSchemaFieldWithOptions";
 import FormSchemaFieldWithCollapse from "./FormSchemaFieldWithCollapse";
 import FormSchemaFieldWithOptimizers from "./FormSchemaFieldWithOptimizers";
 import FormSchemaFieldWithParent from "./FormSchemaFieldWithParent";
-import {
-  getModelFromSubform,
-  getSchemaRules,
-  normalizeEmptyValue,
-} from "../../utils/schema";
+import { getSchemaRules, normalizeEmptyValue } from "../../utils/schema";
 import { evaluateRules } from "../../utils/ruleEngine";
 import { Stack } from "@mui/material";
 import PropTypes from "prop-types";
@@ -182,8 +178,8 @@ function FormSchemaRenderFields({
             <FormSchemaFieldWithParent
               key={objName}
               name={objName}
+              parent={fieldSchema.parent}
               field={baseField}
-              selectedModel={getModelFromSubform(value)}
               label={fieldSchema.title}
               description={fieldSchema.description}
             />,

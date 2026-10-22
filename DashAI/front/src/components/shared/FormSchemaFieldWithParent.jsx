@@ -12,11 +12,13 @@ import {
 import PropTypes from "prop-types";
 import { Input } from "../configurableObject/Inputs/InputStyles";
 import React, { useState, useRef } from "react";
-import { useFormSchemaStore, FormSchemaProvider } from "../../contexts/schema";
+import { FormSchemaProvider } from "../../contexts/schema";
 import {
   formattedModel,
   formattedSubform,
   generateYupSchema,
+  getModelFromSubform,
+  getParamsFromSubform,
 } from "../../utils/schema";
 import useModelParents from "../../hooks/useModelParents";
 import { Settings } from "@mui/icons-material";
@@ -28,21 +30,34 @@ import useSchema from "../../hooks/useSchema";
 import ComponentDownloadControl from "../models/model/ComponentDownloadControl";
 
 /**
- * Renders a parent-model selector field as a card.
- * The "configure sub-model" icon button lives in the card header.
- * The body contains the model select dropdown.
+ * Renders a parent-model selector field as a card. The "configure sub-model"
+ * icon button lives in the card header and the body contains the model select
+ * dropdown.
+ *
+ * The declared parent is authoritative: it drives both the options request and
+ * every value this component writes back. The current selection is read from
+ * the field value itself, in either accepted shape, so the component works
+ * without a form context.
+ *
+ * @param {object} props component props
+ * @param {string} props.name field name in the parent form, used as the card key
+ * @param {string} props.parent schema-declared parent class whose child
+ *   components populate the dropdown
+ * @param {string} props.label card label
+ * @param {object} props.field current field state: `value` plus `onChange`
+ * @param {string} [props.description] card description
+ * @param {string} [props.errorMessage] validation message shown on the card
+ * @returns {JSX.Element} the selector card and its sub-model configuration dialog
  */
 function FormSchemaFieldWithParent({
   name,
+  parent,
   label,
   field,
   description,
   errorMessage,
 }) {
-  const { formValues, setFormValues, getModelFromCurrentProperty } =
-    useFormSchemaStore();
-  const parentComponent =
-    field?.value?.properties?.component ?? field?.value?.component ?? null;
+  const parentComponent = parent;
   const { models, markDownloaded } = useModelParents({
     parent: parentComponent,
   });
@@ -52,8 +67,7 @@ function FormSchemaFieldWithParent({
   const [openSubModal, setOpenSubModal] = useState(false);
   const formikRef = useRef(null);
 
-  // Get the currently selected model name
-  const selectedModelName = getModelFromCurrentProperty(name);
+  const selectedModelName = getModelFromSubform(field?.value);
 
   // Get default values for the sub-model
   const { defaultValues: subModelDefaultValues } = useSchema({
@@ -93,55 +107,42 @@ function FormSchemaFieldWithParent({
     }
   };
 
-  // Function to get current values for the sub-model
-  const getSubModelInitialValues = () => {
-    if (!formValues || !formValues[name]) {
-      return subModelDefaultValues || {};
-    }
+  /**
+   * Params to open the sub-model dialog with.
+   *
+   * `getParamsFromSubform` reads both accepted value shapes: the generated
+   * nested form shape (`properties.params.comp.params`) and a canonical flat
+   * ref (`{ component, params }`). When the field has no stored params, the
+   * selected model's schema defaults are used instead.
+   *
+   * @returns {object} initial params for the nested configuration form
+   */
+  const getSubModelInitialValues = () =>
+    getParamsFromSubform(field?.value) ?? subModelDefaultValues ?? {};
 
-    const fieldValue = formValues[name];
-    if (fieldValue?.properties?.params?.comp?.params) {
-      return fieldValue.properties.params.comp.params;
-    }
-
-    return subModelDefaultValues || {};
-  };
-
-  // Handle saving the sub-model configuration
+  /**
+   * Persist the sub-model configuration.
+   *
+   * Builds a canonical subform from the declared parent rather than whatever
+   * parent the stored value carries, so a legacy value that names a concrete
+   * component as its parent cannot be re-persisted. Both accepted value shapes
+   * are replaced by that canonical nested shape, and `onChange` is the only
+   * state write: both call sites propagate the complete value to their own
+   * state.
+   *
+   * @param {object} values params collected by the nested configuration form
+   * @returns {void}
+   */
   const handleSubModelSave = (values) => {
-    if (formValues && formValues[name]) {
-      const model = getModelFromCurrentProperty(name);
-      const parent = formValues[name]?.properties?.component ?? parentComponent;
-      // Build the updated component-ref value and fire onChange so the
-      // parent form's auto-save propagates the change to savedParamsRef.
-      const updated = formattedSubform(
-        parent && model
-          ? { parent, model, params: values }
-          : { parent: parentComponent, model: model, params: values },
-      );
-      setFormValues((prevFormValues) => {
-        const updatedFormValues = { ...prevFormValues };
-        if (!updatedFormValues[name]) {
-          updatedFormValues[name] = {};
-        }
-        if (!updatedFormValues[name].properties) {
-          updatedFormValues[name].properties = {};
-        }
-        if (!updatedFormValues[name].properties.params) {
-          updatedFormValues[name].properties.params = {};
-        }
-        if (!updatedFormValues[name].properties.params.comp) {
-          updatedFormValues[name].properties.params.comp = { params: {} };
-        }
-        updatedFormValues[name].properties.params.comp.params = {
-          ...updatedFormValues[name].properties.params.comp.params,
-          ...values,
-        };
-        return updatedFormValues;
-      });
-      // Trigger the parent form's onChange to propagate auto-save
-      field.onChange(updated);
+    if (!parentComponent || !selectedModelName) {
+      return;
     }
+    const updated = formattedSubform({
+      parent: parentComponent,
+      model: selectedModelName,
+      params: values,
+    });
+    field.onChange(updated);
     setOpenSubModal(false);
   };
 
@@ -164,7 +165,7 @@ function FormSchemaFieldWithParent({
       >
         <Input
           select
-          value={getModelFromCurrentProperty(name)}
+          value={selectedModelName}
           onChange={handleOnChange}
           size="small"
           sx={{ width: "100%" }}
@@ -247,6 +248,7 @@ function FormSchemaFieldWithParent({
 
 FormSchemaFieldWithParent.propTypes = {
   name: PropTypes.string.isRequired,
+  parent: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   field: PropTypes.shape({
     value: PropTypes.any,
