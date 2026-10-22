@@ -31,7 +31,8 @@
     "importSession": "Importar sessão",
     "selectAll": "Selecionar todos",
     "selectNone": "Nenhum",
-    "chooseFile": "Escolher arquivo"
+    "chooseFile": "Escolher arquivo",
+    "gotIt": "Entendi"
   },
   "error": {
     "exportModel": "Não foi possível exportar o modelo",
@@ -322,7 +323,12 @@
     "includesDataset": "O arquivo inclui o dataset \"{{name}}\". Não o compartilhe se os dados forem privados.",
     "importSessionWarning": "Uma sessão contém modelos que executam código ao serem usados. Importe apenas sessões de pessoas em quem você confia.",
     "sessionImported": "Sessão importada como \"{{session}}\" com o dataset \"{{dataset}}\"",
-    "importedRecipeRuns": "Estes runs chegaram sem treinar: {{names}}"
+    "importedRecipeRuns": "Estes runs chegaram sem treinar: {{names}}",
+    "importedNeedsDownloadTrained": "Você pode prever com estes modelos, mas para retreiná-los baixe-os primeiro em Modelos Disponíveis: {{names}}",
+    "importedNeedsDownloadUntrained": "Estes modelos chegaram sem treinar e precisam ser baixados antes de treinar: {{names}}",
+    "importingSession": "Importando sessão...",
+    "importingSessionHelp": "Pode demorar um pouco se a sessão incluir modelos treinados.",
+    "sessionImportedTitle": "Sessão importada"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} concluiu todas as suas execuções.",

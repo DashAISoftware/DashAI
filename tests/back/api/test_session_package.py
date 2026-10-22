@@ -493,6 +493,51 @@ def test_version_drift_is_reported_as_a_warning(client, regressor, tmp_path):
     assert any("scikit-learn 0.0.1" in warning for warning in result["warnings"])
 
 
+@pytest.mark.parametrize(
+    ("include_trained_models", "listed", "empty"),
+    [
+        (True, "needs_download_trained", "needs_download_untrained"),
+        (False, "needs_download_untrained", "needs_download_trained"),
+    ],
+    ids=["trained", "untrained"],
+)
+def test_models_that_need_a_download_are_listed_by_whether_they_arrive_trained(
+    client, regressor, tmp_path, monkeypatch, include_trained_models, listed, empty
+):
+    package = _export_all(
+        client, regressor, tmp_path / "source.dashai", include_trained_models
+    )
+    registry = client.app.container["component_registry"]
+    model_class = registry["LinearRegression"]["class"]
+    monkeypatch.setattr(model_class, "REQUIRES_DOWNLOAD", True, raising=False)
+    monkeypatch.setattr(
+        model_class, "is_downloaded", classmethod(lambda cls: False), raising=False
+    )
+
+    try:
+        result = _import(client, package)
+    finally:
+        monkeypatch.undo()
+        registry.refresh_download_status("LinearRegression")
+
+    display_name = registry["LinearRegression"]["display_name"]
+    assert result[listed] == [
+        {"name": "LinearRegression", "display_name": display_name.get("en")}
+    ]
+    assert result[empty] == []
+
+
+def test_models_already_downloaded_or_without_download_are_not_listed(
+    client, regressor, tmp_path
+):
+    package = _export_all(client, regressor, tmp_path / "source.dashai")
+
+    result = _import(client, package)
+
+    assert result["needs_download_trained"] == []
+    assert result["needs_download_untrained"] == []
+
+
 # Endpoints ------------------------------------------------------------------
 
 
@@ -548,6 +593,35 @@ def test_the_import_endpoint_creates_the_session(client, regressor, tmp_path):
     session = client.get(f"/api/v1/model-session/{body['session_id']}")
     assert session.status_code == 200
     assert session.json()["name"] == body["session_name"]
+
+
+def test_the_import_endpoint_names_missing_downloads_in_the_app_language(
+    client, regressor, tmp_path, monkeypatch
+):
+    package = _export_all(client, regressor, tmp_path / "upload.dashai")
+    registry = client.app.container["component_registry"]
+    model_class = registry["LinearRegression"]["class"]
+    monkeypatch.setattr(model_class, "REQUIRES_DOWNLOAD", True, raising=False)
+    monkeypatch.setattr(
+        model_class, "is_downloaded", classmethod(lambda cls: False), raising=False
+    )
+
+    try:
+        with open(package, "rb") as handle:
+            response = client.post(
+                "/api/v1/model-session/import",
+                files={"file": ("upload.dashai", handle, "application/zip")},
+                headers={"Accept-Language": "es"},
+            )
+    finally:
+        monkeypatch.undo()
+        registry.refresh_download_status("LinearRegression")
+
+    assert response.status_code == 201, response.text
+    display_name = registry["LinearRegression"]["display_name"].get("es")
+    assert response.json()["needs_download_trained"] == [
+        {"name": "LinearRegression", "display_name": display_name}
+    ]
 
 
 def test_the_import_endpoint_answers_400_for_a_model_file(client, regressor, tmp_path):

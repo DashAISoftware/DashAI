@@ -31,7 +31,8 @@
     "importSession": "导入会话",
     "selectAll": "全选",
     "selectNone": "全不选",
-    "chooseFile": "选择文件"
+    "chooseFile": "选择文件",
+    "gotIt": "知道了"
   },
   "error": {
     "exportModel": "无法导出模型",
@@ -315,7 +316,12 @@
     "includesDataset": "该文件包含数据集“{{name}}”。如果数据是私密的，请不要分享。",
     "importSessionWarning": "会话中包含的模型在使用时会执行代码。请只导入你信任的人的会话。",
     "sessionImported": "会话已导入为“{{session}}”，数据集为“{{dataset}}”",
-    "importedRecipeRuns": "这些运行未经训练：{{names}}"
+    "importedRecipeRuns": "这些运行未经训练：{{names}}",
+    "importedNeedsDownloadTrained": "你可以用这些模型进行预测，但要重新训练，请先在可用模型中下载它们：{{names}}",
+    "importedNeedsDownloadUntrained": "这些模型未经训练，训练前必须先下载：{{names}}",
+    "importingSession": "正在导入会话...",
+    "importingSessionHelp": "如果会话包含已训练的模型，可能需要一些时间。",
+    "sessionImportedTitle": "会话已导入"
   },
   "message": {
     "allRunsCompleted": "{{experiment}} 已完成所有运行。",

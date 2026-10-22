@@ -54,6 +54,11 @@ de nuevo después de importar.
 - Si tus versiones de librerías son distintas a las usadas al exportar, la
   sesión se importa con una advertencia. Si luego un modelo falla, usa
   **Re-entrenar**: la configuración siempre va en el archivo.
+- Si un modelo debe descargarse (por ejemplo, un traductor de HuggingFace) y
+  no lo tienes, dashAI te avisa al importar. Un run entrenado igual predice
+  con su propia copia, y solo necesitas la descarga para re-entrenarlo. Un run
+  que llega sin entrenar la necesita antes de entrenar, y el aviso ofrece un
+  botón **Descargar**.
 
 :::warning
 Un archivo de sesión contiene objetos de Python y usar sus modelos ejecuta
