@@ -197,6 +197,7 @@
     "datasetPreview": "数据集预览",
     "datasetPreviewFor": "笔记本：{{name}} 预览",
     "decreasingColor": "下降颜色",
+    "applyingConverters": "正在应用转换器...",
     "deleteConverterConfirmation": "确定要删除转换器 \"{{converter}}\" 吗？删除此转换器也会移除之后应用的所有转换器和探索器。此操作无法撤销。",
     "deleteExplorerConfirmation": "确定要删除探索器 \"{{explorer}}\" 吗？此操作无法撤销。",
     "detailsForExplorer": "探索器详情：{{name}}",

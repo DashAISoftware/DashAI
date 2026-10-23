@@ -205,6 +205,7 @@
     "aboutTool": "About {{toolName}}",
     "datasetPreviewFor": "Notebook: {{name}} Preview",
     "dataType": "Data Type",
+    "applyingConverters": "Applying converters...",
     "deleteConverterConfirmation": "Are you sure you want to delete the converter \"{{converter}}\"? Deleting this converter will also remove all subsequent converters and explorers applied after it. This action cannot be undone.",
     "deleteExplorerConfirmation": "Are you sure you want to delete the explorer \"{{explorer}}\"? This action cannot be undone.",
     "detailsForExplorer": "Details for Explorer: {{name}}",

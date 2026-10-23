@@ -212,6 +212,7 @@
     "aboutTool": "Acerca de {{toolName}}",
     "datasetPreviewFor": "Cuaderno: Vista Previa de {{name}}",
     "dataType": "Tipo de Dato",
+    "applyingConverters": "Aplicando convertidores...",
     "deleteConverterConfirmation": "¿Está seguro de que desea eliminar el convertidor \"{{converter}}\"? Eliminar este convertidor también eliminará todos los convertidores y exploradores posteriores aplicados después. Esta acción no se puede deshacer.",
     "deleteExplorerConfirmation": "¿Está seguro de que desea eliminar el explorador \"{{explorer}}\"? Esta acción no se puede deshacer.",
     "detailsForExplorer": "Detalles del Explorador: {{name}}",

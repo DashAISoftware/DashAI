@@ -24,6 +24,7 @@ import {
 } from "../../documents/documentKinds";
 import { CONTENT_TYPE_ICONS, contentTypeLabel } from "./documentItems";
 import useNotebookItems from "./useNotebookItems";
+import ApplyingConvertersOverlay from "../converter/ApplyingConvertersOverlay";
 
 const LIST_HEIGHT = 300;
 
@@ -220,6 +221,7 @@ export default function DocumentItemsPanel({
   version,
   onFilterChange,
   headerAction = null,
+  applying = false,
 }) {
   const { t } = useTranslation(["datasets"]);
   const theme = useTheme();
@@ -396,6 +398,7 @@ export default function DocumentItemsPanel({
 
         <Box
           sx={{
+            position: "relative",
             border: 1,
             borderColor: "divider",
             borderRadius: 1,
@@ -403,6 +406,7 @@ export default function DocumentItemsPanel({
             overflow: "hidden",
           }}
         >
+          <ApplyingConvertersOverlay open={applying} />
           <Box
             sx={{
               display: "grid",
@@ -487,4 +491,5 @@ DocumentItemsPanel.propTypes = {
   version: PropTypes.any,
   onFilterChange: PropTypes.func.isRequired,
   headerAction: PropTypes.node,
+  applying: PropTypes.bool,
 };

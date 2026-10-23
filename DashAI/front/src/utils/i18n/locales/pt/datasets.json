@@ -205,6 +205,7 @@
     "datasetPreview": "Visualização Prévia do Conjunto de Dados",
     "datasetPreviewFor": "Caderno: Visualização Prévia de {{name}}",
     "decreasingColor": "Cor de Diminuição",
+    "applyingConverters": "Aplicando conversores...",
     "deleteConverterConfirmation": "Tem certeza de que deseja excluir o conversor \"{{converter}}\"? Excluir este conversor também excluirá todos os conversores e exploradores posteriores aplicados em seguida. Esta ação não pode ser desfeita.",
     "deleteExplorerConfirmation": "Tem certeza de que deseja excluir o explorador \"{{explorer}}\"? Esta ação não pode ser desfeita.",
     "detailsForExplorer": "Detalhes do Explorador: {{name}}",

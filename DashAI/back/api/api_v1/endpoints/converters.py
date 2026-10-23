@@ -349,24 +349,22 @@ async def delete_converter(
 
             restore_notebook_data(notebook)
 
-            # Enqueue all previous converters
-            job_ids = []
-            for converter in previous_converters:
-                job = ConverterJob(converter_id=converter.id)
-                enqueued = job_queue.put(job)
-                job_ids.append(enqueued.id)
+            previous_ids = [previous.id for previous in previous_converters]
+            for previous in previous_converters:
+                previous.set_status_as_delivered()
 
-            # Delete all the converters after the current one
-            for converter in next_converters:
-                db.delete(converter)
+            for following in next_converters:
+                db.delete(following)
 
-            # Delete all the explorers after the current converter
             for explorer in next_explorers:
                 db.delete(explorer)
 
-            # Delete the current converter
-            db.delete(converter)
             db.commit()
+
+            job_ids = [
+                job_queue.put(ConverterJob(converter_id=previous_id)).id
+                for previous_id in previous_ids
+            ]
 
             last_job_id = job_ids[-1] if job_ids else None
             return {"jobId": last_job_id}
