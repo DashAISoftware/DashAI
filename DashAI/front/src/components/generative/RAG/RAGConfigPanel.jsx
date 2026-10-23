@@ -36,6 +36,8 @@ import {
   updateGenerativeSessionParams,
 } from "../../../api/rag";
 import { updateGenerativeSession } from "../../../api/session";
+import { getRequiredDownloads } from "../../../api/component";
+import { subscribeAnyDownloadState } from "../../models/model/ComponentDownloadControl";
 import { getApiErrorMessage } from "../../../utils/apiError";
 
 /**
@@ -65,6 +67,8 @@ const SECTIONS = [
  * @param {Function} [props.onSaved] - Called after parameters are persisted.
  * @param {Function} [props.onRetryIndexing] - Called to restart a failed index.
  * @param {Function} [props.onSessionRenamed] - Called with the new name.
+ * @param {Function} [props.onGeneratorChange] - Called with the generator
+ *   selected in the draft, saved or not, so the chat can gate on it.
  * @returns {JSX.Element} The configuration panel.
  */
 export default function RAGConfigPanel({
@@ -73,6 +77,7 @@ export default function RAGConfigPanel({
   onSaved,
   onRetryIndexing,
   onSessionRenamed,
+  onGeneratorChange,
 }) {
   const { t } = useTranslation(["generative", "common"]);
   const { enqueueSnackbar } = useSnackbar();
@@ -170,6 +175,47 @@ export default function RAGConfigPanel({
         console.error("Failed to load retriever presets:", error),
       );
   }, [topK]);
+
+  const generatorName = draft?.generation_model?.component;
+  useEffect(() => {
+    if (generatorName !== undefined) onGeneratorChange?.(generatorName);
+  }, [generatorName, onGeneratorChange]);
+
+  const retrieverKey = JSON.stringify(draft?.retriever_model ?? null);
+  const [missingRetrieverDownloads, setMissingRetrieverDownloads] = useState(
+    [],
+  );
+  useEffect(() => {
+    const retrieverModel = JSON.parse(retrieverKey);
+    if (!retrieverModel?.component) {
+      setMissingRetrieverDownloads([]);
+      return undefined;
+    }
+    let cancelled = false;
+    const check = () =>
+      getRequiredDownloads({ retriever_model: retrieverModel })
+        .then((missing) => {
+          if (!cancelled) setMissingRetrieverDownloads(missing);
+        })
+        .catch(() => {
+          if (!cancelled) setMissingRetrieverDownloads([]);
+        });
+    const timer = setTimeout(check, 300);
+    const unsubscribe = subscribeAnyDownloadState(() => check());
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [retrieverKey]);
+  const retrieverDownloadMessage =
+    missingRetrieverDownloads.length > 0
+      ? t("common:componentDownload.mustDownloadNested", {
+          names: missingRetrieverDownloads
+            .map((missing) => missing.display_name || missing.name)
+            .join(", "),
+        })
+      : null;
 
   const dirty = useMemo(
     () => JSON.stringify(draft) !== JSON.stringify(savedDraft),
@@ -398,6 +444,11 @@ export default function RAGConfigPanel({
           >
             {t("generative:rag.config.advanced")}
           </Button>
+          {retrieverDownloadMessage && (
+            <Alert severity="warning" sx={{ py: 0.5 }}>
+              {retrieverDownloadMessage}
+            </Alert>
+          )}
           <RetrieverAdvancedModal
             open={showRetrieverAdvanced}
             onClose={() => setShowRetrieverAdvanced(false)}
@@ -407,6 +458,7 @@ export default function RAGConfigPanel({
             setRetrieverModel={(value) =>
               updateSection("retriever_model", value)
             }
+            downloadMessage={retrieverDownloadMessage}
           />
         </Stack>
       );
@@ -695,7 +747,13 @@ export default function RAGConfigPanel({
             variant="contained"
             size="small"
             onClick={handleSave}
-            disabled={!dirty || saving || !modelAvailable || !promptValid}
+            disabled={
+              !dirty ||
+              saving ||
+              !modelAvailable ||
+              !promptValid ||
+              missingRetrieverDownloads.length > 0
+            }
           >
             {t("generative:rag.paramsPanel.save")}
           </Button>
@@ -712,4 +770,5 @@ RAGConfigPanel.propTypes = {
   onSaved: PropTypes.func,
   onRetryIndexing: PropTypes.func,
   onSessionRenamed: PropTypes.func,
+  onGeneratorChange: PropTypes.func,
 };

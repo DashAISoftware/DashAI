@@ -6,6 +6,7 @@ import {
   DialogActions,
   Button,
   IconButton,
+  Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useTranslation } from "react-i18next";
@@ -23,6 +24,8 @@ import RetrieverConfigurationStep from "./RetrieverConfigurationStep";
  * @param {Array} [props.allParadigms] - All available retriever paradigms.
  * @param {object} [props.retrieverModel] - The current retriever model.
  * @param {function} props.setRetrieverModel - State setter for the retriever model.
+ * @param {string|null} [props.downloadMessage] - Names the models the retriever
+ *   still needs downloaded; while set, the dialog cannot be confirmed.
  * @returns {JSX.Element} The advanced retriever modal.
  */
 export default function RetrieverAdvancedModal({
@@ -32,6 +35,7 @@ export default function RetrieverAdvancedModal({
   allParadigms,
   retrieverModel,
   setRetrieverModel,
+  downloadMessage = null,
 }) {
   const { t } = useTranslation(["generative"]);
   const [stepValid, setStepValid] = useState(false);
@@ -98,6 +102,15 @@ export default function RetrieverAdvancedModal({
       </DialogContent>
 
       <DialogActions sx={{ p: 2, bgcolor: "background.paper" }}>
+        {downloadMessage && (
+          <Typography
+            variant="caption"
+            color="warning.main"
+            sx={{ mr: "auto" }}
+          >
+            {downloadMessage}
+          </Typography>
+        )}
         <Button onClick={handleClose} variant="outlined">
           {t("generative:rag.advanced.close")}
         </Button>
@@ -105,7 +118,7 @@ export default function RetrieverAdvancedModal({
           onClick={handleSave}
           variant="contained"
           color="primary"
-          disabled={!stepValid}
+          disabled={!stepValid || Boolean(downloadMessage)}
         >
           {t("generative:rag.advanced.done")}
         </Button>

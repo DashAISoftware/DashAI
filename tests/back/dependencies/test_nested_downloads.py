@@ -66,6 +66,31 @@ def test_iter_nested_depth():
     assert names == [("Wrapper", None), ("SVC", "Wrapper")]
 
 
+def test_iter_walks_component_lists():
+    params = {
+        "retriever_model": {
+            "component": "ParallelRetriever",
+            "params": {
+                "children": [
+                    {
+                        "component": "DenseEmbeddingRetriever",
+                        "params": {
+                            "embedding_model": {"component": "MiniLM", "params": {}}
+                        },
+                    },
+                    {"component": "BM25Retriever", "params": {}},
+                ],
+            },
+        }
+    }
+    assert list(iter_config_components(params)) == [
+        ("ParallelRetriever", None),
+        ("DenseEmbeddingRetriever", "ParallelRetriever"),
+        ("MiniLM", "DenseEmbeddingRetriever"),
+        ("BM25Retriever", "ParallelRetriever"),
+    ]
+
+
 def test_iter_ignores_primitives_and_fixed_values():
     params = {"n": 5, "alpha": {"fixed_value": 0.1}}
     assert list(iter_config_components(params)) == []
