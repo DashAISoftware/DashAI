@@ -41,7 +41,8 @@ def _iter_value(
     """Yield ``(component_name, parent_name)`` for a single parameter value.
 
     Recurses into the selected component's own parameters so components nested
-    at any depth are reported.
+    at any depth are reported. A list value, such as the ``children`` of a
+    composite retriever, is walked item by item.
 
     Parameters
     ----------
@@ -57,6 +58,10 @@ def _iter_value(
         The nested component name and the name of its enclosing component.
     """
     value = _unwrap(value)
+    if isinstance(value, list):
+        for item in value:
+            yield from _iter_value(item, parent)
+        return
     if not (isinstance(value, dict) and "component" in value):
         return
 

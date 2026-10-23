@@ -45,6 +45,7 @@ export default function RAGSessionPage() {
     setSelectedDisplayName,
     deleteSessionById,
     fetchSessions,
+    setParamsVersion,
   } = useGenerative();
 
   const ragTitle = useTaskDisplayName(RAG_TASK_NAME);
@@ -52,6 +53,7 @@ export default function RAGSessionPage() {
   const [notFound, setNotFound] = useState(false);
   const [indexStatus, setIndexStatus] = useState(null);
   const [sessionName, setSessionName] = useState(null);
+  const [generatorName, setGeneratorName] = useState(null);
 
   const sessionId = Number(urlSessionId);
   const isValidId = Number.isFinite(sessionId) && sessionId > 0;
@@ -119,6 +121,7 @@ export default function RAGSessionPage() {
 
   useEffect(() => {
     reindexRequested.current = false;
+    setGeneratorName(null);
   }, [sessionId]);
 
   useEffect(() => {
@@ -149,6 +152,11 @@ export default function RAGSessionPage() {
     },
     [deleteSessionById, navigate, sessionId],
   );
+
+  const handleConfigurationSaved = useCallback(() => {
+    setParamsVersion?.((version) => version + 1);
+    startIndexing();
+  }, [setParamsVersion, startIndexing]);
 
   const handleSessionRenamed = useCallback(
     (newName) => {
@@ -250,7 +258,11 @@ export default function RAGSessionPage() {
                 <RAGBreadcrumbs sessionName={sessionName} />
               </Box>
               <Box sx={{ flex: 1, minHeight: 0 }}>
-                <GenerativeChat key={sessionId} indexStatus={indexStatus} />
+                <GenerativeChat
+                  key={sessionId}
+                  indexStatus={indexStatus}
+                  generatorName={generatorName}
+                />
               </Box>
             </Box>
           </CenterPanel>
@@ -259,9 +271,10 @@ export default function RAGSessionPage() {
             <RAGConfigPanel
               sessionId={sessionId}
               indexStatus={indexStatus}
-              onSaved={startIndexing}
+              onSaved={handleConfigurationSaved}
               onRetryIndexing={startIndexing}
               onSessionRenamed={handleSessionRenamed}
+              onGeneratorChange={setGeneratorName}
             />
           </RightPanel>
         </ModuleContainer>

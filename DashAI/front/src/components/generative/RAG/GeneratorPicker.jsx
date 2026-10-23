@@ -10,7 +10,9 @@ import {
   Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import ComponentDownloadControl from "../../models/model/ComponentDownloadControl";
+import ComponentDownloadControl, {
+  useComponentDownloadState,
+} from "../../models/model/ComponentDownloadControl";
 import {
   useCredentialStatuses,
   getComponentCredentialState,
@@ -69,8 +71,12 @@ export default function GeneratorPicker({
     [generators, generatorModel?.component],
   );
 
+  const { downloaded, downloading } = useComponentDownloadState(
+    selected || { name: "" },
+  );
   const needsDownload =
-    Boolean(selected?.metadata?.requires_download) && !selected?.downloaded;
+    Boolean(selected?.metadata?.requires_download) &&
+    !(downloaded && !downloading);
   const { locked, requiredPlatforms } = getComponentCredentialState(
     selected || {},
     statuses,

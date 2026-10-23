@@ -47,9 +47,12 @@ import { useTheme } from "@mui/material/styles";
  * @param {object} [props.indexStatus] - For RAG sessions, the backend-reported
  *   indexing state. The composer is disabled while a run is in flight: the
  *   retriever cannot answer over chunks that are still being written.
+ * @param {string} [props.generatorName] - For RAG sessions, the generator
+ *   selected in the configuration panel, saved or not. The composer is blocked
+ *   while it is not downloaded, like a normal session's model.
  * @returns {JSX.Element} The chat.
  */
-export default function GenerativeChat({ indexStatus }) {
+export default function GenerativeChat({ indexStatus, generatorName }) {
   const theme = useTheme();
 
   const {
@@ -136,7 +139,10 @@ export default function GenerativeChat({ indexStatus }) {
   // Resolve the session model's metadata plus a reconciled download status, so
   // the chat can block input and offer a download when the weights are missing
   // (e.g. after switching to a not downloaded model or deleting its download).
-  const modelName = sessionInfo?.model_name;
+  const modelName =
+    sessionInfo?.task_name === "RAGTask"
+      ? generatorName || sessionInfo?.parameters?.generation_model?.component
+      : sessionInfo?.model_name;
   const refreshModelStatus = () => {
     if (!modelName) {
       setModelComponent(null);
