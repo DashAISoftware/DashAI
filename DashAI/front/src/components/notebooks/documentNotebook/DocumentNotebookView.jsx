@@ -105,6 +105,7 @@ export default function DocumentNotebookView({ notebook }) {
           version={documentColumns}
           onFilterChange={setItemSelection}
           headerAction={saveButton}
+          applying={converterRunning}
         />
       </Box>
 

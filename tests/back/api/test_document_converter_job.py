@@ -172,6 +172,44 @@ def test_deleting_a_later_converter_replays_the_earlier_one(client: TestClient):
     assert working_document(client, notebook_id)[Text] == ["a b c"]
 
 
+def test_replayed_converters_are_delivered_before_they_run(client, monkeypatch):
+    notebook_id = create_document_notebook(client, "delete_status", ["a_b"])
+    first = add_converter(
+        client,
+        notebook_id,
+        "CharacterReplacer",
+        UNDERSCORES,
+        [{"columnName": "Text"}],
+        offset=0,
+    )
+    ConverterJob(converter_id=first).run()
+    second = add_converter(
+        client,
+        notebook_id,
+        "CharacterReplacer",
+        UNDERSCORES,
+        [{"columnName": "Text"}],
+        offset=1,
+    )
+    ConverterJob(converter_id=second).run()
+
+    job_queue = client.app.container["job_queue"]
+    put = job_queue.put
+    statuses = []
+
+    def recording_put(job):
+        statuses.append(converter_status(client, job.kwargs["converter_id"]))
+        return put(job)
+
+    monkeypatch.setattr(job_queue, "put", recording_put)
+
+    response = client.delete(f"/api/v1/converter/{second}")
+
+    assert response.status_code == 200, response.text
+    assert statuses == [ConverterStatus.DELIVERED]
+    assert converter_status(client, first) == ConverterStatus.FINISHED
+
+
 def test_only_the_picked_items_are_rewritten(client: TestClient):
     notebook_id = create_document_notebook(
         client, "job_positions", ["a_1", "a_2", image(), "a_3"]

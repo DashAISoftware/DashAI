@@ -21,6 +21,7 @@ import { SaveDatasetModal } from "../datasetCreation/SaveDatasetModal";
 import { getDataset, getDatasetFileFiltered } from "../../../api/datasets";
 import DatasetTable from "../dataset/DatasetTable";
 import { NotebookHistoryModal } from "./NotebookHistoryModal";
+import ApplyingConvertersOverlay from "../converter/ApplyingConvertersOverlay";
 import { useExplorersAndConverters } from "../context/ExplorersAndConvertersContext";
 import { useTourContext } from "../../tour/TourProvider";
 import { useTranslation } from "react-i18next";
@@ -57,6 +58,9 @@ export default function DatasetPreviewNotebook({
   const converters = useMemo(
     () => explorersAndConverters.filter((item) => item.type === "converter"),
     [explorersAndConverters],
+  );
+  const converterRunning = converters.some(
+    (converter) => converter.status !== 3 && converter.status !== 4,
   );
   const converterKey = useMemo(
     () => converters.map((c) => `${c.id}:${c.status}`).join("|"),
@@ -301,7 +305,8 @@ export default function DatasetPreviewNotebook({
         </AccordionSummary>
 
         <AccordionDetails>
-          <Box sx={{ width: "100%" }}>
+          <Box sx={{ width: "100%", position: "relative", borderRadius: 1 }}>
+            <ApplyingConvertersOverlay open={converterRunning} />
             {convertersLoaded && (
               <DatasetTable
                 fetchPage={fetchDatasetPage}
